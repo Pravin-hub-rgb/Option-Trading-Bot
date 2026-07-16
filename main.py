@@ -1,95 +1,43 @@
-"""
-NIFTY Options Trading Bot - Main Entry Point
-
-Usage:
-    python main.py                    # Trade both CE and PE (default)
-    python main.py --instruments CE   # Trade only CE
-    python main.py --instruments PE   # Trade only PE
-    python main.py --instruments BOTH # Trade both CE and PE (explicit)
-"""
-import argparse
-from upstox.data_streamer import DataStreamer  # ← UPDATED IMPORT
-from scheduler import TradingScheduler
 import asyncio
-import signal
-import sys
-from datetime import datetime
-import pytz
+import logging
+import threading
+from live_feed_server import LiveFeedServer
+from api_server import start_api_server
+from bot_manager import BotManager
+from settings_db import load_settings
 
-IST = pytz.timezone('Asia/Kolkata')
+logging.basicConfig(level=logging.INFO)
 
-def signal_handler(sig, frame):
-    print(f"[{datetime.now(IST).strftime('%H:%M:%S.%f')[:-3]}] 🛑 Ctrl+C received")
-    if 'scheduler' in globals():
-        scheduler.stop()
-    sys.exit(0)
+def main():
+    load_settings()
 
-def parse_instruments(instruments_arg):
-    """
-    Parse instruments argument and return list of instruments to trade
-    
-    Args:
-        instruments_arg: 'CE', 'PE', or 'BOTH'
-    
-    Returns:
-        list: ['CE'], ['PE'], or ['CE', 'PE']
-    """
-    if instruments_arg == 'CE':
-        return ['CE']
-    elif instruments_arg == 'PE':
-        return ['PE']
-    else:  # 'BOTH'
-        return ['CE', 'PE']
+    live_feed = LiveFeedServer()
 
-async def main():
-    global scheduler
-    
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(
-        description='NIFTY Options Trading Bot',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python main.py                    # Trade both CE and PE
-  python main.py --instruments CE   # Trade only CE
-  python main.py --instruments PE   # Trade only PE
-        """
+    bot_manager = BotManager(live_feed_server=live_feed)
+
+    ws_thread = threading.Thread(
+        target=lambda: asyncio.run(live_feed.start()),
+        daemon=True,
     )
-    parser.add_argument(
-        '--instruments',
-        type=str,
-        choices=['CE', 'PE', 'BOTH'],
-        default='BOTH',
-        help='Which instruments to trade (default: BOTH)'
+    ws_thread.start()
+
+    api_server = start_api_server(bot_manager, host="0.0.0.0", port=8002)
+
+    api_thread = threading.Thread(
+        target=api_server.run,
+        daemon=True,
     )
-    
-    args = parser.parse_args()
-    
-    # Convert to list format
-    instruments_to_trade = parse_instruments(args.instruments)
-    
-    print(f"[{datetime.now(IST).strftime('%H:%M:%S.%f')[:-3]}] 🚀 Starting bot...")
-    print(f"[{datetime.now(IST).strftime('%H:%M:%S.%f')[:-3]}] 📊 Trading: {', '.join(instruments_to_trade)}")
-    
-    # Set up signal handler
-    signal.signal(signal.SIGINT, signal_handler)
-    
-    # Create scheduler with data streamer class and instruments
-    def create_data_streamer(session_name, ce_key, pe_key):
-        return DataStreamer(
-            session_name=session_name,
-            instruments=instruments_to_trade,
-            ce_key=ce_key,
-            pe_key=pe_key
-        )
-    
-    scheduler = TradingScheduler(create_data_streamer)
-    
+    api_thread.start()
+
+    # http://localhost:3002
+    print("Dashboard: http://localhost:3002")
+    print("API: http://localhost:8002/api/status")
+    print("WS: ws://localhost:8765")
+
     try:
-        await scheduler.start()
-    except Exception as e:
-        print(f"[{datetime.now(IST).strftime('%H:%M:%S.%f')[:-3]}] ❌ Error: {e}")
-        scheduler.stop()
+        api_thread.join()
+    except KeyboardInterrupt:
+        pass
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

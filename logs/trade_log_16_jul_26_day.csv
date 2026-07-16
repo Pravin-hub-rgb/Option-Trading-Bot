@@ -1,7 +1,0 @@
-time,symbol,type,price,stop_loss,target,exit_reason,pnl
-2026-07-16 09:20:06.877,NSE_FO|57348,entry,119.95,114.95,,,
-2026-07-16 09:20:30.679,NSE_FO|57348,exit,114.55,114.95,,Trailing SL Hit,-5.40
-2026-07-16 09:21:04.129,NSE_FO|57341,entry,74.75,69.75,,,
-2026-07-16 09:25:00.870,NSE_FO|57348,entry,110.00,105.00,,,
-2026-07-16 09:27:58.639,NSE_FO|57348,exit,104.55,105.00,,Trailing SL Hit,-5.45
-2026-07-16 09:30:12.249,NSE_FO|57341,exit,79.35,79.75,,Trailing SL Hit,4.60

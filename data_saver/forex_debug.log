@@ -1,0 +1,1440 @@
+2025-12-28 11:31:13,941 - ERROR - Error checking availability for 2024-12-31: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:31:24,353 - ERROR - Error checking availability for 2025-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:31:31,243 - WARNING - No data available for 2025-01-02 (status: 404)
+2025-12-28 11:31:41,597 - ERROR - Error checking availability for 2025-12-25: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:31:52,011 - ERROR - Error checking availability for 2021-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:31:57,971 - WARNING - No data available for 2022-01-01 (status: 404)
+2025-12-28 11:32:01,977 - WARNING - No data available for 2023-01-01 (status: 404)
+2025-12-28 11:32:05,894 - WARNING - No data available for 2024-01-01 (status: 404)
+2025-12-28 11:32:13,581 - WARNING - No data available for 2025-01-01 (status: 404)
+2025-12-28 11:36:18,579 - ERROR - Error checking availability for 2021-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:36:29,038 - ERROR - Error checking availability for 2022-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:36:39,468 - ERROR - Error checking availability for 2023-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:36:49,844 - ERROR - Error checking availability for 2024-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:37:00,247 - ERROR - Error checking availability for 2025-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:37:01,023 - INFO - Yahoo Finance data available for 2015
+2025-12-28 11:37:01,323 - INFO - Yahoo Finance data available for 2016
+2025-12-28 11:37:01,628 - WARNING - No Yahoo Finance data for 2017
+2025-12-28 11:37:01,935 - INFO - Yahoo Finance data available for 2018
+2025-12-28 11:37:02,250 - INFO - Yahoo Finance data available for 2019
+2025-12-28 11:37:02,656 - INFO - Yahoo Finance data available for 2020
+2025-12-28 11:37:02,961 - INFO - Yahoo Finance data available for 2021
+2025-12-28 11:37:03,266 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1d 2022-01-01 -> 2022-01-02)
+2025-12-28 11:37:03,277 - ERROR - 
+1 Failed download:
+2025-12-28 11:37:03,277 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1d 2022-01-01 -> 2022-01-02)
+2025-12-28 11:37:03,280 - WARNING - No Yahoo Finance data for 2022
+2025-12-28 11:37:03,666 - WARNING - No Yahoo Finance data for 2023
+2025-12-28 11:37:03,991 - INFO - Yahoo Finance data available for 2024
+2025-12-28 11:37:04,275 - WARNING - No Yahoo Finance data for 2025
+2025-12-28 11:38:03,263 - ERROR - Error checking availability for 2021-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:38:13,680 - ERROR - Error checking availability for 2022-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:38:24,125 - ERROR - Error checking availability for 2023-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:38:34,576 - ERROR - Error checking availability for 2024-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:38:45,027 - ERROR - Error checking availability for 2025-01-01: HTTPSConnectionPool(host='datafeed.dukascopy.com', port=443): Read timed out. (read timeout=10)
+2025-12-28 11:38:45,041 - INFO - Yahoo Finance data available for 2024
+2025-12-28 11:38:45,041 - INFO - Downloading from Yahoo Finance: 2024-01-01
+2025-12-28 11:38:45,770 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-01 -> 2024-01-02) (Yahoo error = "1m data not available for startTime=1704067200 and endTime=1704153600. The requested range must be within the last 30 days.")
+2025-12-28 11:38:45,781 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:45,781 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-01 -> 2024-01-02) (Yahoo error = "1m data not available for startTime=1704067200 and endTime=1704153600. The requested range must be within the last 30 days.")
+2025-12-28 11:38:46,286 - INFO - Downloading from Yahoo Finance: 2024-01-02
+2025-12-28 11:38:47,225 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-02 -> 2024-01-03) (Yahoo error = "1m data not available for startTime=1704153600 and endTime=1704240000. The requested range must be within the last 30 days.")
+2025-12-28 11:38:47,235 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:47,235 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-02 -> 2024-01-03) (Yahoo error = "1m data not available for startTime=1704153600 and endTime=1704240000. The requested range must be within the last 30 days.")
+2025-12-28 11:38:47,738 - INFO - Downloading from Yahoo Finance: 2024-01-03
+2025-12-28 11:38:48,454 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-03 -> 2024-01-04) (Yahoo error = "1m data not available for startTime=1704240000 and endTime=1704326400. The requested range must be within the last 30 days.")
+2025-12-28 11:38:48,462 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:48,462 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-03 -> 2024-01-04) (Yahoo error = "1m data not available for startTime=1704240000 and endTime=1704326400. The requested range must be within the last 30 days.")
+2025-12-28 11:38:48,966 - INFO - Downloading from Yahoo Finance: 2024-01-04
+2025-12-28 11:38:49,959 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-04 -> 2024-01-05) (Yahoo error = "1m data not available for startTime=1704326400 and endTime=1704412800. The requested range must be within the last 30 days.")
+2025-12-28 11:38:49,964 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:49,964 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-04 -> 2024-01-05) (Yahoo error = "1m data not available for startTime=1704326400 and endTime=1704412800. The requested range must be within the last 30 days.")
+2025-12-28 11:38:50,467 - INFO - Downloading from Yahoo Finance: 2024-01-05
+2025-12-28 11:38:51,403 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-05 -> 2024-01-06) (Yahoo error = "1m data not available for startTime=1704412800 and endTime=1704499200. The requested range must be within the last 30 days.")
+2025-12-28 11:38:51,403 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:51,403 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-05 -> 2024-01-06) (Yahoo error = "1m data not available for startTime=1704412800 and endTime=1704499200. The requested range must be within the last 30 days.")
+2025-12-28 11:38:51,906 - INFO - Downloading from Yahoo Finance: 2024-01-08
+2025-12-28 11:38:52,731 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-08 -> 2024-01-09) (Yahoo error = "1m data not available for startTime=1704672000 and endTime=1704758400. The requested range must be within the last 30 days.")
+2025-12-28 11:38:52,742 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:52,742 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-08 -> 2024-01-09) (Yahoo error = "1m data not available for startTime=1704672000 and endTime=1704758400. The requested range must be within the last 30 days.")
+2025-12-28 11:38:53,245 - INFO - Downloading from Yahoo Finance: 2024-01-09
+2025-12-28 11:38:53,963 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-09 -> 2024-01-10) (Yahoo error = "1m data not available for startTime=1704758400 and endTime=1704844800. The requested range must be within the last 30 days.")
+2025-12-28 11:38:53,973 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:53,973 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-09 -> 2024-01-10) (Yahoo error = "1m data not available for startTime=1704758400 and endTime=1704844800. The requested range must be within the last 30 days.")
+2025-12-28 11:38:54,476 - INFO - Downloading from Yahoo Finance: 2024-01-10
+2025-12-28 11:38:55,721 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-10 -> 2024-01-11) (Yahoo error = "1m data not available for startTime=1704844800 and endTime=1704931200. The requested range must be within the last 30 days.")
+2025-12-28 11:38:55,731 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:55,731 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-10 -> 2024-01-11) (Yahoo error = "1m data not available for startTime=1704844800 and endTime=1704931200. The requested range must be within the last 30 days.")
+2025-12-28 11:38:56,234 - INFO - Downloading from Yahoo Finance: 2024-01-11
+2025-12-28 11:38:56,931 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-11 -> 2024-01-12) (Yahoo error = "1m data not available for startTime=1704931200 and endTime=1705017600. The requested range must be within the last 30 days.")
+2025-12-28 11:38:56,941 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:56,941 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-11 -> 2024-01-12) (Yahoo error = "1m data not available for startTime=1704931200 and endTime=1705017600. The requested range must be within the last 30 days.")
+2025-12-28 11:38:57,444 - INFO - Downloading from Yahoo Finance: 2024-01-12
+2025-12-28 11:38:58,257 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-12 -> 2024-01-13) (Yahoo error = "1m data not available for startTime=1705017600 and endTime=1705104000. The requested range must be within the last 30 days.")
+2025-12-28 11:38:58,267 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:58,267 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-12 -> 2024-01-13) (Yahoo error = "1m data not available for startTime=1705017600 and endTime=1705104000. The requested range must be within the last 30 days.")
+2025-12-28 11:38:58,270 - INFO - Checkpoint saved: 0 processed, 10 failed, source: yahoo
+2025-12-28 11:38:58,771 - INFO - Downloading from Yahoo Finance: 2024-01-15
+2025-12-28 11:38:59,598 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-15 -> 2024-01-16) (Yahoo error = "1m data not available for startTime=1705276800 and endTime=1705363200. The requested range must be within the last 30 days.")
+2025-12-28 11:38:59,599 - ERROR - 
+1 Failed download:
+2025-12-28 11:38:59,599 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-15 -> 2024-01-16) (Yahoo error = "1m data not available for startTime=1705276800 and endTime=1705363200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:00,103 - INFO - Downloading from Yahoo Finance: 2024-01-16
+2025-12-28 11:39:01,026 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-16 -> 2024-01-17) (Yahoo error = "1m data not available for startTime=1705363200 and endTime=1705449600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:01,035 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:01,035 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-16 -> 2024-01-17) (Yahoo error = "1m data not available for startTime=1705363200 and endTime=1705449600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:01,538 - INFO - Downloading from Yahoo Finance: 2024-01-17
+2025-12-28 11:39:02,261 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-17 -> 2024-01-18) (Yahoo error = "1m data not available for startTime=1705449600 and endTime=1705536000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:02,272 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:02,272 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-17 -> 2024-01-18) (Yahoo error = "1m data not available for startTime=1705449600 and endTime=1705536000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:02,774 - INFO - Downloading from Yahoo Finance: 2024-01-18
+2025-12-28 11:39:03,692 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-18 -> 2024-01-19) (Yahoo error = "1m data not available for startTime=1705536000 and endTime=1705622400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:03,700 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:03,700 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-18 -> 2024-01-19) (Yahoo error = "1m data not available for startTime=1705536000 and endTime=1705622400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:04,203 - INFO - Downloading from Yahoo Finance: 2024-01-19
+2025-12-28 11:39:04,919 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-19 -> 2024-01-20) (Yahoo error = "1m data not available for startTime=1705622400 and endTime=1705708800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:04,926 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:04,926 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-19 -> 2024-01-20) (Yahoo error = "1m data not available for startTime=1705622400 and endTime=1705708800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:05,428 - INFO - Downloading from Yahoo Finance: 2024-01-22
+2025-12-28 11:39:06,452 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-22 -> 2024-01-23) (Yahoo error = "1m data not available for startTime=1705881600 and endTime=1705968000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:06,463 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:06,463 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-22 -> 2024-01-23) (Yahoo error = "1m data not available for startTime=1705881600 and endTime=1705968000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:06,966 - INFO - Downloading from Yahoo Finance: 2024-01-23
+2025-12-28 11:39:07,987 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-23 -> 2024-01-24) (Yahoo error = "1m data not available for startTime=1705968000 and endTime=1706054400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:07,997 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:07,997 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-23 -> 2024-01-24) (Yahoo error = "1m data not available for startTime=1705968000 and endTime=1706054400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:08,500 - INFO - Downloading from Yahoo Finance: 2024-01-24
+2025-12-28 11:39:09,420 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-24 -> 2024-01-25) (Yahoo error = "1m data not available for startTime=1706054400 and endTime=1706140800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:09,430 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:09,430 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-24 -> 2024-01-25) (Yahoo error = "1m data not available for startTime=1706054400 and endTime=1706140800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:09,934 - INFO - Downloading from Yahoo Finance: 2024-01-25
+2025-12-28 11:39:10,756 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-25 -> 2024-01-26) (Yahoo error = "1m data not available for startTime=1706140800 and endTime=1706227200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:10,761 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:10,761 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-25 -> 2024-01-26) (Yahoo error = "1m data not available for startTime=1706140800 and endTime=1706227200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:11,263 - INFO - Downloading from Yahoo Finance: 2024-01-26
+2025-12-28 11:39:12,189 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-26 -> 2024-01-27) (Yahoo error = "1m data not available for startTime=1706227200 and endTime=1706313600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:12,195 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:12,195 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-26 -> 2024-01-27) (Yahoo error = "1m data not available for startTime=1706227200 and endTime=1706313600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:12,195 - INFO - Checkpoint saved: 0 processed, 20 failed, source: yahoo
+2025-12-28 11:39:12,698 - INFO - Downloading from Yahoo Finance: 2024-01-29
+2025-12-28 11:39:13,519 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-29 -> 2024-01-30) (Yahoo error = "1m data not available for startTime=1706486400 and endTime=1706572800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:13,527 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:13,527 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-29 -> 2024-01-30) (Yahoo error = "1m data not available for startTime=1706486400 and endTime=1706572800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:14,030 - INFO - Downloading from Yahoo Finance: 2024-01-30
+2025-12-28 11:39:14,956 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-30 -> 2024-01-31) (Yahoo error = "1m data not available for startTime=1706572800 and endTime=1706659200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:14,960 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:14,960 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-30 -> 2024-01-31) (Yahoo error = "1m data not available for startTime=1706572800 and endTime=1706659200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:15,462 - INFO - Downloading from Yahoo Finance: 2024-01-31
+2025-12-28 11:39:16,288 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-01-31 -> 2024-02-01) (Yahoo error = "1m data not available for startTime=1706659200 and endTime=1706745600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:16,296 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:16,296 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-01-31 -> 2024-02-01) (Yahoo error = "1m data not available for startTime=1706659200 and endTime=1706745600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:16,799 - INFO - Downloading from Yahoo Finance: 2024-02-01
+2025-12-28 11:39:17,715 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-01 -> 2024-02-02) (Yahoo error = "1m data not available for startTime=1706745600 and endTime=1706832000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:17,725 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:17,726 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-01 -> 2024-02-02) (Yahoo error = "1m data not available for startTime=1706745600 and endTime=1706832000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:18,229 - INFO - Downloading from Yahoo Finance: 2024-02-02
+2025-12-28 11:39:18,943 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-02 -> 2024-02-03) (Yahoo error = "1m data not available for startTime=1706832000 and endTime=1706918400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:18,953 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:18,953 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-02 -> 2024-02-03) (Yahoo error = "1m data not available for startTime=1706832000 and endTime=1706918400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:19,456 - INFO - Downloading from Yahoo Finance: 2024-02-05
+2025-12-28 11:39:20,486 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-05 -> 2024-02-06) (Yahoo error = "1m data not available for startTime=1707091200 and endTime=1707177600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:20,496 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:20,496 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-05 -> 2024-02-06) (Yahoo error = "1m data not available for startTime=1707091200 and endTime=1707177600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:21,000 - INFO - Downloading from Yahoo Finance: 2024-02-06
+2025-12-28 11:39:22,020 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-06 -> 2024-02-07) (Yahoo error = "1m data not available for startTime=1707177600 and endTime=1707264000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:22,025 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:22,025 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-06 -> 2024-02-07) (Yahoo error = "1m data not available for startTime=1707177600 and endTime=1707264000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:22,527 - INFO - Downloading from Yahoo Finance: 2024-02-07
+2025-12-28 11:39:23,336 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-07 -> 2024-02-08) (Yahoo error = "1m data not available for startTime=1707264000 and endTime=1707350400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:23,346 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:23,346 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-07 -> 2024-02-08) (Yahoo error = "1m data not available for startTime=1707264000 and endTime=1707350400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:23,849 - INFO - Downloading from Yahoo Finance: 2024-02-08
+2025-12-28 11:39:24,582 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-08 -> 2024-02-09) (Yahoo error = "1m data not available for startTime=1707350400 and endTime=1707436800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:24,593 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:24,593 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-08 -> 2024-02-09) (Yahoo error = "1m data not available for startTime=1707350400 and endTime=1707436800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:25,095 - INFO - Downloading from Yahoo Finance: 2024-02-09
+2025-12-28 11:39:26,010 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-09 -> 2024-02-10) (Yahoo error = "1m data not available for startTime=1707436800 and endTime=1707523200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:26,015 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:26,015 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-09 -> 2024-02-10) (Yahoo error = "1m data not available for startTime=1707436800 and endTime=1707523200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:26,017 - INFO - Checkpoint saved: 0 processed, 30 failed, source: yahoo
+2025-12-28 11:39:26,519 - INFO - Downloading from Yahoo Finance: 2024-02-12
+2025-12-28 11:39:27,546 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-12 -> 2024-02-13) (Yahoo error = "1m data not available for startTime=1707696000 and endTime=1707782400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:27,557 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:27,557 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-12 -> 2024-02-13) (Yahoo error = "1m data not available for startTime=1707696000 and endTime=1707782400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:28,060 - INFO - Downloading from Yahoo Finance: 2024-02-13
+2025-12-28 11:39:28,990 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-13 -> 2024-02-14) (Yahoo error = "1m data not available for startTime=1707782400 and endTime=1707868800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:29,001 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:29,001 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-13 -> 2024-02-14) (Yahoo error = "1m data not available for startTime=1707782400 and endTime=1707868800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:29,505 - INFO - Downloading from Yahoo Finance: 2024-02-14
+2025-12-28 11:39:30,543 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-14 -> 2024-02-15) (Yahoo error = "1m data not available for startTime=1707868800 and endTime=1707955200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:30,554 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:30,554 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-14 -> 2024-02-15) (Yahoo error = "1m data not available for startTime=1707868800 and endTime=1707955200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:31,057 - INFO - Downloading from Yahoo Finance: 2024-02-15
+2025-12-28 11:39:31,952 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-15 -> 2024-02-16) (Yahoo error = "1m data not available for startTime=1707955200 and endTime=1708041600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:31,957 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:31,957 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-15 -> 2024-02-16) (Yahoo error = "1m data not available for startTime=1707955200 and endTime=1708041600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:32,459 - INFO - Downloading from Yahoo Finance: 2024-02-16
+2025-12-28 11:39:33,213 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-16 -> 2024-02-17) (Yahoo error = "1m data not available for startTime=1708041600 and endTime=1708128000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:33,224 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:33,224 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-16 -> 2024-02-17) (Yahoo error = "1m data not available for startTime=1708041600 and endTime=1708128000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:33,727 - INFO - Downloading from Yahoo Finance: 2024-02-19
+2025-12-28 11:39:34,513 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-19 -> 2024-02-20) (Yahoo error = "1m data not available for startTime=1708300800 and endTime=1708387200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:34,524 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:34,524 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-19 -> 2024-02-20) (Yahoo error = "1m data not available for startTime=1708300800 and endTime=1708387200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:35,026 - INFO - Downloading from Yahoo Finance: 2024-02-20
+2025-12-28 11:39:35,948 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-20 -> 2024-02-21) (Yahoo error = "1m data not available for startTime=1708387200 and endTime=1708473600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:35,954 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:35,954 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-20 -> 2024-02-21) (Yahoo error = "1m data not available for startTime=1708387200 and endTime=1708473600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:36,457 - INFO - Downloading from Yahoo Finance: 2024-02-21
+2025-12-28 11:39:37,593 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-21 -> 2024-02-22) (Yahoo error = "1m data not available for startTime=1708473600 and endTime=1708560000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:37,604 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:37,604 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-21 -> 2024-02-22) (Yahoo error = "1m data not available for startTime=1708473600 and endTime=1708560000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:38,108 - INFO - Downloading from Yahoo Finance: 2024-02-22
+2025-12-28 11:39:38,812 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-22 -> 2024-02-23) (Yahoo error = "1m data not available for startTime=1708560000 and endTime=1708646400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:38,822 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:38,822 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-22 -> 2024-02-23) (Yahoo error = "1m data not available for startTime=1708560000 and endTime=1708646400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:39,326 - INFO - Downloading from Yahoo Finance: 2024-02-23
+2025-12-28 11:39:40,245 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-23 -> 2024-02-24) (Yahoo error = "1m data not available for startTime=1708646400 and endTime=1708732800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:40,256 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:40,256 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-23 -> 2024-02-24) (Yahoo error = "1m data not available for startTime=1708646400 and endTime=1708732800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:40,258 - INFO - Checkpoint saved: 0 processed, 40 failed, source: yahoo
+2025-12-28 11:39:40,760 - INFO - Downloading from Yahoo Finance: 2024-02-26
+2025-12-28 11:39:41,478 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-26 -> 2024-02-27) (Yahoo error = "1m data not available for startTime=1708905600 and endTime=1708992000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:41,486 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:41,486 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-26 -> 2024-02-27) (Yahoo error = "1m data not available for startTime=1708905600 and endTime=1708992000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:41,988 - INFO - Downloading from Yahoo Finance: 2024-02-27
+2025-12-28 11:39:43,015 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-27 -> 2024-02-28) (Yahoo error = "1m data not available for startTime=1708992000 and endTime=1709078400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:43,024 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:43,024 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-27 -> 2024-02-28) (Yahoo error = "1m data not available for startTime=1708992000 and endTime=1709078400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:43,527 - INFO - Downloading from Yahoo Finance: 2024-02-28
+2025-12-28 11:39:44,245 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-28 -> 2024-02-29) (Yahoo error = "1m data not available for startTime=1709078400 and endTime=1709164800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:44,249 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:44,249 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-28 -> 2024-02-29) (Yahoo error = "1m data not available for startTime=1709078400 and endTime=1709164800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:44,752 - INFO - Downloading from Yahoo Finance: 2024-02-29
+2025-12-28 11:39:45,676 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-02-29 -> 2024-03-01) (Yahoo error = "1m data not available for startTime=1709164800 and endTime=1709251200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:45,684 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:45,684 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-02-29 -> 2024-03-01) (Yahoo error = "1m data not available for startTime=1709164800 and endTime=1709251200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:46,187 - INFO - Downloading from Yahoo Finance: 2024-03-01
+2025-12-28 11:39:47,108 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-01 -> 2024-03-02) (Yahoo error = "1m data not available for startTime=1709251200 and endTime=1709337600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:47,118 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:47,118 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-01 -> 2024-03-02) (Yahoo error = "1m data not available for startTime=1709251200 and endTime=1709337600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:47,621 - INFO - Downloading from Yahoo Finance: 2024-03-04
+2025-12-28 11:39:48,556 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-04 -> 2024-03-05) (Yahoo error = "1m data not available for startTime=1709510400 and endTime=1709596800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:48,567 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:48,567 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-04 -> 2024-03-05) (Yahoo error = "1m data not available for startTime=1709510400 and endTime=1709596800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:49,070 - INFO - Downloading from Yahoo Finance: 2024-03-05
+2025-12-28 11:39:49,775 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-05 -> 2024-03-06) (Yahoo error = "1m data not available for startTime=1709596800 and endTime=1709683200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:49,786 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:49,786 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-05 -> 2024-03-06) (Yahoo error = "1m data not available for startTime=1709596800 and endTime=1709683200. The requested range must be within the last 30 days.")
+2025-12-28 11:39:50,289 - INFO - Downloading from Yahoo Finance: 2024-03-06
+2025-12-28 11:39:51,101 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-06 -> 2024-03-07) (Yahoo error = "1m data not available for startTime=1709683200 and endTime=1709769600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:51,110 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:51,110 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-06 -> 2024-03-07) (Yahoo error = "1m data not available for startTime=1709683200 and endTime=1709769600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:51,613 - INFO - Downloading from Yahoo Finance: 2024-03-07
+2025-12-28 11:39:52,415 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-07 -> 2024-03-08) (Yahoo error = "1m data not available for startTime=1709769600 and endTime=1709856000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:52,426 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:52,426 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-07 -> 2024-03-08) (Yahoo error = "1m data not available for startTime=1709769600 and endTime=1709856000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:52,929 - INFO - Downloading from Yahoo Finance: 2024-03-08
+2025-12-28 11:39:53,868 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-08 -> 2024-03-09) (Yahoo error = "1m data not available for startTime=1709856000 and endTime=1709942400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:53,879 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:53,879 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-08 -> 2024-03-09) (Yahoo error = "1m data not available for startTime=1709856000 and endTime=1709942400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:53,879 - INFO - Checkpoint saved: 0 processed, 50 failed, source: yahoo
+2025-12-28 11:39:54,383 - INFO - Downloading from Yahoo Finance: 2024-03-11
+2025-12-28 11:39:55,103 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-11 -> 2024-03-12) (Yahoo error = "1m data not available for startTime=1710115200 and endTime=1710201600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:55,113 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:55,113 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-11 -> 2024-03-12) (Yahoo error = "1m data not available for startTime=1710115200 and endTime=1710201600. The requested range must be within the last 30 days.")
+2025-12-28 11:39:55,616 - INFO - Downloading from Yahoo Finance: 2024-03-12
+2025-12-28 11:39:56,426 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-12 -> 2024-03-13) (Yahoo error = "1m data not available for startTime=1710201600 and endTime=1710288000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:56,432 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:56,432 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-12 -> 2024-03-13) (Yahoo error = "1m data not available for startTime=1710201600 and endTime=1710288000. The requested range must be within the last 30 days.")
+2025-12-28 11:39:56,935 - INFO - Downloading from Yahoo Finance: 2024-03-13
+2025-12-28 11:39:57,657 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-13 -> 2024-03-14) (Yahoo error = "1m data not available for startTime=1710288000 and endTime=1710374400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:57,668 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:57,668 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-13 -> 2024-03-14) (Yahoo error = "1m data not available for startTime=1710288000 and endTime=1710374400. The requested range must be within the last 30 days.")
+2025-12-28 11:39:58,171 - INFO - Downloading from Yahoo Finance: 2024-03-14
+2025-12-28 11:39:58,986 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-14 -> 2024-03-15) (Yahoo error = "1m data not available for startTime=1710374400 and endTime=1710460800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:58,996 - ERROR - 
+1 Failed download:
+2025-12-28 11:39:58,996 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-14 -> 2024-03-15) (Yahoo error = "1m data not available for startTime=1710374400 and endTime=1710460800. The requested range must be within the last 30 days.")
+2025-12-28 11:39:59,498 - INFO - Downloading from Yahoo Finance: 2024-03-15
+2025-12-28 11:40:00,317 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-15 -> 2024-03-16) (Yahoo error = "1m data not available for startTime=1710460800 and endTime=1710547200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:00,321 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:00,321 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-15 -> 2024-03-16) (Yahoo error = "1m data not available for startTime=1710460800 and endTime=1710547200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:00,824 - INFO - Downloading from Yahoo Finance: 2024-03-18
+2025-12-28 11:40:01,756 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-18 -> 2024-03-19) (Yahoo error = "1m data not available for startTime=1710720000 and endTime=1710806400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:01,758 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:01,758 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-18 -> 2024-03-19) (Yahoo error = "1m data not available for startTime=1710720000 and endTime=1710806400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:02,260 - INFO - Downloading from Yahoo Finance: 2024-03-19
+2025-12-28 11:40:02,988 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-19 -> 2024-03-20) (Yahoo error = "1m data not available for startTime=1710806400 and endTime=1710892800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:02,996 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:02,996 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-19 -> 2024-03-20) (Yahoo error = "1m data not available for startTime=1710806400 and endTime=1710892800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:03,499 - INFO - Downloading from Yahoo Finance: 2024-03-20
+2025-12-28 11:40:04,431 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-20 -> 2024-03-21) (Yahoo error = "1m data not available for startTime=1710892800 and endTime=1710979200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:04,433 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:04,433 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-20 -> 2024-03-21) (Yahoo error = "1m data not available for startTime=1710892800 and endTime=1710979200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:04,935 - INFO - Downloading from Yahoo Finance: 2024-03-21
+2025-12-28 11:40:05,649 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-21 -> 2024-03-22) (Yahoo error = "1m data not available for startTime=1710979200 and endTime=1711065600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:05,660 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:05,660 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-21 -> 2024-03-22) (Yahoo error = "1m data not available for startTime=1710979200 and endTime=1711065600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:06,163 - INFO - Downloading from Yahoo Finance: 2024-03-22
+2025-12-28 11:40:07,068 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-22 -> 2024-03-23) (Yahoo error = "1m data not available for startTime=1711065600 and endTime=1711152000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:07,078 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:07,078 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-22 -> 2024-03-23) (Yahoo error = "1m data not available for startTime=1711065600 and endTime=1711152000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:07,078 - INFO - Checkpoint saved: 0 processed, 60 failed, source: yahoo
+2025-12-28 11:40:07,582 - INFO - Downloading from Yahoo Finance: 2024-03-25
+2025-12-28 11:40:08,314 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-25 -> 2024-03-26) (Yahoo error = "1m data not available for startTime=1711324800 and endTime=1711411200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:08,324 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:08,324 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-25 -> 2024-03-26) (Yahoo error = "1m data not available for startTime=1711324800 and endTime=1711411200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:08,827 - INFO - Downloading from Yahoo Finance: 2024-03-26
+2025-12-28 11:40:09,656 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-26 -> 2024-03-27) (Yahoo error = "1m data not available for startTime=1711411200 and endTime=1711497600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:09,657 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:09,657 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-26 -> 2024-03-27) (Yahoo error = "1m data not available for startTime=1711411200 and endTime=1711497600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:10,160 - INFO - Downloading from Yahoo Finance: 2024-03-27
+2025-12-28 11:40:10,869 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-27 -> 2024-03-28) (Yahoo error = "1m data not available for startTime=1711497600 and endTime=1711584000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:10,880 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:10,880 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-27 -> 2024-03-28) (Yahoo error = "1m data not available for startTime=1711497600 and endTime=1711584000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:11,383 - INFO - Downloading from Yahoo Finance: 2024-03-28
+2025-12-28 11:40:12,712 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-28 -> 2024-03-29) (Yahoo error = "1m data not available for startTime=1711584000 and endTime=1711670400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:12,723 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:12,723 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-28 -> 2024-03-29) (Yahoo error = "1m data not available for startTime=1711584000 and endTime=1711670400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:13,226 - INFO - Downloading from Yahoo Finance: 2024-03-29
+2025-12-28 11:40:14,048 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-03-29 -> 2024-03-30) (Yahoo error = "1m data not available for startTime=1711670400 and endTime=1711756800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:14,051 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:14,051 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-03-29 -> 2024-03-30) (Yahoo error = "1m data not available for startTime=1711670400 and endTime=1711756800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:14,554 - INFO - Downloading from Yahoo Finance: 2024-04-01
+2025-12-28 11:40:15,884 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-01 -> 2024-04-02) (Yahoo error = "1m data not available for startTime=1711926000 and endTime=1712012400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:15,890 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:15,890 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-01 -> 2024-04-02) (Yahoo error = "1m data not available for startTime=1711926000 and endTime=1712012400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:16,392 - INFO - Downloading from Yahoo Finance: 2024-04-02
+2025-12-28 11:40:17,017 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-02 -> 2024-04-03) (Yahoo error = "1m data not available for startTime=1712012400 and endTime=1712098800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:17,027 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:17,027 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-02 -> 2024-04-03) (Yahoo error = "1m data not available for startTime=1712012400 and endTime=1712098800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:17,530 - INFO - Downloading from Yahoo Finance: 2024-04-03
+2025-12-28 11:40:18,550 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-03 -> 2024-04-04) (Yahoo error = "1m data not available for startTime=1712098800 and endTime=1712185200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:18,560 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:18,560 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-03 -> 2024-04-04) (Yahoo error = "1m data not available for startTime=1712098800 and endTime=1712185200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:19,063 - INFO - Downloading from Yahoo Finance: 2024-04-04
+2025-12-28 11:40:19,782 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-04 -> 2024-04-05) (Yahoo error = "1m data not available for startTime=1712185200 and endTime=1712271600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:19,789 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:19,789 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-04 -> 2024-04-05) (Yahoo error = "1m data not available for startTime=1712185200 and endTime=1712271600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:20,292 - INFO - Downloading from Yahoo Finance: 2024-04-05
+2025-12-28 11:40:21,439 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-05 -> 2024-04-06) (Yahoo error = "1m data not available for startTime=1712271600 and endTime=1712358000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:21,442 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:21,442 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-05 -> 2024-04-06) (Yahoo error = "1m data not available for startTime=1712271600 and endTime=1712358000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:21,442 - INFO - Checkpoint saved: 0 processed, 70 failed, source: yahoo
+2025-12-28 11:40:21,944 - INFO - Downloading from Yahoo Finance: 2024-04-08
+2025-12-28 11:40:22,752 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-08 -> 2024-04-09) (Yahoo error = "1m data not available for startTime=1712530800 and endTime=1712617200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:22,754 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:22,754 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-08 -> 2024-04-09) (Yahoo error = "1m data not available for startTime=1712530800 and endTime=1712617200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:23,257 - INFO - Downloading from Yahoo Finance: 2024-04-09
+2025-12-28 11:40:24,186 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-09 -> 2024-04-10) (Yahoo error = "1m data not available for startTime=1712617200 and endTime=1712703600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:24,189 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:24,189 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-09 -> 2024-04-10) (Yahoo error = "1m data not available for startTime=1712617200 and endTime=1712703600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:24,691 - INFO - Downloading from Yahoo Finance: 2024-04-10
+2025-12-28 11:40:25,415 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-10 -> 2024-04-11) (Yahoo error = "1m data not available for startTime=1712703600 and endTime=1712790000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:25,424 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:25,424 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-10 -> 2024-04-11) (Yahoo error = "1m data not available for startTime=1712703600 and endTime=1712790000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:25,926 - INFO - Downloading from Yahoo Finance: 2024-04-11
+2025-12-28 11:40:26,949 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-11 -> 2024-04-12) (Yahoo error = "1m data not available for startTime=1712790000 and endTime=1712876400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:26,953 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:26,953 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-11 -> 2024-04-12) (Yahoo error = "1m data not available for startTime=1712790000 and endTime=1712876400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:27,456 - INFO - Downloading from Yahoo Finance: 2024-04-12
+2025-12-28 11:40:28,178 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-12 -> 2024-04-13) (Yahoo error = "1m data not available for startTime=1712876400 and endTime=1712962800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:28,181 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:28,181 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-12 -> 2024-04-13) (Yahoo error = "1m data not available for startTime=1712876400 and endTime=1712962800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:28,684 - INFO - Downloading from Yahoo Finance: 2024-04-15
+2025-12-28 11:40:29,605 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-15 -> 2024-04-16) (Yahoo error = "1m data not available for startTime=1713135600 and endTime=1713222000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:29,612 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:29,612 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-15 -> 2024-04-16) (Yahoo error = "1m data not available for startTime=1713135600 and endTime=1713222000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:30,115 - INFO - Downloading from Yahoo Finance: 2024-04-16
+2025-12-28 11:40:30,841 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-16 -> 2024-04-17) (Yahoo error = "1m data not available for startTime=1713222000 and endTime=1713308400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:30,845 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:30,845 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-16 -> 2024-04-17) (Yahoo error = "1m data not available for startTime=1713222000 and endTime=1713308400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:31,347 - INFO - Downloading from Yahoo Finance: 2024-04-17
+2025-12-28 11:40:32,276 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-17 -> 2024-04-18) (Yahoo error = "1m data not available for startTime=1713308400 and endTime=1713394800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:32,277 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:32,277 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-17 -> 2024-04-18) (Yahoo error = "1m data not available for startTime=1713308400 and endTime=1713394800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:32,780 - INFO - Downloading from Yahoo Finance: 2024-04-18
+2025-12-28 11:40:33,607 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-18 -> 2024-04-19) (Yahoo error = "1m data not available for startTime=1713394800 and endTime=1713481200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:33,615 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:33,615 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-18 -> 2024-04-19) (Yahoo error = "1m data not available for startTime=1713394800 and endTime=1713481200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:34,118 - INFO - Downloading from Yahoo Finance: 2024-04-19
+2025-12-28 11:40:35,031 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-19 -> 2024-04-20) (Yahoo error = "1m data not available for startTime=1713481200 and endTime=1713567600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:35,040 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:35,040 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-19 -> 2024-04-20) (Yahoo error = "1m data not available for startTime=1713481200 and endTime=1713567600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:35,042 - INFO - Checkpoint saved: 0 processed, 80 failed, source: yahoo
+2025-12-28 11:40:35,544 - INFO - Downloading from Yahoo Finance: 2024-04-22
+2025-12-28 11:40:36,270 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-22 -> 2024-04-23) (Yahoo error = "1m data not available for startTime=1713740400 and endTime=1713826800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:36,274 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:36,274 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-22 -> 2024-04-23) (Yahoo error = "1m data not available for startTime=1713740400 and endTime=1713826800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:36,777 - INFO - Downloading from Yahoo Finance: 2024-04-23
+2025-12-28 11:40:37,701 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-23 -> 2024-04-24) (Yahoo error = "1m data not available for startTime=1713826800 and endTime=1713913200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:37,711 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:37,711 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-23 -> 2024-04-24) (Yahoo error = "1m data not available for startTime=1713826800 and endTime=1713913200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:38,215 - INFO - Downloading from Yahoo Finance: 2024-04-24
+2025-12-28 11:40:38,940 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-24 -> 2024-04-25) (Yahoo error = "1m data not available for startTime=1713913200 and endTime=1713999600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:38,942 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:38,942 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-24 -> 2024-04-25) (Yahoo error = "1m data not available for startTime=1713913200 and endTime=1713999600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:39,445 - INFO - Downloading from Yahoo Finance: 2024-04-25
+2025-12-28 11:40:40,392 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-25 -> 2024-04-26) (Yahoo error = "1m data not available for startTime=1713999600 and endTime=1714086000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:40,397 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:40,397 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-25 -> 2024-04-26) (Yahoo error = "1m data not available for startTime=1713999600 and endTime=1714086000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:40,900 - INFO - Downloading from Yahoo Finance: 2024-04-26
+2025-12-28 11:40:41,592 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-26 -> 2024-04-27) (Yahoo error = "1m data not available for startTime=1714086000 and endTime=1714172400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:41,600 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:41,600 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-26 -> 2024-04-27) (Yahoo error = "1m data not available for startTime=1714086000 and endTime=1714172400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:42,102 - INFO - Downloading from Yahoo Finance: 2024-04-29
+2025-12-28 11:40:43,023 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-29 -> 2024-04-30) (Yahoo error = "1m data not available for startTime=1714345200 and endTime=1714431600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:43,026 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:43,026 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-29 -> 2024-04-30) (Yahoo error = "1m data not available for startTime=1714345200 and endTime=1714431600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:43,528 - INFO - Downloading from Yahoo Finance: 2024-04-30
+2025-12-28 11:40:44,360 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-04-30 -> 2024-05-01) (Yahoo error = "1m data not available for startTime=1714431600 and endTime=1714518000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:44,366 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:44,366 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-04-30 -> 2024-05-01) (Yahoo error = "1m data not available for startTime=1714431600 and endTime=1714518000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:44,868 - INFO - Downloading from Yahoo Finance: 2024-05-01
+2025-12-28 11:40:45,787 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-01 -> 2024-05-02) (Yahoo error = "1m data not available for startTime=1714518000 and endTime=1714604400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:45,796 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:45,796 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-01 -> 2024-05-02) (Yahoo error = "1m data not available for startTime=1714518000 and endTime=1714604400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:46,299 - INFO - Downloading from Yahoo Finance: 2024-05-02
+2025-12-28 11:40:47,044 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-02 -> 2024-05-03) (Yahoo error = "1m data not available for startTime=1714604400 and endTime=1714690800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:47,055 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:47,055 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-02 -> 2024-05-03) (Yahoo error = "1m data not available for startTime=1714604400 and endTime=1714690800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:47,558 - INFO - Downloading from Yahoo Finance: 2024-05-03
+2025-12-28 11:40:48,558 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-03 -> 2024-05-04) (Yahoo error = "1m data not available for startTime=1714690800 and endTime=1714777200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:48,568 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:48,568 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-03 -> 2024-05-04) (Yahoo error = "1m data not available for startTime=1714690800 and endTime=1714777200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:48,570 - INFO - Checkpoint saved: 0 processed, 90 failed, source: yahoo
+2025-12-28 11:40:49,072 - INFO - Downloading from Yahoo Finance: 2024-05-06
+2025-12-28 11:40:49,786 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-06 -> 2024-05-07) (Yahoo error = "1m data not available for startTime=1714950000 and endTime=1715036400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:49,797 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:49,797 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-06 -> 2024-05-07) (Yahoo error = "1m data not available for startTime=1714950000 and endTime=1715036400. The requested range must be within the last 30 days.")
+2025-12-28 11:40:50,300 - INFO - Downloading from Yahoo Finance: 2024-05-07
+2025-12-28 11:40:51,529 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-07 -> 2024-05-08) (Yahoo error = "1m data not available for startTime=1715036400 and endTime=1715122800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:51,532 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:51,532 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-07 -> 2024-05-08) (Yahoo error = "1m data not available for startTime=1715036400 and endTime=1715122800. The requested range must be within the last 30 days.")
+2025-12-28 11:40:52,034 - INFO - Downloading from Yahoo Finance: 2024-05-08
+2025-12-28 11:40:52,861 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-08 -> 2024-05-09) (Yahoo error = "1m data not available for startTime=1715122800 and endTime=1715209200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:52,871 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:52,871 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-08 -> 2024-05-09) (Yahoo error = "1m data not available for startTime=1715122800 and endTime=1715209200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:53,374 - INFO - Downloading from Yahoo Finance: 2024-05-09
+2025-12-28 11:40:54,391 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-09 -> 2024-05-10) (Yahoo error = "1m data not available for startTime=1715209200 and endTime=1715295600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:54,401 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:54,401 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-09 -> 2024-05-10) (Yahoo error = "1m data not available for startTime=1715209200 and endTime=1715295600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:54,904 - INFO - Downloading from Yahoo Finance: 2024-05-10
+2025-12-28 11:40:55,646 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-10 -> 2024-05-11) (Yahoo error = "1m data not available for startTime=1715295600 and endTime=1715382000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:55,656 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:55,656 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-10 -> 2024-05-11) (Yahoo error = "1m data not available for startTime=1715295600 and endTime=1715382000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:56,158 - INFO - Downloading from Yahoo Finance: 2024-05-13
+2025-12-28 11:40:57,039 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-13 -> 2024-05-14) (Yahoo error = "1m data not available for startTime=1715554800 and endTime=1715641200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:57,049 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:57,049 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-13 -> 2024-05-14) (Yahoo error = "1m data not available for startTime=1715554800 and endTime=1715641200. The requested range must be within the last 30 days.")
+2025-12-28 11:40:57,552 - INFO - Downloading from Yahoo Finance: 2024-05-14
+2025-12-28 11:40:58,186 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-14 -> 2024-05-15) (Yahoo error = "1m data not available for startTime=1715641200 and endTime=1715727600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:58,197 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:58,197 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-14 -> 2024-05-15) (Yahoo error = "1m data not available for startTime=1715641200 and endTime=1715727600. The requested range must be within the last 30 days.")
+2025-12-28 11:40:58,699 - INFO - Downloading from Yahoo Finance: 2024-05-15
+2025-12-28 11:40:59,615 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-15 -> 2024-05-16) (Yahoo error = "1m data not available for startTime=1715727600 and endTime=1715814000. The requested range must be within the last 30 days.")
+2025-12-28 11:40:59,625 - ERROR - 
+1 Failed download:
+2025-12-28 11:40:59,625 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-15 -> 2024-05-16) (Yahoo error = "1m data not available for startTime=1715727600 and endTime=1715814000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:00,128 - INFO - Downloading from Yahoo Finance: 2024-05-16
+2025-12-28 11:41:00,944 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-16 -> 2024-05-17) (Yahoo error = "1m data not available for startTime=1715814000 and endTime=1715900400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:00,954 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:00,954 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-16 -> 2024-05-17) (Yahoo error = "1m data not available for startTime=1715814000 and endTime=1715900400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:01,457 - INFO - Downloading from Yahoo Finance: 2024-05-17
+2025-12-28 11:41:02,379 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-17 -> 2024-05-18) (Yahoo error = "1m data not available for startTime=1715900400 and endTime=1715986800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:02,383 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:02,383 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-17 -> 2024-05-18) (Yahoo error = "1m data not available for startTime=1715900400 and endTime=1715986800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:02,386 - INFO - Checkpoint saved: 0 processed, 100 failed, source: yahoo
+2025-12-28 11:41:02,887 - INFO - Downloading from Yahoo Finance: 2024-05-20
+2025-12-28 11:41:03,625 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-20 -> 2024-05-21) (Yahoo error = "1m data not available for startTime=1716159600 and endTime=1716246000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:03,634 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:03,634 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-20 -> 2024-05-21) (Yahoo error = "1m data not available for startTime=1716159600 and endTime=1716246000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:04,137 - INFO - Downloading from Yahoo Finance: 2024-05-21
+2025-12-28 11:41:05,152 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-21 -> 2024-05-22) (Yahoo error = "1m data not available for startTime=1716246000 and endTime=1716332400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:05,160 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:05,160 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-21 -> 2024-05-22) (Yahoo error = "1m data not available for startTime=1716246000 and endTime=1716332400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:05,663 - INFO - Downloading from Yahoo Finance: 2024-05-22
+2025-12-28 11:41:06,476 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-22 -> 2024-05-23) (Yahoo error = "1m data not available for startTime=1716332400 and endTime=1716418800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:06,487 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:06,487 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-22 -> 2024-05-23) (Yahoo error = "1m data not available for startTime=1716332400 and endTime=1716418800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:06,990 - INFO - Downloading from Yahoo Finance: 2024-05-23
+2025-12-28 11:41:07,924 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-23 -> 2024-05-24) (Yahoo error = "1m data not available for startTime=1716418800 and endTime=1716505200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:07,935 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:07,935 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-23 -> 2024-05-24) (Yahoo error = "1m data not available for startTime=1716418800 and endTime=1716505200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:08,438 - INFO - Downloading from Yahoo Finance: 2024-05-24
+2025-12-28 11:41:09,246 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-24 -> 2024-05-25) (Yahoo error = "1m data not available for startTime=1716505200 and endTime=1716591600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:09,256 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:09,256 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-24 -> 2024-05-25) (Yahoo error = "1m data not available for startTime=1716505200 and endTime=1716591600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:09,759 - INFO - Downloading from Yahoo Finance: 2024-05-27
+2025-12-28 11:41:10,667 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-27 -> 2024-05-28) (Yahoo error = "1m data not available for startTime=1716764400 and endTime=1716850800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:10,678 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:10,678 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-27 -> 2024-05-28) (Yahoo error = "1m data not available for startTime=1716764400 and endTime=1716850800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:11,181 - INFO - Downloading from Yahoo Finance: 2024-05-28
+2025-12-28 11:41:11,805 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-28 -> 2024-05-29) (Yahoo error = "1m data not available for startTime=1716850800 and endTime=1716937200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:11,815 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:11,815 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-28 -> 2024-05-29) (Yahoo error = "1m data not available for startTime=1716850800 and endTime=1716937200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:12,319 - INFO - Downloading from Yahoo Finance: 2024-05-29
+2025-12-28 11:41:13,136 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-29 -> 2024-05-30) (Yahoo error = "1m data not available for startTime=1716937200 and endTime=1717023600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:13,140 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:13,140 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-29 -> 2024-05-30) (Yahoo error = "1m data not available for startTime=1716937200 and endTime=1717023600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:13,641 - INFO - Downloading from Yahoo Finance: 2024-05-30
+2025-12-28 11:41:14,360 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-30 -> 2024-05-31) (Yahoo error = "1m data not available for startTime=1717023600 and endTime=1717110000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:14,370 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:14,370 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-30 -> 2024-05-31) (Yahoo error = "1m data not available for startTime=1717023600 and endTime=1717110000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:14,873 - INFO - Downloading from Yahoo Finance: 2024-05-31
+2025-12-28 11:41:15,902 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-05-31 -> 2024-06-01) (Yahoo error = "1m data not available for startTime=1717110000 and endTime=1717196400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:15,908 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:15,908 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-05-31 -> 2024-06-01) (Yahoo error = "1m data not available for startTime=1717110000 and endTime=1717196400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:15,911 - INFO - Checkpoint saved: 0 processed, 110 failed, source: yahoo
+2025-12-28 11:41:16,413 - INFO - Downloading from Yahoo Finance: 2024-06-03
+2025-12-28 11:41:17,232 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-03 -> 2024-06-04) (Yahoo error = "1m data not available for startTime=1717369200 and endTime=1717455600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:17,243 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:17,243 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-03 -> 2024-06-04) (Yahoo error = "1m data not available for startTime=1717369200 and endTime=1717455600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:17,745 - INFO - Downloading from Yahoo Finance: 2024-06-04
+2025-12-28 11:41:18,667 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-04 -> 2024-06-05) (Yahoo error = "1m data not available for startTime=1717455600 and endTime=1717542000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:18,678 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:18,678 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-04 -> 2024-06-05) (Yahoo error = "1m data not available for startTime=1717455600 and endTime=1717542000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:19,181 - INFO - Downloading from Yahoo Finance: 2024-06-05
+2025-12-28 11:41:19,893 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-05 -> 2024-06-06) (Yahoo error = "1m data not available for startTime=1717542000 and endTime=1717628400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:19,902 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:19,902 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-05 -> 2024-06-06) (Yahoo error = "1m data not available for startTime=1717542000 and endTime=1717628400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:20,405 - INFO - Downloading from Yahoo Finance: 2024-06-06
+2025-12-28 11:41:21,237 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-06 -> 2024-06-07) (Yahoo error = "1m data not available for startTime=1717628400 and endTime=1717714800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:21,248 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:21,248 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-06 -> 2024-06-07) (Yahoo error = "1m data not available for startTime=1717628400 and endTime=1717714800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:21,749 - INFO - Downloading from Yahoo Finance: 2024-06-07
+2025-12-28 11:41:22,456 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-07 -> 2024-06-08) (Yahoo error = "1m data not available for startTime=1717714800 and endTime=1717801200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:22,466 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:22,466 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-07 -> 2024-06-08) (Yahoo error = "1m data not available for startTime=1717714800 and endTime=1717801200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:22,970 - INFO - Downloading from Yahoo Finance: 2024-06-10
+2025-12-28 11:41:23,884 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-10 -> 2024-06-11) (Yahoo error = "1m data not available for startTime=1717974000 and endTime=1718060400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:23,892 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:23,892 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-10 -> 2024-06-11) (Yahoo error = "1m data not available for startTime=1717974000 and endTime=1718060400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:24,396 - INFO - Downloading from Yahoo Finance: 2024-06-11
+2025-12-28 11:41:25,236 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-11 -> 2024-06-12) (Yahoo error = "1m data not available for startTime=1718060400 and endTime=1718146800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:25,240 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:25,240 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-11 -> 2024-06-12) (Yahoo error = "1m data not available for startTime=1718060400 and endTime=1718146800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:25,743 - INFO - Downloading from Yahoo Finance: 2024-06-12
+2025-12-28 11:41:26,757 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-12 -> 2024-06-13) (Yahoo error = "1m data not available for startTime=1718146800 and endTime=1718233200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:26,760 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:26,760 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-12 -> 2024-06-13) (Yahoo error = "1m data not available for startTime=1718146800 and endTime=1718233200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:27,263 - INFO - Downloading from Yahoo Finance: 2024-06-13
+2025-12-28 11:41:27,986 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-13 -> 2024-06-14) (Yahoo error = "1m data not available for startTime=1718233200 and endTime=1718319600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:27,990 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:27,990 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-13 -> 2024-06-14) (Yahoo error = "1m data not available for startTime=1718233200 and endTime=1718319600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:28,493 - INFO - Downloading from Yahoo Finance: 2024-06-14
+2025-12-28 11:41:29,616 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-14 -> 2024-06-15) (Yahoo error = "1m data not available for startTime=1718319600 and endTime=1718406000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:29,626 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:29,626 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-14 -> 2024-06-15) (Yahoo error = "1m data not available for startTime=1718319600 and endTime=1718406000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:29,628 - INFO - Checkpoint saved: 0 processed, 120 failed, source: yahoo
+2025-12-28 11:41:30,130 - INFO - Downloading from Yahoo Finance: 2024-06-17
+2025-12-28 11:41:30,853 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-17 -> 2024-06-18) (Yahoo error = "1m data not available for startTime=1718578800 and endTime=1718665200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:30,858 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:30,859 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-17 -> 2024-06-18) (Yahoo error = "1m data not available for startTime=1718578800 and endTime=1718665200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:31,362 - INFO - Downloading from Yahoo Finance: 2024-06-18
+2025-12-28 11:41:32,290 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-18 -> 2024-06-19) (Yahoo error = "1m data not available for startTime=1718665200 and endTime=1718751600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:32,301 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:32,301 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-18 -> 2024-06-19) (Yahoo error = "1m data not available for startTime=1718665200 and endTime=1718751600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:32,805 - INFO - Downloading from Yahoo Finance: 2024-06-19
+2025-12-28 11:41:33,503 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-19 -> 2024-06-20) (Yahoo error = "1m data not available for startTime=1718751600 and endTime=1718838000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:33,508 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:33,508 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-19 -> 2024-06-20) (Yahoo error = "1m data not available for startTime=1718751600 and endTime=1718838000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:34,011 - INFO - Downloading from Yahoo Finance: 2024-06-20
+2025-12-28 11:41:35,251 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-20 -> 2024-06-21) (Yahoo error = "1m data not available for startTime=1718838000 and endTime=1718924400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:35,256 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:35,256 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-20 -> 2024-06-21) (Yahoo error = "1m data not available for startTime=1718838000 and endTime=1718924400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:35,758 - INFO - Downloading from Yahoo Finance: 2024-06-21
+2025-12-28 11:41:36,384 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-21 -> 2024-06-22) (Yahoo error = "1m data not available for startTime=1718924400 and endTime=1719010800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:36,388 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:36,388 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-21 -> 2024-06-22) (Yahoo error = "1m data not available for startTime=1718924400 and endTime=1719010800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:36,890 - INFO - Downloading from Yahoo Finance: 2024-06-24
+2025-12-28 11:41:37,566 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-24 -> 2024-06-25) (Yahoo error = "1m data not available for startTime=1719183600 and endTime=1719270000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:37,577 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:37,577 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-24 -> 2024-06-25) (Yahoo error = "1m data not available for startTime=1719183600 and endTime=1719270000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:38,079 - INFO - Downloading from Yahoo Finance: 2024-06-25
+2025-12-28 11:41:38,742 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-25 -> 2024-06-26) (Yahoo error = "1m data not available for startTime=1719270000 and endTime=1719356400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:38,747 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:38,747 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-25 -> 2024-06-26) (Yahoo error = "1m data not available for startTime=1719270000 and endTime=1719356400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:39,249 - INFO - Downloading from Yahoo Finance: 2024-06-26
+2025-12-28 11:41:40,182 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-26 -> 2024-06-27) (Yahoo error = "1m data not available for startTime=1719356400 and endTime=1719442800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:40,185 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:40,185 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-26 -> 2024-06-27) (Yahoo error = "1m data not available for startTime=1719356400 and endTime=1719442800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:40,687 - INFO - Downloading from Yahoo Finance: 2024-06-27
+2025-12-28 11:41:41,259 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-27 -> 2024-06-28) (Yahoo error = "1m data not available for startTime=1719442800 and endTime=1719529200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:41,262 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:41,262 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-27 -> 2024-06-28) (Yahoo error = "1m data not available for startTime=1719442800 and endTime=1719529200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:41,764 - INFO - Downloading from Yahoo Finance: 2024-06-28
+2025-12-28 11:41:42,631 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-06-28 -> 2024-06-29) (Yahoo error = "1m data not available for startTime=1719529200 and endTime=1719615600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:42,640 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:42,640 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-06-28 -> 2024-06-29) (Yahoo error = "1m data not available for startTime=1719529200 and endTime=1719615600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:42,643 - INFO - Checkpoint saved: 0 processed, 130 failed, source: yahoo
+2025-12-28 11:41:43,145 - INFO - Downloading from Yahoo Finance: 2024-07-01
+2025-12-28 11:41:43,791 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-01 -> 2024-07-02) (Yahoo error = "1m data not available for startTime=1719788400 and endTime=1719874800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:43,801 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:43,801 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-01 -> 2024-07-02) (Yahoo error = "1m data not available for startTime=1719788400 and endTime=1719874800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:44,304 - INFO - Downloading from Yahoo Finance: 2024-07-02
+2025-12-28 11:41:44,990 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-02 -> 2024-07-03) (Yahoo error = "1m data not available for startTime=1719874800 and endTime=1719961200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:44,994 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:44,994 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-02 -> 2024-07-03) (Yahoo error = "1m data not available for startTime=1719874800 and endTime=1719961200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:45,496 - INFO - Downloading from Yahoo Finance: 2024-07-03
+2025-12-28 11:41:46,149 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-03 -> 2024-07-04) (Yahoo error = "1m data not available for startTime=1719961200 and endTime=1720047600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:46,158 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:46,158 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-03 -> 2024-07-04) (Yahoo error = "1m data not available for startTime=1719961200 and endTime=1720047600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:46,660 - INFO - Downloading from Yahoo Finance: 2024-07-04
+2025-12-28 11:41:47,649 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-04 -> 2024-07-05) (Yahoo error = "1m data not available for startTime=1720047600 and endTime=1720134000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:47,656 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:47,656 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-04 -> 2024-07-05) (Yahoo error = "1m data not available for startTime=1720047600 and endTime=1720134000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:48,159 - INFO - Downloading from Yahoo Finance: 2024-07-05
+2025-12-28 11:41:48,891 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-05 -> 2024-07-06) (Yahoo error = "1m data not available for startTime=1720134000 and endTime=1720220400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:48,896 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:48,896 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-05 -> 2024-07-06) (Yahoo error = "1m data not available for startTime=1720134000 and endTime=1720220400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:49,398 - INFO - Downloading from Yahoo Finance: 2024-07-08
+2025-12-28 11:41:50,307 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-08 -> 2024-07-09) (Yahoo error = "1m data not available for startTime=1720393200 and endTime=1720479600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:50,313 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:50,313 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-08 -> 2024-07-09) (Yahoo error = "1m data not available for startTime=1720393200 and endTime=1720479600. The requested range must be within the last 30 days.")
+2025-12-28 11:41:50,815 - INFO - Downloading from Yahoo Finance: 2024-07-09
+2025-12-28 11:41:51,540 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-09 -> 2024-07-10) (Yahoo error = "1m data not available for startTime=1720479600 and endTime=1720566000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:51,542 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:51,542 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-09 -> 2024-07-10) (Yahoo error = "1m data not available for startTime=1720479600 and endTime=1720566000. The requested range must be within the last 30 days.")
+2025-12-28 11:41:52,043 - INFO - Downloading from Yahoo Finance: 2024-07-10
+2025-12-28 11:41:52,935 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-10 -> 2024-07-11) (Yahoo error = "1m data not available for startTime=1720566000 and endTime=1720652400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:52,945 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:52,946 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-10 -> 2024-07-11) (Yahoo error = "1m data not available for startTime=1720566000 and endTime=1720652400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:53,449 - INFO - Downloading from Yahoo Finance: 2024-07-11
+2025-12-28 11:41:54,155 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-11 -> 2024-07-12) (Yahoo error = "1m data not available for startTime=1720652400 and endTime=1720738800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:54,156 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:54,156 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-11 -> 2024-07-12) (Yahoo error = "1m data not available for startTime=1720652400 and endTime=1720738800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:54,659 - INFO - Downloading from Yahoo Finance: 2024-07-12
+2025-12-28 11:41:55,528 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-12 -> 2024-07-13) (Yahoo error = "1m data not available for startTime=1720738800 and endTime=1720825200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:55,533 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:55,533 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-12 -> 2024-07-13) (Yahoo error = "1m data not available for startTime=1720738800 and endTime=1720825200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:55,535 - INFO - Checkpoint saved: 0 processed, 140 failed, source: yahoo
+2025-12-28 11:41:56,036 - INFO - Downloading from Yahoo Finance: 2024-07-15
+2025-12-28 11:41:56,642 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-15 -> 2024-07-16) (Yahoo error = "1m data not available for startTime=1720998000 and endTime=1721084400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:56,642 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:56,642 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-15 -> 2024-07-16) (Yahoo error = "1m data not available for startTime=1720998000 and endTime=1721084400. The requested range must be within the last 30 days.")
+2025-12-28 11:41:57,145 - INFO - Downloading from Yahoo Finance: 2024-07-16
+2025-12-28 11:41:58,078 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-16 -> 2024-07-17) (Yahoo error = "1m data not available for startTime=1721084400 and endTime=1721170800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:58,084 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:58,084 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-16 -> 2024-07-17) (Yahoo error = "1m data not available for startTime=1721084400 and endTime=1721170800. The requested range must be within the last 30 days.")
+2025-12-28 11:41:58,587 - INFO - Downloading from Yahoo Finance: 2024-07-17
+2025-12-28 11:41:59,322 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-17 -> 2024-07-18) (Yahoo error = "1m data not available for startTime=1721170800 and endTime=1721257200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:59,326 - ERROR - 
+1 Failed download:
+2025-12-28 11:41:59,326 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-17 -> 2024-07-18) (Yahoo error = "1m data not available for startTime=1721170800 and endTime=1721257200. The requested range must be within the last 30 days.")
+2025-12-28 11:41:59,828 - INFO - Downloading from Yahoo Finance: 2024-07-18
+2025-12-28 11:42:00,757 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-18 -> 2024-07-19) (Yahoo error = "1m data not available for startTime=1721257200 and endTime=1721343600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:00,764 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:00,764 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-18 -> 2024-07-19) (Yahoo error = "1m data not available for startTime=1721257200 and endTime=1721343600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:01,267 - INFO - Downloading from Yahoo Finance: 2024-07-19
+2025-12-28 11:42:02,293 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-19 -> 2024-07-20) (Yahoo error = "1m data not available for startTime=1721343600 and endTime=1721430000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:02,301 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:02,301 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-19 -> 2024-07-20) (Yahoo error = "1m data not available for startTime=1721343600 and endTime=1721430000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:02,804 - INFO - Downloading from Yahoo Finance: 2024-07-22
+2025-12-28 11:42:03,719 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-22 -> 2024-07-23) (Yahoo error = "1m data not available for startTime=1721602800 and endTime=1721689200. The requested range must be within the last 30 days.")
+2025-12-28 11:42:03,720 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:03,720 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-22 -> 2024-07-23) (Yahoo error = "1m data not available for startTime=1721602800 and endTime=1721689200. The requested range must be within the last 30 days.")
+2025-12-28 11:42:04,222 - INFO - Downloading from Yahoo Finance: 2024-07-23
+2025-12-28 11:42:04,852 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-23 -> 2024-07-24) (Yahoo error = "1m data not available for startTime=1721689200 and endTime=1721775600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:04,857 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:04,857 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-23 -> 2024-07-24) (Yahoo error = "1m data not available for startTime=1721689200 and endTime=1721775600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:05,361 - INFO - Downloading from Yahoo Finance: 2024-07-24
+2025-12-28 11:42:06,184 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-24 -> 2024-07-25) (Yahoo error = "1m data not available for startTime=1721775600 and endTime=1721862000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:06,192 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:06,192 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-24 -> 2024-07-25) (Yahoo error = "1m data not available for startTime=1721775600 and endTime=1721862000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:06,695 - INFO - Downloading from Yahoo Finance: 2024-07-25
+2025-12-28 11:42:07,413 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-25 -> 2024-07-26) (Yahoo error = "1m data not available for startTime=1721862000 and endTime=1721948400. The requested range must be within the last 30 days.")
+2025-12-28 11:42:07,415 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:07,415 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-25 -> 2024-07-26) (Yahoo error = "1m data not available for startTime=1721862000 and endTime=1721948400. The requested range must be within the last 30 days.")
+2025-12-28 11:42:07,918 - INFO - Downloading from Yahoo Finance: 2024-07-26
+2025-12-28 11:42:08,949 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-26 -> 2024-07-27) (Yahoo error = "1m data not available for startTime=1721948400 and endTime=1722034800. The requested range must be within the last 30 days.")
+2025-12-28 11:42:08,957 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:08,957 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-26 -> 2024-07-27) (Yahoo error = "1m data not available for startTime=1721948400 and endTime=1722034800. The requested range must be within the last 30 days.")
+2025-12-28 11:42:08,960 - INFO - Checkpoint saved: 0 processed, 150 failed, source: yahoo
+2025-12-28 11:42:09,461 - INFO - Downloading from Yahoo Finance: 2024-07-29
+2025-12-28 11:42:10,391 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-29 -> 2024-07-30) (Yahoo error = "1m data not available for startTime=1722207600 and endTime=1722294000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:10,400 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:10,400 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-29 -> 2024-07-30) (Yahoo error = "1m data not available for startTime=1722207600 and endTime=1722294000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:10,902 - INFO - Downloading from Yahoo Finance: 2024-07-30
+2025-12-28 11:42:11,920 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-30 -> 2024-07-31) (Yahoo error = "1m data not available for startTime=1722294000 and endTime=1722380400. The requested range must be within the last 30 days.")
+2025-12-28 11:42:11,928 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:11,928 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-30 -> 2024-07-31) (Yahoo error = "1m data not available for startTime=1722294000 and endTime=1722380400. The requested range must be within the last 30 days.")
+2025-12-28 11:42:12,430 - INFO - Downloading from Yahoo Finance: 2024-07-31
+2025-12-28 11:42:13,149 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-07-31 -> 2024-08-01) (Yahoo error = "1m data not available for startTime=1722380400 and endTime=1722466800. The requested range must be within the last 30 days.")
+2025-12-28 11:42:13,155 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:13,155 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-07-31 -> 2024-08-01) (Yahoo error = "1m data not available for startTime=1722380400 and endTime=1722466800. The requested range must be within the last 30 days.")
+2025-12-28 11:42:13,657 - INFO - Downloading from Yahoo Finance: 2024-08-01
+2025-12-28 11:42:14,371 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-01 -> 2024-08-02) (Yahoo error = "1m data not available for startTime=1722466800 and endTime=1722553200. The requested range must be within the last 30 days.")
+2025-12-28 11:42:14,378 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:14,378 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-01 -> 2024-08-02) (Yahoo error = "1m data not available for startTime=1722466800 and endTime=1722553200. The requested range must be within the last 30 days.")
+2025-12-28 11:42:14,881 - INFO - Downloading from Yahoo Finance: 2024-08-02
+2025-12-28 11:42:15,594 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-02 -> 2024-08-03) (Yahoo error = "1m data not available for startTime=1722553200 and endTime=1722639600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:15,604 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:15,604 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-02 -> 2024-08-03) (Yahoo error = "1m data not available for startTime=1722553200 and endTime=1722639600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:16,107 - INFO - Downloading from Yahoo Finance: 2024-08-05
+2025-12-28 11:42:16,834 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-05 -> 2024-08-06) (Yahoo error = "1m data not available for startTime=1722812400 and endTime=1722898800. The requested range must be within the last 30 days.")
+2025-12-28 11:42:16,845 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:16,845 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-05 -> 2024-08-06) (Yahoo error = "1m data not available for startTime=1722812400 and endTime=1722898800. The requested range must be within the last 30 days.")
+2025-12-28 11:42:17,348 - INFO - Downloading from Yahoo Finance: 2024-08-06
+2025-12-28 11:42:18,060 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-06 -> 2024-08-07) (Yahoo error = "1m data not available for startTime=1722898800 and endTime=1722985200. The requested range must be within the last 30 days.")
+2025-12-28 11:42:18,071 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:18,071 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-06 -> 2024-08-07) (Yahoo error = "1m data not available for startTime=1722898800 and endTime=1722985200. The requested range must be within the last 30 days.")
+2025-12-28 11:42:18,573 - INFO - Downloading from Yahoo Finance: 2024-08-07
+2025-12-28 11:42:19,276 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-07 -> 2024-08-08) (Yahoo error = "1m data not available for startTime=1722985200 and endTime=1723071600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:19,287 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:19,287 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-07 -> 2024-08-08) (Yahoo error = "1m data not available for startTime=1722985200 and endTime=1723071600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:19,789 - INFO - Downloading from Yahoo Finance: 2024-08-08
+2025-12-28 11:42:20,511 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-08 -> 2024-08-09) (Yahoo error = "1m data not available for startTime=1723071600 and endTime=1723158000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:20,511 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:20,511 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-08 -> 2024-08-09) (Yahoo error = "1m data not available for startTime=1723071600 and endTime=1723158000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:21,014 - INFO - Downloading from Yahoo Finance: 2024-08-09
+2025-12-28 11:42:21,878 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-09 -> 2024-08-10) (Yahoo error = "1m data not available for startTime=1723158000 and endTime=1723244400. The requested range must be within the last 30 days.")
+2025-12-28 11:42:21,887 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:21,887 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-09 -> 2024-08-10) (Yahoo error = "1m data not available for startTime=1723158000 and endTime=1723244400. The requested range must be within the last 30 days.")
+2025-12-28 11:42:21,889 - INFO - Checkpoint saved: 0 processed, 160 failed, source: yahoo
+2025-12-28 11:42:22,391 - INFO - Downloading from Yahoo Finance: 2024-08-12
+2025-12-28 11:42:22,995 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-12 -> 2024-08-13) (Yahoo error = "1m data not available for startTime=1723417200 and endTime=1723503600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:23,005 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:23,005 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-12 -> 2024-08-13) (Yahoo error = "1m data not available for startTime=1723417200 and endTime=1723503600. The requested range must be within the last 30 days.")
+2025-12-28 11:42:23,507 - INFO - Downloading from Yahoo Finance: 2024-08-13
+2025-12-28 11:42:24,325 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-13 -> 2024-08-14) (Yahoo error = "1m data not available for startTime=1723503600 and endTime=1723590000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:24,329 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:24,329 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-13 -> 2024-08-14) (Yahoo error = "1m data not available for startTime=1723503600 and endTime=1723590000. The requested range must be within the last 30 days.")
+2025-12-28 11:42:24,832 - INFO - Downloading from Yahoo Finance: 2024-08-14
+2025-12-28 11:42:25,540 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-14 -> 2024-08-15) (Yahoo error = "1m data not available for startTime=1723590000 and endTime=1723676400. The requested range must be within the last 30 days.")
+2025-12-28 11:42:25,549 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:25,549 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-14 -> 2024-08-15) (Yahoo error = "1m data not available for startTime=1723590000 and endTime=1723676400. The requested range must be within the last 30 days.")
+2025-12-28 11:42:26,052 - INFO - Downloading from Yahoo Finance: 2024-08-15
+2025-12-28 11:42:26,970 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-15 -> 2024-08-16) (Yahoo error = "1m data not available for startTime=1723676400 and endTime=1723762800. The requested range must be within the last 30 days.")
+2025-12-28 11:42:26,980 - ERROR - 
+1 Failed download:
+2025-12-28 11:42:26,980 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-15 -> 2024-08-16) (Yahoo error = "1m data not available for startTime=1723676400 and endTime=1723762800. The requested range must be within the last 30 days.")
+2025-12-28 11:42:27,484 - INFO - Downloading from Yahoo Finance: 2024-08-16
+2025-12-28 11:42:28,203 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-16 -> 2024-08-17) (Yahoo error = "1m data not available for startTime=1723762800 and endTime=1723849200. The requested range must be within the last 30 days.")
+2025-12-28 11:58:18,914 - WARNING - No data available for 2021-01-01 (status: 404)
+2025-12-28 11:58:19,469 - WARNING - No data available for 2022-01-01 (status: 404)
+2025-12-28 11:58:20,053 - WARNING - No data available for 2023-01-01 (status: 404)
+2025-12-28 11:58:20,599 - WARNING - No data available for 2024-01-01 (status: 404)
+2025-12-28 11:58:21,166 - WARNING - No data available for 2025-01-01 (status: 404)
+2025-12-28 11:58:22,037 - INFO - Yahoo Finance data available for 2015
+2025-12-28 11:58:22,320 - INFO - Yahoo Finance data available for 2016
+2025-12-28 11:58:22,528 - WARNING - No Yahoo Finance data for 2017
+2025-12-28 11:58:22,753 - INFO - Yahoo Finance data available for 2018
+2025-12-28 11:58:22,985 - INFO - Yahoo Finance data available for 2019
+2025-12-28 11:58:23,218 - INFO - Yahoo Finance data available for 2020
+2025-12-28 11:58:23,443 - INFO - Yahoo Finance data available for 2021
+2025-12-28 11:58:23,646 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1d 2022-01-01 -> 2022-01-02)
+2025-12-28 11:58:23,650 - ERROR - 
+1 Failed download:
+2025-12-28 11:58:23,650 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1d 2022-01-01 -> 2022-01-02)
+2025-12-28 11:58:23,652 - WARNING - No Yahoo Finance data for 2022
+2025-12-28 11:58:23,903 - WARNING - No Yahoo Finance data for 2023
+2025-12-28 11:58:24,113 - INFO - Yahoo Finance data available for 2024
+2025-12-28 11:58:24,321 - WARNING - No Yahoo Finance data for 2025
+2025-12-28 11:59:18,798 - INFO - Checkpoint loaded: 0 processed, 160 failed, source: yahoo
+2025-12-28 11:59:18,811 - INFO - Downloading from Yahoo Finance: 2024-08-12
+2025-12-28 11:59:19,481 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-12 -> 2024-08-13) (Yahoo error = "1m data not available for startTime=1723417200 and endTime=1723503600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:19,490 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:19,490 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-12 -> 2024-08-13) (Yahoo error = "1m data not available for startTime=1723417200 and endTime=1723503600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:19,993 - INFO - Downloading from Yahoo Finance: 2024-08-13
+2025-12-28 11:59:20,799 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-13 -> 2024-08-14) (Yahoo error = "1m data not available for startTime=1723503600 and endTime=1723590000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:20,803 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:20,803 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-13 -> 2024-08-14) (Yahoo error = "1m data not available for startTime=1723503600 and endTime=1723590000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:21,306 - INFO - Downloading from Yahoo Finance: 2024-08-14
+2025-12-28 11:59:21,975 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-14 -> 2024-08-15) (Yahoo error = "1m data not available for startTime=1723590000 and endTime=1723676400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:21,979 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:21,979 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-14 -> 2024-08-15) (Yahoo error = "1m data not available for startTime=1723590000 and endTime=1723676400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:22,481 - INFO - Downloading from Yahoo Finance: 2024-08-15
+2025-12-28 11:59:23,321 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-15 -> 2024-08-16) (Yahoo error = "1m data not available for startTime=1723676400 and endTime=1723762800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:23,331 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:23,331 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-15 -> 2024-08-16) (Yahoo error = "1m data not available for startTime=1723676400 and endTime=1723762800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:23,834 - INFO - Downloading from Yahoo Finance: 2024-08-16
+2025-12-28 11:59:24,396 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-16 -> 2024-08-17) (Yahoo error = "1m data not available for startTime=1723762800 and endTime=1723849200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:24,407 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:24,407 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-16 -> 2024-08-17) (Yahoo error = "1m data not available for startTime=1723762800 and endTime=1723849200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:24,910 - INFO - Downloading from Yahoo Finance: 2024-08-19
+2025-12-28 11:59:25,760 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-19 -> 2024-08-20) (Yahoo error = "1m data not available for startTime=1724022000 and endTime=1724108400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:25,770 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:25,770 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-19 -> 2024-08-20) (Yahoo error = "1m data not available for startTime=1724022000 and endTime=1724108400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:26,273 - INFO - Downloading from Yahoo Finance: 2024-08-20
+2025-12-28 11:59:26,843 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-20 -> 2024-08-21) (Yahoo error = "1m data not available for startTime=1724108400 and endTime=1724194800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:26,848 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:26,848 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-20 -> 2024-08-21) (Yahoo error = "1m data not available for startTime=1724108400 and endTime=1724194800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:27,351 - INFO - Downloading from Yahoo Finance: 2024-08-21
+2025-12-28 11:59:28,163 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-21 -> 2024-08-22) (Yahoo error = "1m data not available for startTime=1724194800 and endTime=1724281200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:28,166 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:28,166 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-21 -> 2024-08-22) (Yahoo error = "1m data not available for startTime=1724194800 and endTime=1724281200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:28,669 - INFO - Downloading from Yahoo Finance: 2024-08-22
+2025-12-28 11:59:29,362 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-22 -> 2024-08-23) (Yahoo error = "1m data not available for startTime=1724281200 and endTime=1724367600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:29,369 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:29,369 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-22 -> 2024-08-23) (Yahoo error = "1m data not available for startTime=1724281200 and endTime=1724367600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:29,873 - INFO - Downloading from Yahoo Finance: 2024-08-23
+2025-12-28 11:59:30,892 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-23 -> 2024-08-24) (Yahoo error = "1m data not available for startTime=1724367600 and endTime=1724454000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:30,896 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:30,896 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-23 -> 2024-08-24) (Yahoo error = "1m data not available for startTime=1724367600 and endTime=1724454000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:30,896 - INFO - Checkpoint saved: 0 processed, 170 failed, source: yahoo
+2025-12-28 11:59:31,400 - INFO - Downloading from Yahoo Finance: 2024-08-26
+2025-12-28 11:59:32,058 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-26 -> 2024-08-27) (Yahoo error = "1m data not available for startTime=1724626800 and endTime=1724713200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:32,061 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:32,061 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-26 -> 2024-08-27) (Yahoo error = "1m data not available for startTime=1724626800 and endTime=1724713200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:32,564 - INFO - Downloading from Yahoo Finance: 2024-08-27
+2025-12-28 11:59:33,378 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-27 -> 2024-08-28) (Yahoo error = "1m data not available for startTime=1724713200 and endTime=1724799600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:33,378 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:33,378 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-27 -> 2024-08-28) (Yahoo error = "1m data not available for startTime=1724713200 and endTime=1724799600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:33,880 - INFO - Downloading from Yahoo Finance: 2024-08-28
+2025-12-28 11:59:34,465 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-28 -> 2024-08-29) (Yahoo error = "1m data not available for startTime=1724799600 and endTime=1724886000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:34,470 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:34,470 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-28 -> 2024-08-29) (Yahoo error = "1m data not available for startTime=1724799600 and endTime=1724886000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:34,973 - INFO - Downloading from Yahoo Finance: 2024-08-29
+2025-12-28 11:59:35,966 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-29 -> 2024-08-30) (Yahoo error = "1m data not available for startTime=1724886000 and endTime=1724972400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:35,967 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:35,967 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-29 -> 2024-08-30) (Yahoo error = "1m data not available for startTime=1724886000 and endTime=1724972400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:36,469 - INFO - Downloading from Yahoo Finance: 2024-08-30
+2025-12-28 11:59:37,104 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-08-30 -> 2024-08-31) (Yahoo error = "1m data not available for startTime=1724972400 and endTime=1725058800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:37,114 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:37,114 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-08-30 -> 2024-08-31) (Yahoo error = "1m data not available for startTime=1724972400 and endTime=1725058800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:37,617 - INFO - Downloading from Yahoo Finance: 2024-09-02
+2025-12-28 11:59:38,473 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-02 -> 2024-09-03) (Yahoo error = "1m data not available for startTime=1725231600 and endTime=1725318000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:38,476 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:38,476 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-02 -> 2024-09-03) (Yahoo error = "1m data not available for startTime=1725231600 and endTime=1725318000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:38,978 - INFO - Downloading from Yahoo Finance: 2024-09-03
+2025-12-28 11:59:39,619 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-03 -> 2024-09-04) (Yahoo error = "1m data not available for startTime=1725318000 and endTime=1725404400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:39,627 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:39,627 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-03 -> 2024-09-04) (Yahoo error = "1m data not available for startTime=1725318000 and endTime=1725404400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:40,130 - INFO - Downloading from Yahoo Finance: 2024-09-04
+2025-12-28 11:59:40,997 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-04 -> 2024-09-05) (Yahoo error = "1m data not available for startTime=1725404400 and endTime=1725490800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:41,008 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:41,008 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-04 -> 2024-09-05) (Yahoo error = "1m data not available for startTime=1725404400 and endTime=1725490800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:41,511 - INFO - Downloading from Yahoo Finance: 2024-09-05
+2025-12-28 11:59:42,218 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-05 -> 2024-09-06) (Yahoo error = "1m data not available for startTime=1725490800 and endTime=1725577200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:42,226 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:42,226 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-05 -> 2024-09-06) (Yahoo error = "1m data not available for startTime=1725490800 and endTime=1725577200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:42,729 - INFO - Downloading from Yahoo Finance: 2024-09-06
+2025-12-28 11:59:43,635 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-06 -> 2024-09-07) (Yahoo error = "1m data not available for startTime=1725577200 and endTime=1725663600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:43,637 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:43,637 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-06 -> 2024-09-07) (Yahoo error = "1m data not available for startTime=1725577200 and endTime=1725663600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:43,637 - INFO - Checkpoint saved: 0 processed, 180 failed, source: yahoo
+2025-12-28 11:59:44,141 - INFO - Downloading from Yahoo Finance: 2024-09-09
+2025-12-28 11:59:44,690 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-09 -> 2024-09-10) (Yahoo error = "1m data not available for startTime=1725836400 and endTime=1725922800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:44,701 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:44,701 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-09 -> 2024-09-10) (Yahoo error = "1m data not available for startTime=1725836400 and endTime=1725922800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:45,205 - INFO - Downloading from Yahoo Finance: 2024-09-10
+2025-12-28 11:59:46,005 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-10 -> 2024-09-11) (Yahoo error = "1m data not available for startTime=1725922800 and endTime=1726009200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:46,010 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:46,010 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-10 -> 2024-09-11) (Yahoo error = "1m data not available for startTime=1725922800 and endTime=1726009200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:46,513 - INFO - Downloading from Yahoo Finance: 2024-09-11
+2025-12-28 11:59:47,446 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-11 -> 2024-09-12) (Yahoo error = "1m data not available for startTime=1726009200 and endTime=1726095600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:47,456 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:47,456 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-11 -> 2024-09-12) (Yahoo error = "1m data not available for startTime=1726009200 and endTime=1726095600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:47,959 - INFO - Downloading from Yahoo Finance: 2024-09-12
+2025-12-28 11:59:48,786 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-12 -> 2024-09-13) (Yahoo error = "1m data not available for startTime=1726095600 and endTime=1726182000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:48,794 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:48,794 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-12 -> 2024-09-13) (Yahoo error = "1m data not available for startTime=1726095600 and endTime=1726182000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:49,297 - INFO - Downloading from Yahoo Finance: 2024-09-13
+2025-12-28 11:59:49,877 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-13 -> 2024-09-14) (Yahoo error = "1m data not available for startTime=1726182000 and endTime=1726268400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:49,883 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:49,883 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-13 -> 2024-09-14) (Yahoo error = "1m data not available for startTime=1726182000 and endTime=1726268400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:50,385 - INFO - Downloading from Yahoo Finance: 2024-09-16
+2025-12-28 11:59:51,288 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-16 -> 2024-09-17) (Yahoo error = "1m data not available for startTime=1726441200 and endTime=1726527600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:51,293 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:51,293 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-16 -> 2024-09-17) (Yahoo error = "1m data not available for startTime=1726441200 and endTime=1726527600. The requested range must be within the last 30 days.")
+2025-12-28 11:59:51,796 - INFO - Downloading from Yahoo Finance: 2024-09-17
+2025-12-28 11:59:52,389 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-17 -> 2024-09-18) (Yahoo error = "1m data not available for startTime=1726527600 and endTime=1726614000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:52,399 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:52,399 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-17 -> 2024-09-18) (Yahoo error = "1m data not available for startTime=1726527600 and endTime=1726614000. The requested range must be within the last 30 days.")
+2025-12-28 11:59:52,901 - INFO - Downloading from Yahoo Finance: 2024-09-18
+2025-12-28 11:59:53,789 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-18 -> 2024-09-19) (Yahoo error = "1m data not available for startTime=1726614000 and endTime=1726700400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:53,800 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:53,800 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-18 -> 2024-09-19) (Yahoo error = "1m data not available for startTime=1726614000 and endTime=1726700400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:54,302 - INFO - Downloading from Yahoo Finance: 2024-09-19
+2025-12-28 11:59:55,015 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-19 -> 2024-09-20) (Yahoo error = "1m data not available for startTime=1726700400 and endTime=1726786800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:55,024 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:55,024 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-19 -> 2024-09-20) (Yahoo error = "1m data not available for startTime=1726700400 and endTime=1726786800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:55,527 - INFO - Downloading from Yahoo Finance: 2024-09-20
+2025-12-28 11:59:56,388 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-20 -> 2024-09-21) (Yahoo error = "1m data not available for startTime=1726786800 and endTime=1726873200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:56,394 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:56,394 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-20 -> 2024-09-21) (Yahoo error = "1m data not available for startTime=1726786800 and endTime=1726873200. The requested range must be within the last 30 days.")
+2025-12-28 11:59:56,394 - INFO - Checkpoint saved: 0 processed, 190 failed, source: yahoo
+2025-12-28 11:59:56,897 - INFO - Downloading from Yahoo Finance: 2024-09-23
+2025-12-28 11:59:57,478 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-23 -> 2024-09-24) (Yahoo error = "1m data not available for startTime=1727046000 and endTime=1727132400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:57,487 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:57,487 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-23 -> 2024-09-24) (Yahoo error = "1m data not available for startTime=1727046000 and endTime=1727132400. The requested range must be within the last 30 days.")
+2025-12-28 11:59:57,991 - INFO - Downloading from Yahoo Finance: 2024-09-24
+2025-12-28 11:59:59,161 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-24 -> 2024-09-25) (Yahoo error = "1m data not available for startTime=1727132400 and endTime=1727218800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:59,164 - ERROR - 
+1 Failed download:
+2025-12-28 11:59:59,164 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-24 -> 2024-09-25) (Yahoo error = "1m data not available for startTime=1727132400 and endTime=1727218800. The requested range must be within the last 30 days.")
+2025-12-28 11:59:59,666 - INFO - Downloading from Yahoo Finance: 2024-09-25
+2025-12-28 12:00:00,326 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-25 -> 2024-09-26) (Yahoo error = "1m data not available for startTime=1727218800 and endTime=1727305200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:00,330 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:00,330 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-25 -> 2024-09-26) (Yahoo error = "1m data not available for startTime=1727218800 and endTime=1727305200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:00,833 - INFO - Downloading from Yahoo Finance: 2024-09-26
+2025-12-28 12:00:01,696 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-26 -> 2024-09-27) (Yahoo error = "1m data not available for startTime=1727305200 and endTime=1727391600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:01,703 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:01,703 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-26 -> 2024-09-27) (Yahoo error = "1m data not available for startTime=1727305200 and endTime=1727391600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:02,205 - INFO - Downloading from Yahoo Finance: 2024-09-27
+2025-12-28 12:00:03,006 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-27 -> 2024-09-28) (Yahoo error = "1m data not available for startTime=1727391600 and endTime=1727478000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:03,016 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:03,016 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-27 -> 2024-09-28) (Yahoo error = "1m data not available for startTime=1727391600 and endTime=1727478000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:03,520 - INFO - Downloading from Yahoo Finance: 2024-09-30
+2025-12-28 12:00:04,643 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-09-30 -> 2024-10-01) (Yahoo error = "1m data not available for startTime=1727650800 and endTime=1727737200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:04,650 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:04,650 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-09-30 -> 2024-10-01) (Yahoo error = "1m data not available for startTime=1727650800 and endTime=1727737200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:05,153 - INFO - Downloading from Yahoo Finance: 2024-10-01
+2025-12-28 12:00:05,875 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-01 -> 2024-10-02) (Yahoo error = "1m data not available for startTime=1727737200 and endTime=1727823600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:05,880 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:05,880 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-01 -> 2024-10-02) (Yahoo error = "1m data not available for startTime=1727737200 and endTime=1727823600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:06,383 - INFO - Downloading from Yahoo Finance: 2024-10-02
+2025-12-28 12:00:07,460 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-02 -> 2024-10-03) (Yahoo error = "1m data not available for startTime=1727823600 and endTime=1727910000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:07,461 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:07,461 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-02 -> 2024-10-03) (Yahoo error = "1m data not available for startTime=1727823600 and endTime=1727910000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:07,963 - INFO - Downloading from Yahoo Finance: 2024-10-03
+2025-12-28 12:00:08,630 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-03 -> 2024-10-04) (Yahoo error = "1m data not available for startTime=1727910000 and endTime=1727996400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:08,636 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:08,636 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-03 -> 2024-10-04) (Yahoo error = "1m data not available for startTime=1727910000 and endTime=1727996400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:09,138 - INFO - Downloading from Yahoo Finance: 2024-10-04
+2025-12-28 12:00:10,994 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-04 -> 2024-10-05) (Yahoo error = "1m data not available for startTime=1727996400 and endTime=1728082800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:10,997 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:10,997 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-04 -> 2024-10-05) (Yahoo error = "1m data not available for startTime=1727996400 and endTime=1728082800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:10,997 - INFO - Checkpoint saved: 0 processed, 200 failed, source: yahoo
+2025-12-28 12:00:11,500 - INFO - Downloading from Yahoo Finance: 2024-10-07
+2025-12-28 12:00:12,134 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-07 -> 2024-10-08) (Yahoo error = "1m data not available for startTime=1728255600 and endTime=1728342000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:12,138 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:12,138 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-07 -> 2024-10-08) (Yahoo error = "1m data not available for startTime=1728255600 and endTime=1728342000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:12,640 - INFO - Downloading from Yahoo Finance: 2024-10-08
+2025-12-28 12:00:14,079 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-08 -> 2024-10-09) (Yahoo error = "1m data not available for startTime=1728342000 and endTime=1728428400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:14,081 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:14,081 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-08 -> 2024-10-09) (Yahoo error = "1m data not available for startTime=1728342000 and endTime=1728428400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:14,584 - INFO - Downloading from Yahoo Finance: 2024-10-09
+2025-12-28 12:00:15,415 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-09 -> 2024-10-10) (Yahoo error = "1m data not available for startTime=1728428400 and endTime=1728514800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:15,426 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:15,426 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-09 -> 2024-10-10) (Yahoo error = "1m data not available for startTime=1728428400 and endTime=1728514800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:15,928 - INFO - Downloading from Yahoo Finance: 2024-10-10
+2025-12-28 12:00:17,228 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-10 -> 2024-10-11) (Yahoo error = "1m data not available for startTime=1728514800 and endTime=1728601200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:17,231 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:17,231 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-10 -> 2024-10-11) (Yahoo error = "1m data not available for startTime=1728514800 and endTime=1728601200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:17,734 - INFO - Downloading from Yahoo Finance: 2024-10-11
+2025-12-28 12:00:19,721 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-11 -> 2024-10-12) (Yahoo error = "1m data not available for startTime=1728601200 and endTime=1728687600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:19,731 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:19,732 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-11 -> 2024-10-12) (Yahoo error = "1m data not available for startTime=1728601200 and endTime=1728687600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:20,234 - INFO - Downloading from Yahoo Finance: 2024-10-14
+2025-12-28 12:00:21,962 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-14 -> 2024-10-15) (Yahoo error = "1m data not available for startTime=1728860400 and endTime=1728946800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:21,973 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:21,973 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-14 -> 2024-10-15) (Yahoo error = "1m data not available for startTime=1728860400 and endTime=1728946800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:22,476 - INFO - Downloading from Yahoo Finance: 2024-10-15
+2025-12-28 12:00:23,205 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-15 -> 2024-10-16) (Yahoo error = "1m data not available for startTime=1728946800 and endTime=1729033200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:23,209 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:23,209 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-15 -> 2024-10-16) (Yahoo error = "1m data not available for startTime=1728946800 and endTime=1729033200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:23,711 - INFO - Downloading from Yahoo Finance: 2024-10-16
+2025-12-28 12:00:29,054 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-16 -> 2024-10-17) (Yahoo error = "1m data not available for startTime=1729033200 and endTime=1729119600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:29,062 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:29,062 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-16 -> 2024-10-17) (Yahoo error = "1m data not available for startTime=1729033200 and endTime=1729119600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:29,565 - INFO - Downloading from Yahoo Finance: 2024-10-17
+2025-12-28 12:00:30,864 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-17 -> 2024-10-18) (Yahoo error = "1m data not available for startTime=1729119600 and endTime=1729206000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:30,868 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:30,868 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-17 -> 2024-10-18) (Yahoo error = "1m data not available for startTime=1729119600 and endTime=1729206000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:31,372 - INFO - Downloading from Yahoo Finance: 2024-10-18
+2025-12-28 12:00:33,423 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-18 -> 2024-10-19) (Yahoo error = "1m data not available for startTime=1729206000 and endTime=1729292400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:33,429 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:33,429 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-18 -> 2024-10-19) (Yahoo error = "1m data not available for startTime=1729206000 and endTime=1729292400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:33,430 - INFO - Checkpoint saved: 0 processed, 210 failed, source: yahoo
+2025-12-28 12:00:33,932 - INFO - Downloading from Yahoo Finance: 2024-10-21
+2025-12-28 12:00:36,700 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-21 -> 2024-10-22) (Yahoo error = "1m data not available for startTime=1729465200 and endTime=1729551600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:36,702 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:36,702 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-21 -> 2024-10-22) (Yahoo error = "1m data not available for startTime=1729465200 and endTime=1729551600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:37,204 - INFO - Downloading from Yahoo Finance: 2024-10-22
+2025-12-28 12:00:38,775 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-22 -> 2024-10-23) (Yahoo error = "1m data not available for startTime=1729551600 and endTime=1729638000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:38,785 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:38,785 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-22 -> 2024-10-23) (Yahoo error = "1m data not available for startTime=1729551600 and endTime=1729638000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:39,288 - INFO - Downloading from Yahoo Finance: 2024-10-23
+2025-12-28 12:00:41,349 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-23 -> 2024-10-24) (Yahoo error = "1m data not available for startTime=1729638000 and endTime=1729724400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:41,359 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:41,359 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-23 -> 2024-10-24) (Yahoo error = "1m data not available for startTime=1729638000 and endTime=1729724400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:41,861 - INFO - Downloading from Yahoo Finance: 2024-10-24
+2025-12-28 12:00:43,378 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-24 -> 2024-10-25) (Yahoo error = "1m data not available for startTime=1729724400 and endTime=1729810800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:43,388 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:43,388 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-24 -> 2024-10-25) (Yahoo error = "1m data not available for startTime=1729724400 and endTime=1729810800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:43,891 - INFO - Downloading from Yahoo Finance: 2024-10-25
+2025-12-28 12:00:45,413 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-25 -> 2024-10-26) (Yahoo error = "1m data not available for startTime=1729810800 and endTime=1729897200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:45,421 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:45,421 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-25 -> 2024-10-26) (Yahoo error = "1m data not available for startTime=1729810800 and endTime=1729897200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:45,924 - INFO - Downloading from Yahoo Finance: 2024-10-28
+2025-12-28 12:00:47,762 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-28 -> 2024-10-29) (Yahoo error = "1m data not available for startTime=1730073600 and endTime=1730160000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:47,762 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:47,762 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-28 -> 2024-10-29) (Yahoo error = "1m data not available for startTime=1730073600 and endTime=1730160000. The requested range must be within the last 30 days.")
+2025-12-28 12:00:48,265 - INFO - Downloading from Yahoo Finance: 2024-10-29
+2025-12-28 12:00:49,332 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-29 -> 2024-10-30) (Yahoo error = "1m data not available for startTime=1730160000 and endTime=1730246400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:49,342 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:49,342 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-29 -> 2024-10-30) (Yahoo error = "1m data not available for startTime=1730160000 and endTime=1730246400. The requested range must be within the last 30 days.")
+2025-12-28 12:00:49,846 - INFO - Downloading from Yahoo Finance: 2024-10-30
+2025-12-28 12:00:52,573 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-30 -> 2024-10-31) (Yahoo error = "1m data not available for startTime=1730246400 and endTime=1730332800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:52,582 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:52,582 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-30 -> 2024-10-31) (Yahoo error = "1m data not available for startTime=1730246400 and endTime=1730332800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:53,085 - INFO - Downloading from Yahoo Finance: 2024-10-31
+2025-12-28 12:00:53,749 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-10-31 -> 2024-11-01) (Yahoo error = "1m data not available for startTime=1730332800 and endTime=1730419200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:53,759 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:53,759 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-10-31 -> 2024-11-01) (Yahoo error = "1m data not available for startTime=1730332800 and endTime=1730419200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:54,262 - INFO - Downloading from Yahoo Finance: 2024-11-01
+2025-12-28 12:00:55,535 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-01 -> 2024-11-02) (Yahoo error = "1m data not available for startTime=1730419200 and endTime=1730505600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:55,545 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:55,545 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-01 -> 2024-11-02) (Yahoo error = "1m data not available for startTime=1730419200 and endTime=1730505600. The requested range must be within the last 30 days.")
+2025-12-28 12:00:55,545 - INFO - Checkpoint saved: 0 processed, 220 failed, source: yahoo
+2025-12-28 12:00:56,049 - INFO - Downloading from Yahoo Finance: 2024-11-04
+2025-12-28 12:00:56,807 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-04 -> 2024-11-05) (Yahoo error = "1m data not available for startTime=1730678400 and endTime=1730764800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:56,809 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:56,809 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-04 -> 2024-11-05) (Yahoo error = "1m data not available for startTime=1730678400 and endTime=1730764800. The requested range must be within the last 30 days.")
+2025-12-28 12:00:57,312 - INFO - Downloading from Yahoo Finance: 2024-11-05
+2025-12-28 12:00:58,586 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-05 -> 2024-11-06) (Yahoo error = "1m data not available for startTime=1730764800 and endTime=1730851200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:58,587 - ERROR - 
+1 Failed download:
+2025-12-28 12:00:58,587 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-05 -> 2024-11-06) (Yahoo error = "1m data not available for startTime=1730764800 and endTime=1730851200. The requested range must be within the last 30 days.")
+2025-12-28 12:00:59,090 - INFO - Downloading from Yahoo Finance: 2024-11-06
+2025-12-28 12:01:00,530 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-06 -> 2024-11-07) (Yahoo error = "1m data not available for startTime=1730851200 and endTime=1730937600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:00,541 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:00,541 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-06 -> 2024-11-07) (Yahoo error = "1m data not available for startTime=1730851200 and endTime=1730937600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:01,044 - INFO - Downloading from Yahoo Finance: 2024-11-07
+2025-12-28 12:01:02,479 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-07 -> 2024-11-08) (Yahoo error = "1m data not available for startTime=1730937600 and endTime=1731024000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:02,488 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:02,489 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-07 -> 2024-11-08) (Yahoo error = "1m data not available for startTime=1730937600 and endTime=1731024000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:02,992 - INFO - Downloading from Yahoo Finance: 2024-11-08
+2025-12-28 12:01:04,140 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-08 -> 2024-11-09) (Yahoo error = "1m data not available for startTime=1731024000 and endTime=1731110400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:04,147 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:04,147 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-08 -> 2024-11-09) (Yahoo error = "1m data not available for startTime=1731024000 and endTime=1731110400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:04,651 - INFO - Downloading from Yahoo Finance: 2024-11-11
+2025-12-28 12:01:05,858 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-11 -> 2024-11-12) (Yahoo error = "1m data not available for startTime=1731283200 and endTime=1731369600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:05,868 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:05,868 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-11 -> 2024-11-12) (Yahoo error = "1m data not available for startTime=1731283200 and endTime=1731369600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:06,371 - INFO - Downloading from Yahoo Finance: 2024-11-12
+2025-12-28 12:01:07,218 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-12 -> 2024-11-13) (Yahoo error = "1m data not available for startTime=1731369600 and endTime=1731456000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:07,227 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:07,227 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-12 -> 2024-11-13) (Yahoo error = "1m data not available for startTime=1731369600 and endTime=1731456000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:07,731 - INFO - Downloading from Yahoo Finance: 2024-11-13
+2025-12-28 12:01:09,385 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-13 -> 2024-11-14) (Yahoo error = "1m data not available for startTime=1731456000 and endTime=1731542400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:09,395 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:09,395 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-13 -> 2024-11-14) (Yahoo error = "1m data not available for startTime=1731456000 and endTime=1731542400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:09,898 - INFO - Downloading from Yahoo Finance: 2024-11-14
+2025-12-28 12:01:11,111 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-14 -> 2024-11-15) (Yahoo error = "1m data not available for startTime=1731542400 and endTime=1731628800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:11,115 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:11,115 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-14 -> 2024-11-15) (Yahoo error = "1m data not available for startTime=1731542400 and endTime=1731628800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:11,618 - INFO - Downloading from Yahoo Finance: 2024-11-15
+2025-12-28 12:01:14,228 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-15 -> 2024-11-16) (Yahoo error = "1m data not available for startTime=1731628800 and endTime=1731715200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:14,233 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:14,233 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-15 -> 2024-11-16) (Yahoo error = "1m data not available for startTime=1731628800 and endTime=1731715200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:14,236 - INFO - Checkpoint saved: 0 processed, 230 failed, source: yahoo
+2025-12-28 12:01:14,737 - INFO - Downloading from Yahoo Finance: 2024-11-18
+2025-12-28 12:01:15,563 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-18 -> 2024-11-19) (Yahoo error = "1m data not available for startTime=1731888000 and endTime=1731974400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:15,566 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:15,566 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-18 -> 2024-11-19) (Yahoo error = "1m data not available for startTime=1731888000 and endTime=1731974400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:16,068 - INFO - Downloading from Yahoo Finance: 2024-11-19
+2025-12-28 12:01:17,154 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-19 -> 2024-11-20) (Yahoo error = "1m data not available for startTime=1731974400 and endTime=1732060800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:17,159 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:17,159 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-19 -> 2024-11-20) (Yahoo error = "1m data not available for startTime=1731974400 and endTime=1732060800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:17,661 - INFO - Downloading from Yahoo Finance: 2024-11-20
+2025-12-28 12:01:18,461 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-20 -> 2024-11-21) (Yahoo error = "1m data not available for startTime=1732060800 and endTime=1732147200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:18,472 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:18,472 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-20 -> 2024-11-21) (Yahoo error = "1m data not available for startTime=1732060800 and endTime=1732147200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:18,975 - INFO - Downloading from Yahoo Finance: 2024-11-21
+2025-12-28 12:01:20,373 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-21 -> 2024-11-22) (Yahoo error = "1m data not available for startTime=1732147200 and endTime=1732233600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:20,376 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:20,376 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-21 -> 2024-11-22) (Yahoo error = "1m data not available for startTime=1732147200 and endTime=1732233600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:20,878 - INFO - Downloading from Yahoo Finance: 2024-11-22
+2025-12-28 12:01:21,966 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-22 -> 2024-11-23) (Yahoo error = "1m data not available for startTime=1732233600 and endTime=1732320000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:21,972 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:21,972 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-22 -> 2024-11-23) (Yahoo error = "1m data not available for startTime=1732233600 and endTime=1732320000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:22,475 - INFO - Downloading from Yahoo Finance: 2024-11-25
+2025-12-28 12:01:24,058 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-25 -> 2024-11-26) (Yahoo error = "1m data not available for startTime=1732492800 and endTime=1732579200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:24,063 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:24,063 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-25 -> 2024-11-26) (Yahoo error = "1m data not available for startTime=1732492800 and endTime=1732579200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:24,566 - INFO - Downloading from Yahoo Finance: 2024-11-26
+2025-12-28 12:01:25,377 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-26 -> 2024-11-27) (Yahoo error = "1m data not available for startTime=1732579200 and endTime=1732665600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:25,385 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:25,385 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-26 -> 2024-11-27) (Yahoo error = "1m data not available for startTime=1732579200 and endTime=1732665600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:25,888 - INFO - Downloading from Yahoo Finance: 2024-11-27
+2025-12-28 12:01:27,393 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-27 -> 2024-11-28) (Yahoo error = "1m data not available for startTime=1732665600 and endTime=1732752000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:27,395 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:27,395 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-27 -> 2024-11-28) (Yahoo error = "1m data not available for startTime=1732665600 and endTime=1732752000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:27,897 - INFO - Downloading from Yahoo Finance: 2024-11-28
+2025-12-28 12:01:28,624 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-28 -> 2024-11-29) (Yahoo error = "1m data not available for startTime=1732752000 and endTime=1732838400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:28,629 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:28,629 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-28 -> 2024-11-29) (Yahoo error = "1m data not available for startTime=1732752000 and endTime=1732838400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:29,132 - INFO - Downloading from Yahoo Finance: 2024-11-29
+2025-12-28 12:01:30,267 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-11-29 -> 2024-11-30) (Yahoo error = "1m data not available for startTime=1732838400 and endTime=1732924800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:30,275 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:30,275 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-11-29 -> 2024-11-30) (Yahoo error = "1m data not available for startTime=1732838400 and endTime=1732924800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:30,277 - INFO - Checkpoint saved: 0 processed, 240 failed, source: yahoo
+2025-12-28 12:01:30,779 - INFO - Downloading from Yahoo Finance: 2024-12-02
+2025-12-28 12:01:32,500 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-02 -> 2024-12-03) (Yahoo error = "1m data not available for startTime=1733097600 and endTime=1733184000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:32,510 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:32,510 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-02 -> 2024-12-03) (Yahoo error = "1m data not available for startTime=1733097600 and endTime=1733184000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:33,012 - INFO - Downloading from Yahoo Finance: 2024-12-03
+2025-12-28 12:01:34,302 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-03 -> 2024-12-04) (Yahoo error = "1m data not available for startTime=1733184000 and endTime=1733270400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:34,307 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:34,307 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-03 -> 2024-12-04) (Yahoo error = "1m data not available for startTime=1733184000 and endTime=1733270400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:34,810 - INFO - Downloading from Yahoo Finance: 2024-12-04
+2025-12-28 12:01:36,005 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-04 -> 2024-12-05) (Yahoo error = "1m data not available for startTime=1733270400 and endTime=1733356800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:36,014 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:36,014 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-04 -> 2024-12-05) (Yahoo error = "1m data not available for startTime=1733270400 and endTime=1733356800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:36,517 - INFO - Downloading from Yahoo Finance: 2024-12-05
+2025-12-28 12:01:37,533 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-05 -> 2024-12-06) (Yahoo error = "1m data not available for startTime=1733356800 and endTime=1733443200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:37,544 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:37,544 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-05 -> 2024-12-06) (Yahoo error = "1m data not available for startTime=1733356800 and endTime=1733443200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:38,047 - INFO - Downloading from Yahoo Finance: 2024-12-06
+2025-12-28 12:01:38,967 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-06 -> 2024-12-07) (Yahoo error = "1m data not available for startTime=1733443200 and endTime=1733529600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:38,969 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:38,969 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-06 -> 2024-12-07) (Yahoo error = "1m data not available for startTime=1733443200 and endTime=1733529600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:39,471 - INFO - Downloading from Yahoo Finance: 2024-12-09
+2025-12-28 12:01:40,915 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-09 -> 2024-12-10) (Yahoo error = "1m data not available for startTime=1733702400 and endTime=1733788800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:40,925 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:40,925 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-09 -> 2024-12-10) (Yahoo error = "1m data not available for startTime=1733702400 and endTime=1733788800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:41,427 - INFO - Downloading from Yahoo Finance: 2024-12-10
+2025-12-28 12:01:42,374 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-10 -> 2024-12-11) (Yahoo error = "1m data not available for startTime=1733788800 and endTime=1733875200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:42,383 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:42,383 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-10 -> 2024-12-11) (Yahoo error = "1m data not available for startTime=1733788800 and endTime=1733875200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:42,887 - INFO - Downloading from Yahoo Finance: 2024-12-11
+2025-12-28 12:01:44,086 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-11 -> 2024-12-12) (Yahoo error = "1m data not available for startTime=1733875200 and endTime=1733961600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:44,087 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:44,087 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-11 -> 2024-12-12) (Yahoo error = "1m data not available for startTime=1733875200 and endTime=1733961600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:44,591 - INFO - Downloading from Yahoo Finance: 2024-12-12
+2025-12-28 12:01:45,724 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-12 -> 2024-12-13) (Yahoo error = "1m data not available for startTime=1733961600 and endTime=1734048000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:45,730 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:45,731 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-12 -> 2024-12-13) (Yahoo error = "1m data not available for startTime=1733961600 and endTime=1734048000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:46,234 - INFO - Downloading from Yahoo Finance: 2024-12-13
+2025-12-28 12:01:48,405 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-13 -> 2024-12-14) (Yahoo error = "1m data not available for startTime=1734048000 and endTime=1734134400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:48,405 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:48,405 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-13 -> 2024-12-14) (Yahoo error = "1m data not available for startTime=1734048000 and endTime=1734134400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:48,407 - INFO - Checkpoint saved: 0 processed, 250 failed, source: yahoo
+2025-12-28 12:01:48,909 - INFO - Downloading from Yahoo Finance: 2024-12-16
+2025-12-28 12:01:51,817 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-16 -> 2024-12-17) (Yahoo error = "1m data not available for startTime=1734307200 and endTime=1734393600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:51,822 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:51,822 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-16 -> 2024-12-17) (Yahoo error = "1m data not available for startTime=1734307200 and endTime=1734393600. The requested range must be within the last 30 days.")
+2025-12-28 12:01:52,325 - INFO - Downloading from Yahoo Finance: 2024-12-17
+2025-12-28 12:01:53,252 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-17 -> 2024-12-18) (Yahoo error = "1m data not available for startTime=1734393600 and endTime=1734480000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:53,260 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:53,260 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-17 -> 2024-12-18) (Yahoo error = "1m data not available for startTime=1734393600 and endTime=1734480000. The requested range must be within the last 30 days.")
+2025-12-28 12:01:53,763 - INFO - Downloading from Yahoo Finance: 2024-12-18
+2025-12-28 12:01:55,250 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-18 -> 2024-12-19) (Yahoo error = "1m data not available for startTime=1734480000 and endTime=1734566400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:55,259 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:55,259 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-18 -> 2024-12-19) (Yahoo error = "1m data not available for startTime=1734480000 and endTime=1734566400. The requested range must be within the last 30 days.")
+2025-12-28 12:01:55,761 - INFO - Downloading from Yahoo Finance: 2024-12-19
+2025-12-28 12:01:57,040 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-19 -> 2024-12-20) (Yahoo error = "1m data not available for startTime=1734566400 and endTime=1734652800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:57,048 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:57,048 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-19 -> 2024-12-20) (Yahoo error = "1m data not available for startTime=1734566400 and endTime=1734652800. The requested range must be within the last 30 days.")
+2025-12-28 12:01:57,551 - INFO - Downloading from Yahoo Finance: 2024-12-20
+2025-12-28 12:01:58,325 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-20 -> 2024-12-21) (Yahoo error = "1m data not available for startTime=1734652800 and endTime=1734739200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:58,334 - ERROR - 
+1 Failed download:
+2025-12-28 12:01:58,334 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-20 -> 2024-12-21) (Yahoo error = "1m data not available for startTime=1734652800 and endTime=1734739200. The requested range must be within the last 30 days.")
+2025-12-28 12:01:58,837 - INFO - Downloading from Yahoo Finance: 2024-12-23
+2025-12-28 12:02:00,065 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-23 -> 2024-12-24) (Yahoo error = "1m data not available for startTime=1734912000 and endTime=1734998400. The requested range must be within the last 30 days.")
+2025-12-28 12:02:00,068 - ERROR - 
+1 Failed download:
+2025-12-28 12:02:00,068 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-23 -> 2024-12-24) (Yahoo error = "1m data not available for startTime=1734912000 and endTime=1734998400. The requested range must be within the last 30 days.")
+2025-12-28 12:02:00,570 - INFO - Downloading from Yahoo Finance: 2024-12-24
+2025-12-28 12:02:01,206 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-24 -> 2024-12-25) (Yahoo error = "1m data not available for startTime=1734998400 and endTime=1735084800. The requested range must be within the last 30 days.")
+2025-12-28 12:02:01,215 - ERROR - 
+1 Failed download:
+2025-12-28 12:02:01,215 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-24 -> 2024-12-25) (Yahoo error = "1m data not available for startTime=1734998400 and endTime=1735084800. The requested range must be within the last 30 days.")
+2025-12-28 12:02:01,717 - INFO - Downloading from Yahoo Finance: 2024-12-25
+2025-12-28 12:02:03,690 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-25 -> 2024-12-26) (Yahoo error = "1m data not available for startTime=1735084800 and endTime=1735171200. The requested range must be within the last 30 days.")
+2025-12-28 12:02:03,692 - ERROR - 
+1 Failed download:
+2025-12-28 12:02:03,692 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-25 -> 2024-12-26) (Yahoo error = "1m data not available for startTime=1735084800 and endTime=1735171200. The requested range must be within the last 30 days.")
+2025-12-28 12:02:04,195 - INFO - Downloading from Yahoo Finance: 2024-12-26
+2025-12-28 12:02:05,161 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-26 -> 2024-12-27) (Yahoo error = "1m data not available for startTime=1735171200 and endTime=1735257600. The requested range must be within the last 30 days.")
+2025-12-28 12:02:05,167 - ERROR - 
+1 Failed download:
+2025-12-28 12:02:05,167 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-26 -> 2024-12-27) (Yahoo error = "1m data not available for startTime=1735171200 and endTime=1735257600. The requested range must be within the last 30 days.")
+2025-12-28 12:02:05,670 - INFO - Downloading from Yahoo Finance: 2024-12-27
+2025-12-28 12:02:06,995 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-27 -> 2024-12-28) (Yahoo error = "1m data not available for startTime=1735257600 and endTime=1735344000. The requested range must be within the last 30 days.")
+2025-12-28 12:02:07,001 - ERROR - 
+1 Failed download:
+2025-12-28 12:02:07,001 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-27 -> 2024-12-28) (Yahoo error = "1m data not available for startTime=1735257600 and endTime=1735344000. The requested range must be within the last 30 days.")
+2025-12-28 12:02:07,003 - INFO - Checkpoint saved: 0 processed, 260 failed, source: yahoo
+2025-12-28 12:02:07,504 - INFO - Downloading from Yahoo Finance: 2024-12-30
+2025-12-28 12:02:08,157 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-30 -> 2024-12-31) (Yahoo error = "1m data not available for startTime=1735516800 and endTime=1735603200. The requested range must be within the last 30 days.")
+2025-12-28 12:02:08,165 - ERROR - 
+1 Failed download:
+2025-12-28 12:02:08,165 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-30 -> 2024-12-31) (Yahoo error = "1m data not available for startTime=1735516800 and endTime=1735603200. The requested range must be within the last 30 days.")
+2025-12-28 12:02:08,668 - INFO - Downloading from Yahoo Finance: 2024-12-31
+2025-12-28 12:02:10,201 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1m 2024-12-31 -> 2025-01-01) (Yahoo error = "1m data not available for startTime=1735603200 and endTime=1735689600. The requested range must be within the last 30 days.")
+2025-12-28 12:02:10,204 - ERROR - 
+1 Failed download:
+2025-12-28 12:02:10,204 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1m 2024-12-31 -> 2025-01-01) (Yahoo error = "1m data not available for startTime=1735603200 and endTime=1735689600. The requested range must be within the last 30 days.")
+2025-12-28 12:02:10,708 - INFO - Checkpoint saved: 0 processed, 262 failed, source: yahoo
+2025-12-28 12:02:10,708 - ERROR - No data downloaded - check data source availability and network connection
+2025-12-28 12:03:31,114 - WARNING - Alpha Vantage returned no data
+2025-12-28 12:03:31,715 - WARNING - No data available for 2021-01-01 (status: 404)
+2025-12-28 12:03:32,330 - WARNING - No data available for 2022-01-01 (status: 404)
+2025-12-28 12:03:32,940 - WARNING - No data available for 2023-01-01 (status: 404)
+2025-12-28 12:03:33,529 - WARNING - No data available for 2024-01-01 (status: 404)
+2025-12-28 12:03:34,175 - WARNING - No data available for 2025-01-01 (status: 404)
+2025-12-28 12:03:35,120 - INFO - Yahoo Finance data available for 2015
+2025-12-28 12:03:35,415 - INFO - Yahoo Finance data available for 2016
+2025-12-28 12:03:35,865 - WARNING - No Yahoo Finance data for 2017
+2025-12-28 12:03:36,230 - INFO - Yahoo Finance data available for 2018
+2025-12-28 12:03:36,544 - INFO - Yahoo Finance data available for 2019
+2025-12-28 12:03:36,972 - INFO - Yahoo Finance data available for 2020
+2025-12-28 12:03:37,462 - INFO - Yahoo Finance data available for 2021
+2025-12-28 12:03:37,762 - ERROR - $EURUSD=X: possibly delisted; no price data found  (1d 2022-01-01 -> 2022-01-02)
+2025-12-28 12:03:37,766 - ERROR - 
+1 Failed download:
+2025-12-28 12:03:37,766 - ERROR - ['EURUSD=X']: possibly delisted; no price data found  (1d 2022-01-01 -> 2022-01-02)
+2025-12-28 12:03:37,766 - WARNING - No Yahoo Finance data for 2022
+2025-12-28 12:03:38,298 - WARNING - No Yahoo Finance data for 2023
+2025-12-28 12:03:38,693 - INFO - Yahoo Finance data available for 2024
+2025-12-28 12:03:39,203 - WARNING - No Yahoo Finance data for 2025
+2025-12-28 12:03:45,613 - INFO - Checkpoint loaded: 0 processed, 262 failed, source: yahoo
+2025-12-28 12:03:45,613 - INFO - Checkpoint saved: 0 processed, 262 failed, source: yahoo
+2025-12-28 12:03:45,613 - ERROR - No data downloaded - check data source availability and network connection

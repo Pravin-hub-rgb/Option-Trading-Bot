@@ -73,7 +73,7 @@ class BotManager:
         try:
             self.mode = "starting"
 
-            from settings_db import apply_settings_to_config
+            from settings_db import apply_settings_to_config, get_setting
             config_overrides = apply_settings_to_config()
 
             def create_streamer(session_name, ce_key, pe_key):
@@ -82,10 +82,11 @@ class BotManager:
                     instruments=instruments,
                     ce_key=ce_key,
                     pe_key=pe_key,
+                    live_feed_server=self.live_feed_server,
+                    bot_manager=self,
+                    access_token=get_setting("access_token"),
                 )
-                ds.live_feed_server = self.live_feed_server
                 ds.price_history = {}
-                ds.bot_manager = self
                 self._data_streamer = ds
                 return ds
 
@@ -108,6 +109,24 @@ class BotManager:
         with self.lock:
             if self.running:
                 return {"status": "error", "message": "Bot already running"}
+
+            from settings_db import get_setting
+            import requests
+            token = get_setting("access_token")
+            if not token:
+                return {"status": "error", "message": "No access token configured. Update in Settings."}
+            try:
+                headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
+                r = requests.get(
+                    "https://api.upstox.com/v2/market-quote/ltp",
+                    headers=headers,
+                    params={"instrument_key": "NSE_INDEX|Nifty 50"},
+                    timeout=10,
+                )
+                if r.status_code != 200:
+                    return {"status": "error", "message": "Access token invalid or expired. Update in Settings."}
+            except Exception as e:
+                return {"status": "error", "message": f"Token validation failed: {e}"}
 
             now = datetime.now(IST)
             market_end = datetime.strptime("15:30", "%H:%M").replace(

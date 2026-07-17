@@ -63,19 +63,24 @@ def reset_settings():
     return dict(DEFAULT_SETTINGS)
 
 def get_settings_meta():
-    return [{"key": k, **v} for k, v in load_settings().items()]
+    return [{"key": k, **v} for k, v in load_settings().items() if k != "access_token"]
 
 def apply_settings_to_config():
-    settings = load_settings()
+    try:
+        settings = load_settings()
+    except Exception:
+        return {}
     overrides = {}
     for key, entry in settings.items():
+        if not isinstance(entry, dict) or "value" not in entry:
+            continue
         val = entry["value"]
         if entry.get("type") == "boolean":
             val = val.lower() == "true"
         elif entry.get("type") == "number":
             try:
                 val = int(val)
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
         overrides[key] = val
     return overrides

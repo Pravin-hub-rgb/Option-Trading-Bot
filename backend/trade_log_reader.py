@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from collections import defaultdict
 
-LOGS_DIR = "logs"
+LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
 
 def _parse_trade_log(filepath):
     trades = []
@@ -48,18 +48,25 @@ def _parse_date_from_time(time_str):
     except (ValueError, IndexError):
         return None
 
+def _scan_csvs(directory):
+    results = []
+    if not os.path.isdir(directory):
+        return results
+    for fname in os.listdir(directory):
+        if fname.endswith(".csv"):
+            results.append(os.path.join(directory, fname))
+        elif os.path.isdir(os.path.join(directory, fname)):
+            results.extend(_scan_csvs(os.path.join(directory, fname)))
+    return results
+
 def load_all_trades(year=None):
     all_trades = []
-    if not os.path.isdir(LOGS_DIR):
-        return all_trades
-    for fname in os.listdir(LOGS_DIR):
-        if fname.endswith(".csv"):
-            filepath = os.path.join(LOGS_DIR, fname)
-            trades = _parse_trade_log(filepath)
-            if year is not None:
-                trades = [t for t in trades if _parse_date_from_time(t.get("entry_time", ""))
-                         and _parse_date_from_time(t["entry_time"]).year == year]
-            all_trades.extend(trades)
+    for filepath in _scan_csvs(LOGS_DIR):
+        trades = _parse_trade_log(filepath)
+        if year is not None:
+            trades = [t for t in trades if _parse_date_from_time(t.get("entry_time", ""))
+                     and _parse_date_from_time(t["entry_time"]).year == year]
+        all_trades.extend(trades)
     all_trades.sort(key=lambda t: t.get("entry_time", ""))
     return all_trades
 

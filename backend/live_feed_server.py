@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +10,7 @@ class LiveFeedServer:
         self.port = port
         self.clients = set()
         self.server = None
+        self._loop = None
 
     async def handler(self, websocket):
         self.clients.add(websocket)
@@ -24,8 +24,10 @@ class LiveFeedServer:
 
     async def start(self):
         import websockets
+        self._loop = asyncio.get_running_loop()
         self.server = await websockets.serve(self.handler, self.host, self.port)
         logger.info(f"WebSocket server started on ws://{self.host}:{self.port}")
+        await self.server.wait_closed()
 
     async def stop(self):
         if self.server:
@@ -45,13 +47,6 @@ class LiveFeedServer:
         self.clients -= dead
 
     def broadcast_sync(self, message):
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(self.broadcast(message))
-            else:
-                loop.run_until_complete(self.broadcast(message))
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(self.broadcast(message))
+        if not self._loop or self._loop.is_closed():
+            return
+        asyncio.run_coroutine_threadsafe(self.broadcast(message), self._loop)

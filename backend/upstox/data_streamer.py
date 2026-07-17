@@ -1,5 +1,5 @@
 import upstox_client
-from config import (ACCESS_TOKEN, MARKET_START, MARKET_END, STRATEGY_START, 
+from config import (MARKET_START, MARKET_END, STRATEGY_START, 
                     ENTRY_WINDOW_END, STOP_AFTER_FIRST_WIN, MAX_TRADES_PER_SIDE)
 from datetime import datetime
 import pytz
@@ -8,11 +8,13 @@ from core.candle import CandleAggregator
 from strategies.red_candle_high_break import RedCandleHighBreak
 from core.position_manager import PositionManager
 from core.trade_logger import TradeLogger
+from settings_db import get_setting
 
 IST = pytz.timezone('Asia/Kolkata')
 
 class DataStreamer:
-    def __init__(self, session_name="day", instruments=None, ce_key=None, pe_key=None):
+    def __init__(self, session_name="day", instruments=None, ce_key=None, pe_key=None,
+                 live_feed_server=None, bot_manager=None, access_token=None):
         self.session_name = session_name
         self.running = True
         self.streamer = None
@@ -21,10 +23,10 @@ class DataStreamer:
         self.last_candle_count = {}
 
         self.active_instruments = instruments if instruments else ['CE', 'PE']
-
-        self.live_feed_server = getattr(self, 'live_feed_server', None)
+        self.live_feed_server = live_feed_server
         self.price_history = {}
-        self.bot_manager = getattr(self, 'bot_manager', None)
+        self.bot_manager = bot_manager
+        self._access_token = access_token or get_setting("access_token") or ""
 
         if not ce_key or not pe_key:
             raise ValueError("CE and PE keys must be provided")
@@ -369,45 +371,51 @@ class DataStreamer:
 
     def on_close(self, *args):
         print(f"WebSocket closed")
-        self.running = False
+        self.streamer = None
+
+    def _connect_ws(self, configuration):
+        self.streamer = upstox_client.MarketDataStreamerV3(
+            upstox_client.ApiClient(configuration)
+        )
+        self.streamer.on("open", self.on_open)
+        self.streamer.on("message", self.on_message)
+        self.streamer.on("error", self.on_error)
+        self.streamer.on("close", self.on_close)
+        print(f"Connecting to market data...")
+        self.streamer.connect()
 
     def run(self):
         configuration = upstox_client.Configuration()
-        configuration.access_token = ACCESS_TOKEN
+        configuration.access_token = self._access_token
         
-        max_retries = 3
-        retry_delay = 2
+        reconnect_attempts = 0
+        max_reconnect = 20
+        base_delay = 2
         
-        for attempt in range(max_retries):
+        while self.running and reconnect_attempts < max_reconnect:
             try:
-                self.streamer = upstox_client.MarketDataStreamerV3(
-                    upstox_client.ApiClient(configuration)
-                )
-                
-                self.streamer.on("open", self.on_open)
-                self.streamer.on("message", self.on_message)
-                self.streamer.on("error", self.on_error)
-                self.streamer.on("close", self.on_close)
-                
-                print(f"Connecting to market data...")
-                self.streamer.connect()
+                self._connect_ws(configuration)
+                reconnect_attempts = 0
                 
                 while self.running:
                     time.sleep(1)
-                return
-                
+                    
             except Exception as e:
-                print(f"Connection failed: {e}")
-                if attempt < max_retries - 1:
-                    print(f"Retrying in {retry_delay} seconds...")
-                    time.sleep(retry_delay)
-                else:
-                    print(f"Max retries reached")
+                reconnect_attempts += 1
+                delay = min(base_delay * reconnect_attempts, 30)
+                print(f"Connection failed (attempt {reconnect_attempts}/{max_reconnect}): {e}")
+                print(f"Reconnecting in {delay}s...")
+                
+                if reconnect_attempts >= max_reconnect:
+                    print(f"Max reconnection attempts reached")
                     for inst in self.active_instruments:
                         self.components[inst]['trade_logger'].close()
                     raise
+                
+                time.sleep(delay)
 
     def close(self):
+        self.running = False
         if self.streamer:
             self.streamer.disconnect()
         for inst in self.active_instruments:

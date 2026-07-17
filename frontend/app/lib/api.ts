@@ -1,6 +1,6 @@
 import type { BotStatus, TradeEntry, DayPnl, TradeStats, SettingMeta } from "./types";
 
-const API = "http://localhost:8002";
+const API = "http://127.0.0.1:8002";
 
 export async function fetchStatus(): Promise<BotStatus> {
   const res = await fetch(`${API}/api/status`);
@@ -30,6 +30,25 @@ export async function fetchTrades(year?: number): Promise<{ trades: TradeEntry[]
 export async function fetchTradePnl(year?: number): Promise<{ days: DayPnl[] }> {
   const params = year ? `?year=${year}` : "";
   const res = await fetch(`${API}/api/trades/pnl${params}`);
+  return res.json();
+}
+
+export async function checkToken(): Promise<{ valid: boolean; message: string }> {
+  const res = await fetch(`${API}/api/token/check`);
+  return res.json();
+}
+
+export async function checkTokenStatus(): Promise<{ exists: boolean }> {
+  const res = await fetch(`${API}/api/token/status`);
+  return res.json();
+}
+
+export async function validateToken(token: string): Promise<{ valid: boolean; message: string; test_results?: string[] }> {
+  const res = await fetch(`${API}/api/token/validate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
   return res.json();
 }
 

@@ -1,8 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 import pytz
-from config import ACCESS_TOKEN, MARKET_START, MARKET_END, MARKET_OPEN_DELAY
-from upstox.strike_selector import StrikeSelector
+from config import MARKET_START, MARKET_END, MARKET_OPEN_DELAY
 import threading
 import time
 import requests
@@ -20,6 +19,10 @@ class TradingScheduler:
         self.data_streamer = None
         self.is_running = True
         self.current_session = None
+
+    def _get_token(self):
+        from settings_db import get_setting
+        return get_setting("access_token") or ""
 
     def now(self):
         return datetime.now(IST).strftime("%H:%M:%S.%f")[:-3]
@@ -65,7 +68,7 @@ class TradingScheduler:
         try:
             base_url = "https://api.upstox.com/v2"
             headers = {
-                'Authorization': f'Bearer {ACCESS_TOKEN}',
+                'Authorization': f'Bearer {self._get_token()}',
                 'Accept': 'application/json'
             }
             
@@ -94,7 +97,7 @@ class TradingScheduler:
         try:
             base_url = "https://api.upstox.com/v2"
             headers = {
-                'Authorization': f'Bearer {ACCESS_TOKEN}',
+                'Authorization': f'Bearer {self._get_token()}',
                 'Accept': 'application/json'
             }
             
@@ -122,7 +125,7 @@ class TradingScheduler:
         try:
             base_url = "https://api.upstox.com/v2"
             headers = {
-                'Authorization': f'Bearer {ACCESS_TOKEN}',
+                'Authorization': f'Bearer {self._get_token()}',
                 'Accept': 'application/json'
             }
             
@@ -146,7 +149,7 @@ class TradingScheduler:
         try:
             base_url = "https://api.upstox.com/v2"
             headers = {
-                'Authorization': f'Bearer {ACCESS_TOKEN}',
+                'Authorization': f'Bearer {self._get_token()}',
                 'Accept': 'application/json'
             }
             
@@ -365,3 +368,4 @@ class TradingScheduler:
     def stop(self):
         self.log(f"🛑 Stopping...")
         self.is_running = False
+        self.stop_streaming()

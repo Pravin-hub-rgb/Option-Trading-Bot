@@ -5,15 +5,17 @@ import pytz
 
 IST = pytz.timezone('Asia/Kolkata')
 
+LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "logs")
+
 class TradeLogger:
     def __init__(self, session_name, symbol):
         self.symbol = symbol
         date_str = datetime.now(IST).strftime('%d_%b_%y').lower()
-        self.trade_log_file = f"logs/trade_log_{date_str}_{session_name}.csv"
+        self.trade_log_file = os.path.join(LOGS_DIR, f"trade_log_{date_str}_{session_name}.csv")
         self.init_log()
 
     def init_log(self):
-        os.makedirs("logs", exist_ok=True)
+        os.makedirs(LOGS_DIR, exist_ok=True)
         if not os.path.exists(self.trade_log_file):
             with open(self.trade_log_file, 'w', newline='') as f:
                 writer = csv.writer(f)

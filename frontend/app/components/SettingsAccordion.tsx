@@ -15,7 +15,6 @@ const categoryLabels: Record<string, string> = {
   risk: "Risk Management",
   limits: "Trade Limits",
   logging: "Logging",
-  credentials: "Credentials",
 };
 
 export default function SettingsAccordion({ settings, onRefresh }: Props) {

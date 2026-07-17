@@ -54,15 +54,31 @@ input, select, textarea, button {
 }
 
 .card-ce {
+  box-shadow: 0 0 20px -5px rgba(99, 102, 241, 0.2);
   border-top: 4px solid #6366f1;
 }
 
 .card-pe {
+  box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.2);
   border-top: 4px solid #f59e0b;
 }
 
+.pulse-dot {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+  70% { transform: scale(1.1); opacity: 0.8; box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+  100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+.log-row:nth-child(even) {
+  background: rgba(255,255,255,0.02);
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -70,6 +86,6 @@ input, select, textarea, button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
-  border-radius: 3px;
+  background: #333;
+  border-radius: 10px;
 }

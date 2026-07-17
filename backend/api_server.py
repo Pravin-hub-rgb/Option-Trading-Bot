@@ -8,7 +8,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uvicorn
 
-from settings_db import get_settings_meta, save_setting, reset_settings, load_settings
+import requests
+from settings_db import get_settings_meta, save_setting, reset_settings, load_settings, get_setting
 from trade_log_reader import load_all_trades, load_trade_pnl, load_trade_stats
 from bot_manager import BotManager
 
@@ -19,7 +20,7 @@ def create_app(bot_manager):
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3002", "http://127.0.0.1:3002"],
+        allow_origins=["http://localhost:3001", "http://127.0.0.1:3001"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -76,6 +77,57 @@ def create_app(bot_manager):
         reset_settings()
         return {"status": "reset"}
 
+    @app.get("/api/token/status")
+    async def token_status():
+        token = get_setting("access_token")
+        return {"exists": bool(token)}
+
+    @app.get("/api/token/check")
+    async def check_token():
+        token = get_setting("access_token")
+        if not token:
+            return {"valid": False, "message": "No access token configured."}
+        try:
+            headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
+            resp = requests.get(
+                "https://api.upstox.com/v2/market-quote/ltp",
+                headers=headers,
+                params={"instrument_key": "NSE_INDEX|Nifty 50"},
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                return {"valid": True, "message": "Token is valid"}
+            return {"valid": False, "message": f"Token rejected (HTTP {resp.status_code})"}
+        except Exception as e:
+            return {"valid": False, "message": f"Token check failed: {e}"}
+
+    class TokenBody(BaseModel):
+        token: str
+
+    @app.post("/api/token/validate")
+    async def validate_token(body: TokenBody):
+        try:
+            save_setting("access_token", body.token)
+            headers = {"Accept": "application/json", "Authorization": f"Bearer {body.token}"}
+            results = []
+            successes = 0
+            for symbol in ["RELIANCE", "TCS", "HDFCBANK"]:
+                try:
+                    url = f"https://api.upstox.com/v2/market-quote/ltp?instrument_key=NSE_EQ%7C{symbol}"
+                    r = requests.get(url, headers=headers, timeout=10)
+                    if r.status_code == 200:
+                        successes += 1
+                        results.append(f"OK {symbol}")
+                    else:
+                        results.append(f"FAIL {symbol}: HTTP {r.status_code}")
+                except Exception as e:
+                    results.append(f"FAIL {symbol}: {e}")
+            if successes > 0:
+                return {"valid": True, "test_results": results, "message": f"{successes}/3 tests passed"}
+            return {"valid": False, "test_results": results, "message": "All tests failed — token invalid"}
+        except Exception as e:
+            return {"valid": False, "message": f"Error: {e}"}
+
     @app.get("/api/logs/stream")
     async def stream_logs(request: Request):
         async def event_generator():
@@ -102,7 +154,7 @@ def create_app(bot_manager):
 
     return app
 
-def start_api_server(bot_manager, host="0.0.0.0", port=8002):
+def start_api_server(bot_manager, host="127.0.0.1", port=8002):
     app = create_app(bot_manager)
     config = uvicorn.Config(app, host=host, port=port, log_level="info")
     server = uvicorn.Server(config)

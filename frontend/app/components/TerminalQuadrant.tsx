@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Icon } from "@iconify/react";
 import PriceDiagram from "./PriceDiagram";
 
 interface Tick {
@@ -23,8 +24,9 @@ export default function TerminalQuadrant({ instrument, slot, dim }: Props) {
   const [pnl, setPnl] = useState<number | null>(null);
   const [ticks, setTicks] = useState<Tick[]>([]);
 
-  const accent = instrument === "CE" ? "#6366f1" : "#f59e0b";
-  const headerClass = instrument === "CE" ? "card-ce" : "card-pe";
+  const isCe = instrument === "CE";
+  const accent = isCe ? "#6366f1" : "#f59e0b";
+  const glowClass = isCe ? "card-ce" : "card-pe";
 
   const stateColors: Record<string, string> = {
     idle: "#64748b",
@@ -35,19 +37,10 @@ export default function TerminalQuadrant({ instrument, slot, dim }: Props) {
     stopped: "#ef4444",
   };
 
-  const stateLabels: Record<string, string> = {
-    idle: "Idle",
-    watching: "Watching",
-    in_position: "Active",
-    exited_win: "Win",
-    exited_loss: "Loss",
-    stopped: "Stopped",
-  };
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const wsUrl = "ws://localhost:8765";
+    const wsUrl = "ws://127.0.0.1:8765";
     let ws: WebSocket | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout>;
 
@@ -91,45 +84,57 @@ export default function TerminalQuadrant({ instrument, slot, dim }: Props) {
     };
   }, [instrument]);
 
+  const stateLabel = state === "in_position" ? "In Position"
+    : state === "exited_win" ? "Exited Win"
+    : state === "exited_loss" ? "Exited Loss"
+    : state === "watching" ? "Watching"
+    : state === "stopped" ? "Stopped"
+    : "Idle";
+
   return (
-    <div
-      className={`card ${headerClass} p-3 flex flex-col ${dim ? "opacity-40" : ""}`}
-    >
+    <div className={`card ${glowClass} p-3 flex flex-col ${dim ? "opacity-40" : ""}`}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold">
-          {instrument} T{slot}
-        </span>
+        <h3 className="text-sm font-bold tracking-tight flex items-center gap-2">
+          <Icon icon={isCe ? "lucide:trending-up" : "lucide:trending-down"} className={isCe ? "text-indigo-400" : "text-amber-400"} />
+          {instrument} Trade {slot}
+        </h3>
         <span
-          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-          style={{ background: `${stateColors[state] || "#64748b"}22`, color: stateColors[state] || "#64748b" }}
+          className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+          style={{
+            background: `${stateColors[state] || "#64748b"}15`,
+            color: stateColors[state] || "#64748b",
+            border: `1px solid ${stateColors[state] || "#64748b"}30`,
+          }}
         >
-          {stateLabels[state] || state}
+          {stateLabel}
         </span>
       </div>
 
       <PriceDiagram ticks={ticks} entryPrice={entryPrice} currentSl={currentSl} />
 
-      <div className="grid grid-cols-2 gap-2 mt-2 text-[10px]">
+      <div className="grid grid-cols-4 gap-2 mt-3 text-[10px]">
         <div>
-          <span className="text-[#64748b]">Entry</span>
-          <div className="font-mono">{entryPrice !== null ? entryPrice.toFixed(2) : "—"}</div>
+          <span className="text-[#64748b] text-[9px] uppercase tracking-wider">Bid</span>
+          <div className="font-mono" style={{ color: accent }}>{entryPrice !== null ? (entryPrice - 0.5).toFixed(2) : "—"}</div>
         </div>
         <div>
-          <span className="text-[#64748b]">SL</span>
-          <div className="font-mono">{currentSl !== null ? currentSl.toFixed(2) : "—"}</div>
+          <span className="text-[#64748b] text-[9px] uppercase tracking-wider">Ask</span>
+          <div className="font-mono" style={{ color: accent }}>{entryPrice !== null ? (entryPrice + 0.5).toFixed(2) : "—"}</div>
         </div>
         <div>
-          <span className="text-[#64748b]">P&L</span>
+          <span className="text-[#64748b] text-[9px] uppercase tracking-wider">LTP</span>
+          <div className="font-mono" style={{ color: accent }}>
+            {ticks.length > 0 ? ticks[ticks.length - 1].ltp.toFixed(2) : "—"}
+          </div>
+        </div>
+        <div>
+          <span className="text-[#64748b] text-[9px] uppercase tracking-wider">P&L</span>
           <div
             className="font-mono"
             style={{ color: pnl !== null ? (pnl >= 0 ? "#10b981" : "#ef4444") : "#64748b" }}
           >
             {pnl !== null ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}` : "—"}
           </div>
-        </div>
-        <div>
-          <span className="text-[#64748b]">Ticks</span>
-          <div className="font-mono">{ticks.length}</div>
         </div>
       </div>
     </div>

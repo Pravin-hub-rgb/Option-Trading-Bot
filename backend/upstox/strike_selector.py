@@ -19,9 +19,10 @@ IST = pytz.timezone('Asia/Kolkata')
 class StrikeSelector:
     def __init__(self):
         self.base_url = "https://api.upstox.com/v2"
-        from config import ACCESS_TOKEN
+        from settings_db import get_setting
+        token = get_setting("access_token") or ""
         self.headers = {
-            'Authorization': f'Bearer {ACCESS_TOKEN}',
+            'Authorization': f'Bearer {token}',
             'Accept': 'application/json'
         }
     

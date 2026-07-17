@@ -1,6 +1,5 @@
 # ========== UPSTOX CREDENTIALS ==========
 API_KEY = "e6b14cad-cea4-4062-a244-bb885316c93b"
-ACCESS_TOKEN = "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YTU4NTA0MGQzOTRlYTE4OTNjNjUwZTMiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc4NDE3MjYwOCwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzg0MjM5MjAwfQ.rP7vEket8hJgMZ7g6DGetiRHNoMr7sv3RSVVkco5Awg"
 
 # ========== TIMING ==========
 MARKET_START = "09:15"              # Market open
@@ -36,8 +35,3 @@ ALERT_ON_DISCONNECT = True          # Print loud alerts on disconnect
 
 # ========== CANDLE CONVENTION ==========
 CANDLE_TIMESTAMP_STYLE = "next_minute"  # Industry standard: 9:15-9:16 candle labeled as 9:16
-
-#taskkill /f /im python.exe
-
-# ========== LIVE PREMIUM SELECTION TIMING ========== 
-MARKET_OPEN_DELAY = 40  # Seconds after market open for live premium selection

@@ -4,12 +4,13 @@ import threading
 from live_feed_server import LiveFeedServer
 from api_server import start_api_server
 from bot_manager import BotManager
-from settings_db import load_settings
+from settings_db import load_settings, get_as_dict
 
 logging.basicConfig(level=logging.INFO)
 
 def main():
     load_settings()
+    get_as_dict()  # populate settings cache
 
     live_feed = LiveFeedServer()
 

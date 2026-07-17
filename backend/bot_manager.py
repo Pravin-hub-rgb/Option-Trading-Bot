@@ -31,24 +31,30 @@ class BotManager:
             "total_pnl": 0.0,
         }
         self._data_streamer = None
+        self._log_counter = 0
 
     def emit_log(self, message):
+        self._log_counter += 1
         timestamp = datetime.now(IST).strftime("%H:%M:%S.%f")[:-3]
-        entry = {"type": "log", "timestamp": timestamp, "message": message}
+        entry = {"id": self._log_counter, "type": "log", "timestamp": timestamp, "message": message}
         self.log_buffer.append(entry)
 
     def _patch_print(self):
         import builtins
-        original_print = builtins.print
+        if hasattr(builtins, "__original_print__"):
+            return
+        builtins.__original_print__ = builtins.print
         def patched_print(*args, **kwargs):
             msg = " ".join(str(a) for a in args)
-            original_print(*args, **kwargs)
+            builtins.__original_print__(*args, **kwargs)
             self.emit_log(msg)
         builtins.print = patched_print
 
     def _restore_print(self):
         import builtins
-        builtins.print = builtins.__original_print__ if hasattr(builtins, "__original_print__") else builtins.print
+        if hasattr(builtins, "__original_print__"):
+            builtins.print = builtins.__original_print__
+            del builtins.__original_print__
 
     def get_status(self):
         with self.lock:
@@ -71,38 +77,43 @@ class BotManager:
     def _bot_loop(self, instruments):
         self._patch_print()
         try:
-            self.mode = "starting"
+            from settings_db import get_setting
 
-            from settings_db import apply_settings_to_config, get_setting
-            config_overrides = apply_settings_to_config()
-
-            def create_streamer(session_name, ce_key, pe_key):
+            def create_streamer(session_name, ce_key, pe_key, ce_strike=None, pe_strike=None):
                 ds = DataStreamer(
                     session_name=session_name,
                     instruments=instruments,
                     ce_key=ce_key,
                     pe_key=pe_key,
+                    ce_strike=ce_strike,
+                    pe_strike=pe_strike,
                     live_feed_server=self.live_feed_server,
                     bot_manager=self,
                     access_token=get_setting("access_token"),
                 )
-                ds.price_history = {}
-                self._data_streamer = ds
+                with self.lock:
+                    self._data_streamer = ds
+                    self.strikes = {"CE": str(ce_strike or ""), "PE": str(pe_strike or "")}
                 return ds
 
-            scheduler = TradingScheduler(create_streamer)
-            scheduler.log = lambda msg: self.emit_log(msg)
+            self._scheduler = TradingScheduler(create_streamer)
+            self._scheduler.log = lambda msg: self.emit_log(msg)
 
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(scheduler.start())
+            loop.run_until_complete(self._scheduler.start())
 
         except Exception as e:
             self.emit_log(f"Bot error: {e}")
         finally:
-            self.mode = "stopped"
-            self.running = False
-            self._data_streamer = None
+            with self.lock:
+                self.mode = "stopped"
+                self.running = False
+            if hasattr(self, '_scheduler') and self._scheduler:
+                self._scheduler.stop()
+                self._scheduler = None
+            with self.lock:
+                self._data_streamer = None
             self._restore_print()
 
     def start(self, instruments=None):
@@ -136,6 +147,18 @@ class BotManager:
                 return {"status": "error", "message": "Market closed"}
 
             self.instruments = instruments if instruments else ["CE", "PE"]
+            self.positions = {
+                "CE": {"trade1": None, "trade2": None},
+                "PE": {"trade1": None, "trade2": None},
+            }
+            self.strikes = {}
+            self.stats = {
+                "total_trades": 0,
+                "wins": 0,
+                "losses": 0,
+                "win_rate": 0.0,
+                "total_pnl": 0.0,
+            }
             self.running = True
             self.mode = "starting"
             self.log_buffer.clear()
@@ -159,6 +182,9 @@ class BotManager:
 
             if hasattr(self, "_data_streamer") and self._data_streamer:
                 self._data_streamer.close()
+            if hasattr(self, "_scheduler") and self._scheduler:
+                self._scheduler.stop()
+                self._scheduler = None
 
             self.mode = "stopped"
             return {"status": "stopped", "message": "Bot stopped"}

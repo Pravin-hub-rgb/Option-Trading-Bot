@@ -30,7 +30,7 @@
     "category": "timing"
   },
   "max_wait_candles": {
-    "value": "2",
+    "value": "3",
     "type": "number",
     "label": "Max Wait Candles",
     "category": "strategy"

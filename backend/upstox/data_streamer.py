@@ -1,6 +1,4 @@
 import upstox_client
-from config import (MARKET_START, MARKET_END, STRATEGY_START, 
-                    ENTRY_WINDOW_END, STOP_AFTER_FIRST_WIN, MAX_TRADES_PER_SIDE)
 from datetime import datetime
 import pytz
 import time
@@ -8,13 +6,14 @@ from core.candle import CandleAggregator
 from strategies.red_candle_high_break import RedCandleHighBreak
 from core.position_manager import PositionManager
 from core.trade_logger import TradeLogger
-from settings_db import get_setting
+from settings_db import get_setting, get_as_dict
 
 IST = pytz.timezone('Asia/Kolkata')
 
 class DataStreamer:
     def __init__(self, session_name="day", instruments=None, ce_key=None, pe_key=None,
-                 live_feed_server=None, bot_manager=None, access_token=None):
+                 live_feed_server=None, bot_manager=None, access_token=None,
+                 ce_strike=None, pe_strike=None):
         self.session_name = session_name
         self.running = True
         self.streamer = None
@@ -24,7 +23,6 @@ class DataStreamer:
 
         self.active_instruments = instruments if instruments else ['CE', 'PE']
         self.live_feed_server = live_feed_server
-        self.price_history = {}
         self.bot_manager = bot_manager
         self._access_token = access_token or get_setting("access_token") or ""
 
@@ -35,8 +33,12 @@ class DataStreamer:
         self.CE_SYMBOL = ce_key
         self.PE_KEY = pe_key
         self.PE_SYMBOL = pe_key
+        self.CE_STRIKE = ce_strike
+        self.PE_STRIKE = pe_strike
 
         print(f"Using strikes: CE={self.CE_SYMBOL}, PE={self.PE_SYMBOL}")
+
+        s = self._settings = get_as_dict()
 
         self.components = {}
         for inst in self.active_instruments:
@@ -45,17 +47,25 @@ class DataStreamer:
             aggregator.add_listener(lambda e, c, i=inst: self._on_candle_event(i, e, c))
             self.components[inst] = {
                 'candle_aggregator': aggregator,
-                'strategy': RedCandleHighBreak(),
-                'position_manager': PositionManager(),
+                'strategy': RedCandleHighBreak(
+                    max_wait_candles=s.get('max_wait_candles'),
+                    allow_reference_shift=s.get('allow_reference_shift'),
+                    initial_sl_points=s.get('initial_sl_points'),
+                ),
+                'position_manager': PositionManager(
+                    initial_sl_points=s.get('initial_sl_points'),
+                    trailing_trigger=s.get('trailing_trigger'),
+                    trailing_step=s.get('trailing_step'),
+                ),
                 'trade_logger': TradeLogger(session_name=session_name, symbol=symbol),
                 'trades_taken': 0,
+                'trade_slot': 1,
                 'can_trade': True,
                 'symbol': symbol,
             }
             self.last_running_print[inst] = 0
             self.tick_count[inst] = 0
             self.last_candle_count[inst] = 0
-            self.price_history[inst] = []
 
         print(f"Trading: {', '.join(self.active_instruments)}")
 
@@ -64,11 +74,13 @@ class DataStreamer:
 
     def is_market_open(self):
         current_time = datetime.now(IST).strftime("%H:%M")
-        return MARKET_START <= current_time <= MARKET_END
+        s = get_as_dict()
+        return s.get('market_start', '09:15') <= current_time <= s.get('market_end', '15:30')
     
     def is_entry_window_open(self):
         current_time = datetime.now(IST).strftime("%H:%M")
-        return STRATEGY_START <= current_time <= ENTRY_WINDOW_END
+        s = get_as_dict()
+        return s.get('strategy_start', '09:15') <= current_time <= s.get('entry_window_end', '15:00')
 
     def _on_candle_event(self, inst_type, event_type, candle):
         if self.live_feed_server:
@@ -79,13 +91,17 @@ class DataStreamer:
         if self.live_feed_server:
             comp = self.components[inst_type]
             pm = comp['position_manager']
+            in_pos = pm.is_in_position()
             msg = {
                 "type": "tick",
                 "instrument": inst_type,
+                "trade_slot": comp.get('trade_slot', 1),
                 "ltp": ltp,
                 "timestamp": timestamp.strftime("%H:%M:%S.%f")[:-3],
-                "sl": pm.current_sl if pm.is_in_position() else None,
-                "pnl": pm.get_unrealized_pnl(ltp) if pm.is_in_position() else None,
+                "sl": pm.get_current_sl() if in_pos else None,
+                "pnl": pm.get_unrealized_pnl(ltp) if in_pos else None,
+                "entry": pm.position['entry_price'] if in_pos else None,
+                "tp_levels": pm.get_tp_levels(current_ltp=ltp) if in_pos else [],
             }
             self.live_feed_server.broadcast_sync(msg)
 
@@ -105,13 +121,27 @@ class DataStreamer:
         )
         
         comp['strategy'].reset()
-        
+
+        slot = comp['trade_slot']
+        if self.bot_manager:
+            with self.bot_manager.lock:
+                slot_key = f"trade{slot}"
+                pos = self.bot_manager.positions[inst_type][slot_key]
+                if pos:
+                    pos['state'] = 'exited_win' if trade_summary['pnl'] > 0 else 'exited_loss'
+                    pos['exit_price'] = exit_price
+                    pos['exit_time'] = exit_time.isoformat()
+                    pos['exit_reason'] = exit_reason
+                    pos['pnl'] = trade_summary['pnl']
+                    pos['duration_seconds'] = trade_summary['duration_seconds']
+
         print(f"[{inst_type}] EXIT at {exit_price:.2f} | P&L: {trade_summary['pnl']:.2f} | Reason: {exit_reason}")
         
         if self.live_feed_server:
             self.live_feed_server.broadcast_sync({
                 "type": "trade",
                 "instrument": inst_type,
+                "trade_slot": slot,
                 "action": "exit",
                 "price": exit_price,
                 "timestamp": exit_time.isoformat(),
@@ -119,14 +149,18 @@ class DataStreamer:
                 "reason": exit_reason,
             })
 
+        s = get_as_dict()
         if trade_summary['pnl'] > 0:
-            if STOP_AFTER_FIRST_WIN:
+            if s.get('stop_after_first_win', True):
                 comp['can_trade'] = False
                 print(f"[{inst_type}] First win achieved - No more trades today")
         else:
-            if comp['trades_taken'] >= MAX_TRADES_PER_SIDE:
+            if comp['trades_taken'] >= s.get('max_trades_per_side', 2):
                 comp['can_trade'] = False
                 print(f"[{inst_type}] Max trades reached - No more trades today")
+            elif comp['can_trade']:
+                comp['trade_slot'] = 2
+                print(f"[{inst_type}] Moving to slot 2 for next trade")
 
     def process_tick(self, inst_type, ltp, timestamp):
         comp = self.components[inst_type]
@@ -137,8 +171,11 @@ class DataStreamer:
         if comp['position_manager'].is_in_position():
             if comp['position_manager'].check_exit(ltp) and not comp.get('_exiting', False):
                 comp['_exiting'] = True
-                self.exit_position(inst_type, ltp, timestamp, "Trailing SL Hit")
-                comp['_exiting'] = False
+                try:
+                    self._broadcast_tick(inst_type, ltp, timestamp)
+                    self.exit_position(inst_type, ltp, timestamp, "Trailing SL Hit")
+                finally:
+                    comp['_exiting'] = False
                 return
             
             sl_moved, new_sl = comp['position_manager'].update_trailing_sl(ltp)
@@ -163,22 +200,33 @@ class DataStreamer:
                 )
                 
                 comp['trades_taken'] += 1
-                print(f"[{inst_type}] ENTRY at {entry_signal['entry_price']:.2f} | SL: {entry_signal['stop_loss']:.2f}")
+
+                slot = comp['trade_slot']
+                if self.bot_manager:
+                    with self.bot_manager.lock:
+                        self.bot_manager.positions[inst_type][f"trade{slot}"] = {
+                            'state': 'in_position',
+                            'instrument': inst_type,
+                            'trade_slot': slot,
+                            'entry_price': entry_signal['entry_price'],
+                            'current_sl': entry_signal['stop_loss'],
+                            'entry_time': timestamp.isoformat(),
+                        }
+
+                print(f"[{inst_type}] ENTRY at {entry_signal['entry_price']:.2f} | SL: {entry_signal['stop_loss']:.2f} (slot {slot})")
 
                 if self.live_feed_server:
                     self.live_feed_server.broadcast_sync({
                         "type": "trade",
                         "instrument": inst_type,
+                        "trade_slot": slot,
                         "action": "entry",
                         "price": entry_signal['entry_price'],
                         "timestamp": timestamp.isoformat(),
                         "sl": entry_signal['stop_loss'],
                     })
 
-        if comp['position_manager'].is_in_position():
-            self.price_history[inst_type].append((timestamp, ltp))
-            if len(self.price_history[inst_type]) > 1000:
-                self.price_history[inst_type] = self.price_history[inst_type][-1000:]
+        self._broadcast_tick(inst_type, ltp, timestamp)
 
     def process_ohlc_candles(self, inst_type, ohlc_list):
         comp = self.components[inst_type]
@@ -348,7 +396,9 @@ class DataStreamer:
                     return
                 
         except Exception as e:
+            import traceback
             print(f"Error processing message: {e}")
+            traceback.print_exc()
 
     def on_open(self):
         print(f"WebSocket connected")

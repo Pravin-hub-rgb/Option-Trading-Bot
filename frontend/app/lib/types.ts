@@ -68,7 +68,3 @@ export interface SettingMeta {
   options?: string;
 }
 
-export interface WsMessage {
-  type: "init" | "candle_update" | "candle_closed" | "tick" | "trade" | "strategy";
-  [key: string]: unknown;
-}

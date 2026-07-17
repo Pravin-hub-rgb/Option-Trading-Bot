@@ -22,9 +22,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="h-full flex flex-col bg-[#0a0a0a] text-[#e5e7eb]">
+      <body className="min-h-screen flex flex-col bg-[#0a0a0a] text-[#e5e7eb]">
         <AppHeader />
-        <main className="flex-1 overflow-auto p-4">{children}</main>
+        <main className="flex-1 p-0 overflow-y-auto">{children}</main>
       </body>
     </html>
   );

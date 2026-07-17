@@ -1,133 +1,251 @@
 "use client";
 
+import { useEffect, useRef, useState, useMemo } from "react";
+
 interface Tick {
   timestamp: string;
   ltp: number;
+  sl: number | null;
+  pnl: number | null;
 }
 
 interface Props {
   ticks: Tick[];
   entryPrice: number | null;
   currentSl: number | null;
-  width?: number;
-  height?: number;
+  tpLevels?: number[];
+  color?: string;
 }
 
-export default function PriceDiagram({ ticks, entryPrice, currentSl, width = 280, height = 180 }: Props) {
-  if (ticks.length < 2 || entryPrice === null) {
+const PX_PER_TICK = 2.5;
+
+type Level = { label: string; price: number; color: string };
+
+function buildLevels(entryPrice: number | null, currentSl: number | null, tpLevels: number[]): { left: Level[]; right: Level | null } {
+  const left: Level[] = [];
+  let right: Level | null = null;
+  if (currentSl !== null)
+    right = { label: `SL ${currentSl.toFixed(2)}`, price: currentSl, color: "#ef4444" };
+  if (entryPrice !== null) {
+    left.push({ label: `Entry ${entryPrice.toFixed(2)}`, price: entryPrice, color: "#94a3b8" });
+    tpLevels.forEach((tp, i) => {
+      const diff = tp - entryPrice;
+      left.push({ label: `TP${i + 1} +${diff.toFixed(1)} ${tp.toFixed(2)}`, price: tp, color: "#10b981" });
+    });
+  }
+  left.sort((a, b) => a.price - b.price);
+  return { left, right };
+}
+
+export default function PriceDiagram({
+  ticks, entryPrice, currentSl,
+  tpLevels = [], color = "#6366f1"
+}: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [chartH, setChartH] = useState(200);
+  const atEndRef = useRef(true);
+
+  const { left: leftLevels, right: slLevel } = useMemo(
+    () => buildLevels(entryPrice, currentSl, tpLevels),
+    [entryPrice, currentSl, tpLevels]
+  );
+  const levels = useMemo(
+    () => slLevel ? [...leftLevels, slLevel] : leftLevels,
+    [leftLevels, slLevel]
+  );
+
+  useEffect(() => {
+    const el = outerRef.current;
+    if (!el || entryPrice === null) return;
+    setChartH(el.clientHeight);
+    const ro = new ResizeObserver(([entry]) => setChartH(entry.contentRect.height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [entryPrice !== null]);
+
+  const { lo, hi, range } = useMemo(() => {
+    const prices = ticks.map(t => t.ltp);
+    const allVals = [...prices, ...levels.map(l => l.price)];
+    const lo = Math.min(...allVals) - 0.4;
+    const hi = Math.max(...allVals) + 0.4;
+    return { lo, hi, range: hi - lo || 1 };
+  }, [ticks, levels]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const scrollEl = scrollRef.current;
+    if (!canvas || !scrollEl || entryPrice === null || ticks.length === 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const containerH = outerRef.current?.clientHeight || chartH;
+    if (containerH === 0) return;
+
+    const T = 4;
+    const B = 4;
+    const ch = containerH - T - B;
+    const yPos = (p: number) => T + ch - ((p - lo) / range) * ch;
+
+    const totalPathW = (ticks.length - 1) * PX_PER_TICK;
+    const scrollW = scrollEl.clientWidth;
+    const needsScroll = totalPathW > scrollW;
+    const canvasW = needsScroll ? totalPathW + 120 : scrollW;
+
+    canvas.width = canvasW * dpr;
+    canvas.height = containerH * dpr;
+    canvas.style.width = `${canvasW}px`;
+    canvas.style.height = `${containerH}px`;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, canvasW, containerH);
+
+    const xPos = (i: number) => {
+      if (needsScroll) return 120 + i * PX_PER_TICK;
+      return 120 + (i / (ticks.length - 1)) * (scrollW - 120);
+    };
+
+    // grid lines
+    ctx.strokeStyle = "#1e293b";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const y = T + (ch / 5) * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvasW, y);
+      ctx.stroke();
+    }
+
+    // reference lines
+    ctx.textBaseline = "middle";
+    levels.forEach(lvl => {
+      const y = yPos(lvl.price);
+      ctx.strokeStyle = lvl.color;
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvasW, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    });
+
+    // price path
+    if (ticks.length > 1) {
+      const pts = ticks.map((t, i) => ({
+        x: xPos(i),
+        y: yPos(t.ltp),
+      }));
+
+      const grad = ctx.createLinearGradient(0, T, 0, T + ch);
+      grad.addColorStop(0, color + "20");
+      grad.addColorStop(1, color + "02");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, T + ch);
+      pts.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.lineTo(pts[pts.length - 1].x, T + ch);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+      ctx.stroke();
+
+      const last = pts[pts.length - 1];
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.15;
+      ctx.beginPath();
+      ctx.arc(last.x, last.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(last.x, last.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // auto-scroll only if user hasn't scrolled left
+    if (atEndRef.current) {
+      scrollEl.scrollLeft = scrollEl.scrollWidth - scrollEl.clientWidth;
+    }
+  }, [ticks, entryPrice, currentSl, tpLevels, color, chartH]);
+
+  if (entryPrice === null) {
     return (
-      <div className="flex items-center justify-center text-[#64748b] text-xs" style={{ height }}>
-        No price data
+      <div className="flex items-center justify-center text-gray-500 text-xs tracking-wider uppercase h-full">
+        Idle
       </div>
     );
   }
 
-  const prices = ticks.map((t) => t.ltp);
-  const minP = Math.min(...prices, entryPrice, currentSl ?? entryPrice);
-  const maxP = Math.max(...prices, entryPrice, currentSl ?? entryPrice);
-  const range = maxP - minP || 1;
-
-  const pad = 20;
-  const chartW = width - pad * 2;
-  const chartH = height - pad * 2;
-
-  const yPos = (p: number) => pad + chartH - ((p - minP) / range) * chartH;
-  const xPos = (i: number) => pad + (i / (ticks.length - 1)) * chartW;
-
-  const pathD = ticks
-    .map((t, i) => `${i === 0 ? "M" : "L"}${xPos(i).toFixed(1)},${yPos(t.ltp).toFixed(1)}`)
-    .join("");
-
-  const entryY = yPos(entryPrice);
-  const slY = currentSl !== null ? yPos(currentSl) : null;
+  const H = chartH;
+  const yPos = (p: number) => 4 + (H - 8) - ((p - lo) / range) * (H - 8);
 
   const lastTick = ticks[ticks.length - 1];
-  const lastX = xPos(ticks.length - 1);
-  const lastY = yPos(lastTick.ltp);
-
-  const gridPcts = [0.75, 0.5, 0.25];
-  const gridLabels = [
-    `+${((maxP - minP) * 0.75 + minP - entryPrice).toFixed(1)}`,
-    `ENTRY (0)`,
-    `${((maxP - minP) * 0.25 + minP - entryPrice).toFixed(1)}`,
-  ];
-
-  const isCe = entryPrice >= (currentSl ?? entryPrice);
 
   return (
-    <div className="relative price-line-gradient border-b border-white/5 rounded-t-lg overflow-hidden" style={{ height }}>
-      {/* Gridlines */}
-      <div className="absolute inset-0 grid grid-rows-4 pointer-events-none">
-        {gridPcts.map((pct, i) => {
-          const y = pad + chartH * (1 - pct);
-          const isEntry = i === 1;
+    <div ref={outerRef} className="relative h-full overflow-hidden">
+      {/* Left Y-axis labels (Entry, TP's) */}
+      <div className="absolute left-0 top-0 bottom-0 w-[102px] z-10 pointer-events-none">
+        {leftLevels.map((lvl, i) => {
+          const y = yPos(lvl.price);
           return (
             <div
               key={i}
-              className="relative"
-              style={{ position: "absolute", top: y - 12, left: 0, right: 0, height: 24 }}
+              className="absolute right-1 leading-none"
+              style={{ top: y, transform: "translateY(-50%)" }}
             >
-              <div
-                className={`absolute inset-x-0 top-1/2 ${isEntry ? "border-t border-indigo-500/30 bg-indigo-500/[0.02]" : "border-t border-white/[0.03]"}`}
-              />
-              <span
-                className={`absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-mono ${
-                  isEntry ? "text-indigo-400/80 font-bold" : "text-gray-600"
-                }`}
-              >
-                {gridLabels[i]}
+              <span className="font-mono text-[9px] font-bold whitespace-nowrap" style={{ color: lvl.color }}>
+                {lvl.label}
               </span>
             </div>
           );
         })}
       </div>
 
-      {/* Price path SVG */}
-      <svg width={width} height={height} className="absolute inset-0 w-full h-full">
-        <defs>
-          <linearGradient id={`grad-${isCe ? "ce" : "pe"}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={isCe ? "#6366f1" : "#f59e0b"} stopOpacity="0.08" />
-            <stop offset="100%" stopColor={isCe ? "#6366f1" : "#f59e0b"} stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
+      {/* Right SL label */}
+      {slLevel && (
+        <div className="absolute right-0 top-0 bottom-0 w-[100px] z-10 pointer-events-none">
+          <div
+            className="absolute left-1 leading-none"
+            style={{ top: yPos(slLevel.price), transform: "translateY(-50%)" }}
+          >
+            <span className="font-mono text-[9px] font-bold whitespace-nowrap" style={{ color: slLevel.color }}>
+              {slLevel.label}
+            </span>
+          </div>
+        </div>
+      )}
 
-        {/* Gradient fill under path */}
-        <path
-          d={`${pathD} L${xPos(ticks.length - 1)},${pad + chartH} L${pad},${pad + chartH} Z`}
-          fill={`url(#grad-${isCe ? "ce" : "pe"})`}
-        />
+      {/* Scrollable chart */}
+      <div
+        ref={scrollRef}
+        className="absolute left-0 right-0 top-0 bottom-0 overflow-x-auto"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          atEndRef.current = el.scrollWidth - el.scrollLeft - el.clientWidth < 10;
+        }}
+      >
+        <canvas ref={canvasRef} className="block" />
+      </div>
 
-        {/* Entry line */}
-        <line x1={pad} y1={entryY} x2={width - pad} y2={entryY} stroke="#64748b" strokeWidth={1} strokeDasharray="4 2" />
-        <text x={width - pad - 4} y={entryY - 4} fill="#64748b" fontSize={9} fontFamily="monospace" textAnchor="end">
-          ENTRY {entryPrice.toFixed(2)}
-        </text>
-
-        {/* SL line */}
-        {slY !== null && (
-          <>
-            <line x1={pad} y1={slY} x2={width - pad} y2={slY} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
-            <text x={width - pad - 4} y={slY - 4} fill="#ef4444" fontSize={9} fontFamily="monospace" textAnchor="end">
-              SL {currentSl!.toFixed(2)}
-            </text>
-          </>
+      {/* LTP + P&L overlay (kept between left labels and right SL label) */}
+      <div className="absolute left-[102px] right-[100px] bottom-0 h-5 pointer-events-none flex items-center justify-between px-2 text-[10px] font-mono font-bold bg-gradient-to-t from-[#0a0a0a] to-transparent">
+        <span style={{ color }}>{lastTick?.ltp.toFixed(2)}</span>
+        {lastTick?.pnl != null && (
+          <span style={{ color: lastTick.pnl >= 0 ? "#10b981" : "#ef4444" }}>
+            {lastTick.pnl >= 0 ? "+" : ""}{lastTick.pnl.toFixed(2)}
+          </span>
         )}
-
-        {/* Price path */}
-        <path
-          d={pathD}
-          fill="none"
-          stroke={isCe ? "#6366f1" : "#f59e0b"}
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]"
-        />
-
-        {/* Pulsing dot on latest point */}
-        <circle cx={lastX} cy={lastY} r={5} fill={isCe ? "#6366f1" : "#f59e0b"} opacity={0.3} className="pulse-dot" />
-        <circle cx={lastX} cy={lastY} r={2.5} fill={isCe ? "#6366f1" : "#f59e0b"} />
-      </svg>
+      </div>
     </div>
   );
 }

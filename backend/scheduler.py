@@ -1,7 +1,5 @@
-import asyncio
 from datetime import datetime, timedelta
 import pytz
-from config import MARKET_START, MARKET_END, MARKET_OPEN_DELAY
 import threading
 import time
 import requests
@@ -144,54 +142,6 @@ class TradingScheduler:
             self.log(f"Spot fetch failed: {e}")
         return None
 
-    def fetch_chain_and_filter_keys(self, expiry, spot, range_points=500):
-        """Fetch option chain and filter keys near spot price"""
-        try:
-            base_url = "https://api.upstox.com/v2"
-            headers = {
-                'Authorization': f'Bearer {self._get_token()}',
-                'Accept': 'application/json'
-            }
-            
-            self.log(f"Fetching chain for {expiry}...")
-            resp = requests.get(
-                f"{base_url}/option/chain",
-                headers=headers,
-                params={
-                    'instrument_key': 'NSE_INDEX|Nifty 50',
-                    'expiry_date': expiry
-                },
-                timeout=15
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                if 'data' in data:
-                    self.log(f"Chain fetched – {len(data['data'])} strikes")
-                    
-                    # Filter keys near spot (±500 points)
-                    keys = []
-                    for entry in data['data']:
-                        strike = float(entry.get('strike_price', 0))
-                        if abs(strike - spot) <= range_points:
-                            # Add CE
-                            ce = entry.get('call_options', {})
-                            if ce:
-                                key = ce.get('instrument_key', '')
-                                if key:
-                                    keys.append(key)
-                            # Add PE  
-                            pe = entry.get('put_options', {})
-                            if pe:
-                                key = pe.get('instrument_key', '')
-                                if key:
-                                    keys.append(key)
-                    
-                    self.log(f"Filtered {len(keys)} near-spot keys (±{range_points} pts)")
-                    return keys
-        except Exception as e:
-            self.log(f"Chain error: {e}")
-        return None
-
     def fetch_live_strikes(self):
         """
         Fetch live strikes using real-time LTP with spot-based filtering
@@ -297,7 +247,7 @@ class TradingScheduler:
             self.log(f"❌ Error in fetch_live_strikes: {e}")
             return None
 
-    def start_streaming(self, ce_key, pe_key):
+    def start_streaming(self, ce_key, pe_key, ce_strike=None, pe_strike=None):
         """Start the data streamer with specific strikes"""
         self.log(f"🚀 Starting streaming with strikes...")
         self.current_session = "day"
@@ -305,7 +255,9 @@ class TradingScheduler:
         self.data_streamer = self.data_streamer_factory(
             session_name="day",
             ce_key=ce_key,
-            pe_key=pe_key
+            pe_key=pe_key,
+            ce_strike=ce_strike,
+            pe_strike=pe_strike,
         )
         threading.Thread(target=self.data_streamer.run, daemon=True).start()
         self.log(f"✅ Streaming started")
@@ -324,13 +276,20 @@ class TradingScheduler:
         self.log(f"🚀 Bot Started")
         current_time = self.get_current_time_str()
         
-        if current_time > MARKET_END:
+        from settings_db import get_as_dict
+        s = get_as_dict()
+        
+        market_start = s.get('market_start', '09:15')
+        market_end = s.get('market_end', '15:30')
+        market_open_delay = int(s.get('market_open_delay', 40))
+        
+        if current_time > market_end:
             self.log(f"🔒 Market closed")
             return
         
-        # STEP 1: Wait until market_open + MARKET_OPEN_DELAY (9:15:40)
-        market_start_time = datetime.strptime(MARKET_START, "%H:%M")
-        live_selection_time = (market_start_time + timedelta(seconds=MARKET_OPEN_DELAY)).strftime("%H:%M:%S")
+        # STEP 1: Wait until market_open + market_open_delay
+        market_start_time = datetime.strptime(market_start, "%H:%M")
+        live_selection_time = (market_start_time + timedelta(seconds=market_open_delay)).strftime("%H:%M:%S")
         current_time_full = datetime.now(IST).strftime("%H:%M:%S")
         
         if current_time_full < live_selection_time:
@@ -352,14 +311,19 @@ class TradingScheduler:
         
         # STEP 3: Start streaming with CORRECT strikes (happens AFTER we know which strikes to use!)
         self.log(f"🚀 Starting streaming with selected strikes...")
-        self.start_streaming(strikes['ce_key'], strikes['pe_key'])
+        self.start_streaming(
+            strikes['ce_key'], strikes['pe_key'],
+            ce_strike=strikes['ce_strike'], pe_strike=strikes['pe_strike']
+        )
         
         # STEP 4: Strategy will start automatically when first OHLC candle is received
         # No hardcoded timing - strategy starts when data is available
         self.log(f"📊 Waiting for first OHLC candle to start strategy...")
         
         # STEP 5: Wait until market end (silent wait)
-        while self.is_running and self.get_current_time_str() < MARKET_END:
+        s = get_as_dict()
+        market_end = s.get('market_end', '15:30')
+        while self.is_running and self.get_current_time_str() < market_end:
             time.sleep(60)  # Check every minute without logging
         self.stop_streaming()
         self.log(f"✅ Done for today")

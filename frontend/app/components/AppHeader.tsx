@@ -62,8 +62,8 @@ export default function AppHeader() {
 
   const strikes = s?.strikes || {};
   const pos = s?.positions;
-  const ceStrike = (Object.values(strikes)[0] as string) || "--";
-  const peStrike = (Object.values(strikes)[1] as string) || "--";
+  const ceStrike = strikes.CE || "--";
+  const peStrike = strikes.PE || "--";
   const netPnl =
     (pos?.CE?.trade1?.pnl ?? 0) +
     (pos?.CE?.trade2?.pnl ?? 0) +
@@ -125,6 +125,7 @@ export default function AppHeader() {
             <button
               onClick={running ? handleStop : handleStart}
               disabled={busy || connecting}
+              suppressHydrationWarning
               className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
                 running
                   ? "bg-red-600/20 text-red-400 border border-red-600/30 hover:bg-red-600/30"

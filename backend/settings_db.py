@@ -37,7 +37,14 @@ def load_settings():
     except (json.JSONDecodeError, IOError):
         return dict(DEFAULT_SETTINGS)
 
+_cache = None
+
+def invalidate_cache():
+    global _cache
+    _cache = None
+
 def save_settings(settings):
+    invalidate_cache()
     tmp = SETTINGS_FILE + ".tmp"
     with open(tmp, "w") as f:
         json.dump(settings, f, indent=2)
@@ -65,12 +72,14 @@ def reset_settings():
 def get_settings_meta():
     return [{"key": k, **v} for k, v in load_settings().items() if k != "access_token"]
 
-def apply_settings_to_config():
-    try:
-        settings = load_settings()
-    except Exception:
-        return {}
-    overrides = {}
+def get_as_dict():
+    """Read settings JSON and return a flat dict with type-casted values.
+    Results are cached in memory — cache is invalidated on every save."""
+    global _cache
+    if _cache is not None:
+        return _cache
+    settings = load_settings()
+    result = {}
     for key, entry in settings.items():
         if not isinstance(entry, dict) or "value" not in entry:
             continue
@@ -79,8 +88,16 @@ def apply_settings_to_config():
             val = val.lower() == "true"
         elif entry.get("type") == "number":
             try:
-                val = int(val)
+                if "." in str(val):
+                    val = float(val)
+                else:
+                    val = int(val)
             except (ValueError, TypeError):
                 pass
-        overrides[key] = val
-    return overrides
+        result[key] = val
+    _cache = result
+    return result
+
+def apply_settings_to_config():
+    """DEPRECATED: use get_as_dict() instead."""
+    return get_as_dict()

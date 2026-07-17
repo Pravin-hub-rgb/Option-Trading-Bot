@@ -24,7 +24,7 @@ const { result } = concurrently(
       prefixColor: 'blue',
     },
     {
-      command: '.venv\\Scripts\\python server.py',
+      command: '..\\.venv\\Scripts\\python server.py',
       name: 'py',
       cwd: 'backend',
       prefixColor: 'yellow',

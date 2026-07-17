@@ -2,12 +2,11 @@
 Position Manager: Handles single position lifecycle with trailing stop loss
 """
 from datetime import datetime
-from config import INITIAL_SL_POINTS, TRAILING_TRIGGER, TRAILING_STEP
 
 class PositionManager:
-    def __init__(self, initial_sl_points=INITIAL_SL_POINTS, 
-                 trailing_trigger=TRAILING_TRIGGER, 
-                 trailing_step=TRAILING_STEP):
+    def __init__(self, initial_sl_points=5, 
+                 trailing_trigger=5, 
+                 trailing_step=5):
         """
         Initialize Position Manager
         
@@ -37,11 +36,14 @@ class PositionManager:
         Returns:
             dict: Position details
         """
+        from settings_db import get_as_dict
+        s = get_as_dict()
+        sl_points = int(s.get('initial_sl_points', self.initial_sl_points))
         self.position = {
             'symbol': symbol,
             'entry_price': entry_price,
             'entry_time': entry_time,
-            'stop_loss': entry_price - self.initial_sl_points,
+            'stop_loss': entry_price - sl_points,
             'highest_price': entry_price,
             'last_ltp': entry_price
         }
@@ -60,6 +62,11 @@ class PositionManager:
         if not self.position:
             return False, None
         
+        from settings_db import get_as_dict
+        s = get_as_dict()
+        trailing_trigger = int(s.get('trailing_trigger', self.trailing_trigger))
+        trailing_step = int(s.get('trailing_step', self.trailing_step))
+        
         self.position['last_ltp'] = current_ltp
         
         # Track highest price reached
@@ -70,11 +77,11 @@ class PositionManager:
         old_sl = self.position['stop_loss']
         
         # Calculate new SL based on profit milestones
-        if profit >= self.trailing_trigger:
+        if profit >= trailing_trigger:
             # Reached at least +5 profit
             # Calculate how many milestones passed
-            milestones_passed = int((profit - self.trailing_trigger) / self.trailing_step)
-            new_sl = self.position['entry_price'] + (milestones_passed * self.trailing_step)
+            milestones_passed = int((profit - trailing_trigger) / trailing_step)
+            new_sl = self.position['entry_price'] + (milestones_passed * trailing_step)
             
             # Only update if new SL is higher
             if new_sl > self.position['stop_loss']:
@@ -142,3 +149,16 @@ class PositionManager:
         if not self.position:
             return None
         return self.position['stop_loss']
+
+    def get_unrealized_pnl(self, current_ltp):
+        """Get unrealized P&L at current price"""
+        if not self.position:
+            return None
+        return current_ltp - self.position['entry_price']
+
+    def get_tp_levels(self, current_ltp=None):
+        """Get next 5 take-profit milestone levels from entry price"""
+        if not self.position:
+            return []
+        entry = self.position['entry_price']
+        return [entry + self.trailing_trigger + i * self.trailing_step for i in range(5)]

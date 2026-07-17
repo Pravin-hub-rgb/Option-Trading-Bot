@@ -9,19 +9,21 @@ Logic:
 5. If newer red candle appears while waiting, shift to it
 6. Trailing stop loss management
 """
-from config import MAX_WAIT_CANDLES, ALLOW_REFERENCE_SHIFT
 from datetime import datetime
 
 class RedCandleHighBreak:
-    def __init__(self):
+    def __init__(self, max_wait_candles=None, allow_reference_shift=None, initial_sl_points=None):
+        self._max_wait_candles = max_wait_candles if max_wait_candles is not None else 2
+        self._allow_reference_shift = allow_reference_shift if allow_reference_shift is not None else True
+        self._initial_sl_points = initial_sl_points if initial_sl_points is not None else 5
         self.reset()
     
     def reset(self):
         """Reset strategy state (called after trade exit)"""
         self.reference_candle = None
         self.candles_since_reference = 0
-        self.max_wait_candles = MAX_WAIT_CANDLES
-        self.allow_reference_shift = ALLOW_REFERENCE_SHIFT
+        self.max_wait_candles = self._max_wait_candles
+        self.allow_reference_shift = self._allow_reference_shift
     
     def is_red_candle(self, candle):
         """Check if candle is red (bearish): open > close"""
@@ -73,16 +75,14 @@ class RedCandleHighBreak:
         
         # Check for breakout
         if current_ltp > self.reference_candle['high']:
-            from config import INITIAL_SL_POINTS
-            
-            # CRITICAL FIX: Enter at reference high, NOT current LTP
-            # This matches backtest behavior and prevents slippage
+            from settings_db import get_as_dict
+            s = get_as_dict()
+            sl_points = int(s.get('initial_sl_points', self._initial_sl_points))
             entry_price = self.reference_candle['high']
-            
             entry_signal = {
                 'enter': True,
-                'entry_price': entry_price,  # ← Enter at ref high (like backtest)
-                'stop_loss': entry_price - INITIAL_SL_POINTS,  # ← SL from ref high
+                'entry_price': entry_price,
+                'stop_loss': entry_price - sl_points,
                 'reference_high': self.reference_candle['high']
             }
             return entry_signal

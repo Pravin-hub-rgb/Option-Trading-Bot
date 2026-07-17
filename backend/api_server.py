@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,8 +11,6 @@ import requests
 from settings_db import get_settings_meta, save_setting, reset_settings, load_settings, get_setting
 from trade_log_reader import load_all_trades, load_trade_pnl, load_trade_stats
 from bot_manager import BotManager
-
-logger = logging.getLogger(__name__)
 
 def create_app(bot_manager):
     app = FastAPI(title="Options Trading Bot API")
@@ -49,7 +46,8 @@ def create_app(bot_manager):
 
     @app.get("/api/trades")
     async def get_trades(year: int | None = None):
-        return {"trades": load_all_trades(year=year), "count": 0}
+        trades = load_all_trades(year=year)
+        return {"trades": trades, "count": len(trades)}
 
     @app.get("/api/trades/pnl")
     async def get_trades_pnl(year: int | None = None):
@@ -131,16 +129,17 @@ def create_app(bot_manager):
     @app.get("/api/logs/stream")
     async def stream_logs(request: Request):
         async def event_generator():
-            sent = len(bot_manager.log_buffer)
+            sent_id = 0
             for entry in list(bot_manager.log_buffer):
+                sent_id = max(sent_id, entry.get("id", 0))
                 yield f"data: {json.dumps(entry)}\n\n"
             while True:
                 if await request.is_disconnected():
                     break
-                while len(bot_manager.log_buffer) > sent:
-                    entry = bot_manager.log_buffer[sent]
-                    sent += 1
-                    yield f"data: {json.dumps(entry)}\n\n"
+                for entry in list(bot_manager.log_buffer):
+                    if entry.get("id", 0) > sent_id:
+                        sent_id = entry.get("id", 0)
+                        yield f"data: {json.dumps(entry)}\n\n"
                 await asyncio.sleep(0.2)
 
         return StreamingResponse(

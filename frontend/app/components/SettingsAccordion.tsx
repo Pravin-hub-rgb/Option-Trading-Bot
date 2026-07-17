@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { SettingMeta } from "../lib/types";
 import { updateSetting, resetSettings } from "../lib/api";
 
@@ -21,13 +21,21 @@ export default function SettingsAccordion({ settings, onRefresh }: Props) {
   const categories = [...new Set(settings.map((s) => s.category))];
   const [openCat, setOpenCat] = useState<string | null>(categories[0] || null);
   const [dirty, setDirty] = useState(false);
+  const [edits, setEdits] = useState<Record<string, string>>({});
+
+  const val = (key: string, original: string) =>
+    key in edits ? edits[key] : original;
+
+  useEffect(() => { setEdits({}); }, [settings]);
 
   async function handleChange(key: string, value: string) {
+    setEdits((prev) => ({ ...prev, [key]: value }));
     await updateSetting(key, value);
     setDirty(true);
   }
 
   async function handleReset() {
+    setEdits({});
     await resetSettings();
     onRefresh();
   }
@@ -54,18 +62,18 @@ export default function SettingsAccordion({ settings, onRefresh }: Props) {
                     {s.type === "boolean" ? (
                       <button
                         className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                          s.value === "true"
+                          val(s.key, s.value) === "true"
                             ? "bg-[#10b981] text-white"
                             : "bg-[#1a1a1a] text-[#64748b]"
                         }`}
-                        onClick={() => handleChange(s.key, s.value === "true" ? "false" : "true")}
+                        onClick={() => handleChange(s.key, val(s.key, s.value) === "true" ? "false" : "true")}
                       >
-                        {s.value === "true" ? "ON" : "OFF"}
+                        {val(s.key, s.value) === "true" ? "ON" : "OFF"}
                       </button>
                     ) : s.type === "select" ? (
                       <select
                         className="input-dark text-xs"
-                        value={s.value}
+                        value={val(s.key, s.value)}
                         onChange={(e) => handleChange(s.key, e.target.value)}
                       >
                         {(s.options || "").split(",").map((opt) => (
@@ -78,7 +86,7 @@ export default function SettingsAccordion({ settings, onRefresh }: Props) {
                       <input
                         type="password"
                         className="input-dark text-xs"
-                        value={s.value}
+                        value={val(s.key, s.value)}
                         onChange={(e) => handleChange(s.key, e.target.value)}
                         placeholder="Enter token..."
                       />
@@ -86,7 +94,7 @@ export default function SettingsAccordion({ settings, onRefresh }: Props) {
                       <input
                         type={s.type === "number" ? "number" : "text"}
                         className="input-dark text-xs"
-                        value={s.value}
+                        value={val(s.key, s.value)}
                         onChange={(e) => handleChange(s.key, e.target.value)}
                       />
                     )}

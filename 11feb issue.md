@@ -21,6 +21,8 @@ Chart shows: First 1-min high = ₹97.95
 118.45 is yesterday's frozen price!
 97.95 is today's actual trading price!
 
+> **Update 17 Jul 2026:** This issue has been **resolved**. The bot now uses `/v2/market-quote/ltp` batch API for live premium scanning instead of reading `market_data.ltp` from the option chain. See `scheduler.py:fetch_live_strikes()`. Strike selection is working correctly with live premiums.
+
 Looking at your code and the issue, I can see **MULTIPLE PROBLEMS**:
 
 ## 🚨 PROBLEM 1: Premium Price is COMPLETELY WRONG!
@@ -32,10 +34,10 @@ def find_strikes_ge_target(self, chain, target=100):
     ltp = float(ce.get('market_data', {}).get('ltp', 0))  # ← READING LTP!
 ```
 
-**The Issue:**
+**The Issue (Historical):**
 At 9:15:40, the bot reads `market_data.ltp` from the option chain API.
 
-**BUT:** This LTP is **yesterday's closing price** or **pre-market frozen price**, NOT live market price!
+**BUT:** This LTP was **yesterday's closing price** or **pre-market frozen price**, NOT live market price!
 
 The option chain API at 9:15:40 shows:
 - `ltp` = Yesterday's 3:30 PM price (frozen)

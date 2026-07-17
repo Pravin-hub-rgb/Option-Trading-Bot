@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import PriceDiagram from "./PriceDiagram";
 
@@ -11,22 +11,46 @@ interface Tick {
   pnl: number | null;
 }
 
+interface InitialPos {
+  state: string;
+  entry_price: number | null;
+  current_sl: number | null;
+  pnl: number | null;
+}
+
 interface Props {
   instrument: "CE" | "PE";
   slot: 1 | 2;
-  dim?: boolean;
+  initialPos?: InitialPos | null;
 }
 
-export default function TerminalQuadrant({ instrument, slot, dim }: Props) {
+interface TickData {
+  ticks: Tick[];
+  currentSl: number | null;
+  pnl: number | null;
+  entryPrice: number | null;
+  tpLevels: number[];
+}
+
+const INITIAL_TICK_DATA: TickData = {
+  ticks: [],
+  currentSl: null,
+  pnl: null,
+  entryPrice: null,
+  tpLevels: [],
+};
+
+export default function TerminalQuadrant({ instrument, slot, initialPos }: Props) {
   const [state, setState] = useState<string>("idle");
-  const [entryPrice, setEntryPrice] = useState<number | null>(null);
-  const [currentSl, setCurrentSl] = useState<number | null>(null);
-  const [pnl, setPnl] = useState<number | null>(null);
-  const [ticks, setTicks] = useState<Tick[]>([]);
+  const [tickData, setTickData] = useState<TickData>(INITIAL_TICK_DATA);
+  const [synced, setSynced] = useState(false);
+  const frozenRef = useRef(false);
 
   const isCe = instrument === "CE";
   const accent = isCe ? "#6366f1" : "#f59e0b";
   const glowClass = isCe ? "card-ce" : "card-pe";
+
+  const dim = state === "idle" && tickData.entryPrice === null;
 
   const stateColors: Record<string, string> = {
     idle: "#64748b",
@@ -36,6 +60,68 @@ export default function TerminalQuadrant({ instrument, slot, dim }: Props) {
     exited_loss: "#ef4444",
     stopped: "#ef4444",
   };
+
+  useEffect(() => {
+    const pos = initialPos !== undefined ? initialPos : undefined;
+    if (pos) {
+      if (pos.state === "in_position") {
+        frozenRef.current = false;
+        setState("in_position");
+        setTickData({
+          ticks: [],
+          currentSl: pos.current_sl ?? null,
+          pnl: pos.pnl ?? null,
+          entryPrice: pos.entry_price ?? null,
+          tpLevels: [],
+        });
+      } else if (pos.state === "exited_win" || pos.state === "exited_loss") {
+        frozenRef.current = true;
+        setState(pos.state);
+        setTickData({
+          ticks: [],
+          currentSl: null,
+          pnl: pos.pnl ?? null,
+          entryPrice: pos.entry_price ?? null,
+          tpLevels: [],
+        });
+      }
+    }
+    if (initialPos !== undefined) {
+      setSynced(true);
+      return;
+    }
+
+    fetch("http://127.0.0.1:8002/api/status")
+      .then((r) => r.json())
+      .then((status) => {
+        const pos = status?.positions?.[instrument]?.[`trade${slot}`];
+        if (pos) {
+          if (pos.state === "in_position") {
+            frozenRef.current = false;
+            setState("in_position");
+            setTickData({
+              ticks: [],
+              currentSl: pos.current_sl ?? null,
+              pnl: pos.pnl ?? null,
+              entryPrice: pos.entry_price ?? null,
+              tpLevels: [],
+            });
+          } else if (pos.state === "exited_win" || pos.state === "exited_loss") {
+            frozenRef.current = true;
+            setState(pos.state);
+            setTickData({
+              ticks: [],
+              currentSl: null,
+              pnl: pos.pnl ?? null,
+              entryPrice: pos.entry_price ?? null,
+              tpLevels: [],
+            });
+          }
+        }
+        setSynced(true);
+      })
+      .catch(() => setSynced(true));
+  }, [instrument, slot, initialPos]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -50,22 +136,25 @@ export default function TerminalQuadrant({ instrument, slot, dim }: Props) {
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
-          if (msg.type === "tick" && msg.instrument === instrument) {
-            setTicks((prev) => [...prev.slice(-200), { timestamp: msg.timestamp, ltp: msg.ltp, sl: msg.sl, pnl: msg.pnl }]);
-            setCurrentSl(msg.sl);
-            setPnl(msg.pnl);
+          if (msg.type === "tick" && msg.instrument === instrument && msg.trade_slot === slot && !frozenRef.current) {
+            setTickData((prev) => ({
+              ticks: [...prev.ticks.slice(-2000), { timestamp: msg.timestamp, ltp: msg.ltp, sl: msg.sl, pnl: msg.pnl }],
+              currentSl: msg.sl,
+              pnl: msg.pnl,
+              entryPrice: msg.entry ?? prev.entryPrice,
+              tpLevels: msg.tp_levels ?? prev.tpLevels,
+            }));
           }
-          if (msg.type === "trade" && msg.instrument === instrument) {
+          if (msg.type === "trade" && msg.instrument === instrument && msg.trade_slot === slot) {
             if (msg.action === "entry") {
+              frozenRef.current = false;
               setState("in_position");
-              setEntryPrice(msg.price);
+              setTickData((prev) => ({ ...prev, entryPrice: msg.price }));
             }
             if (msg.action === "exit") {
+              frozenRef.current = true;
               setState(msg.pnl > 0 ? "exited_win" : "exited_loss");
             }
-          }
-          if (msg.type === "strategy" && msg.instrument === instrument) {
-            setState(msg.state);
           }
         } catch {
           // ignore
@@ -92,14 +181,14 @@ export default function TerminalQuadrant({ instrument, slot, dim }: Props) {
     : "Idle";
 
   return (
-    <div className={`card ${glowClass} p-3 flex flex-col ${dim ? "opacity-40" : ""}`}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-bold tracking-tight flex items-center gap-2">
-          <Icon icon={isCe ? "lucide:trending-up" : "lucide:trending-down"} className={isCe ? "text-indigo-400" : "text-amber-400"} />
+    <div className={`card ${glowClass} p-2 flex flex-col ${dim ? "opacity-40" : ""}`}>
+      <div className="flex items-center justify-between shrink-0">
+        <h3 className="text-xs font-bold tracking-tight flex items-center gap-1.5">
+          <Icon icon={isCe ? "lucide:trending-up" : "lucide:trending-down"} className={isCe ? "text-indigo-400" : "text-amber-400"} width={14} />
           {instrument} Trade {slot}
         </h3>
         <span
-          className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+          className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
           style={{
             background: `${stateColors[state] || "#64748b"}15`,
             color: stateColors[state] || "#64748b",
@@ -110,32 +199,8 @@ export default function TerminalQuadrant({ instrument, slot, dim }: Props) {
         </span>
       </div>
 
-      <PriceDiagram ticks={ticks} entryPrice={entryPrice} currentSl={currentSl} />
-
-      <div className="grid grid-cols-4 gap-2 mt-3 text-[10px]">
-        <div>
-          <span className="text-[#64748b] text-[9px] uppercase tracking-wider">Bid</span>
-          <div className="font-mono" style={{ color: accent }}>{entryPrice !== null ? (entryPrice - 0.5).toFixed(2) : "—"}</div>
-        </div>
-        <div>
-          <span className="text-[#64748b] text-[9px] uppercase tracking-wider">Ask</span>
-          <div className="font-mono" style={{ color: accent }}>{entryPrice !== null ? (entryPrice + 0.5).toFixed(2) : "—"}</div>
-        </div>
-        <div>
-          <span className="text-[#64748b] text-[9px] uppercase tracking-wider">LTP</span>
-          <div className="font-mono" style={{ color: accent }}>
-            {ticks.length > 0 ? ticks[ticks.length - 1].ltp.toFixed(2) : "—"}
-          </div>
-        </div>
-        <div>
-          <span className="text-[#64748b] text-[9px] uppercase tracking-wider">P&L</span>
-          <div
-            className="font-mono"
-            style={{ color: pnl !== null ? (pnl >= 0 ? "#10b981" : "#ef4444") : "#64748b" }}
-          >
-            {pnl !== null ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}` : "—"}
-          </div>
-        </div>
+      <div className="flex-1 min-h-0 mt-1">
+        <PriceDiagram ticks={tickData.ticks} entryPrice={tickData.entryPrice} currentSl={tickData.currentSl} tpLevels={tickData.tpLevels} color={accent} />
       </div>
     </div>
   );

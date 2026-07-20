@@ -101,6 +101,7 @@ class DataStreamer:
                 "sl": pm.get_current_sl() if in_pos else None,
                 "pnl": pm.get_unrealized_pnl(ltp) if in_pos else None,
                 "entry": pm.position['entry_price'] if in_pos else None,
+                "entry_time": pm.position['entry_time'].strftime("%H:%M:%S.%f")[:-3] if in_pos else None,
                 "tp_levels": pm.get_tp_levels(current_ltp=ltp) if in_pos else [],
             }
             self.live_feed_server.broadcast_sync(msg)
@@ -411,8 +412,9 @@ class DataStreamer:
             keys_to_subscribe.append(self.PE_KEY)
         
         try:
-            self.streamer.subscribe(keys_to_subscribe, "full")
-            print(f"Subscribed to instruments")
+            if self.streamer:
+                self.streamer.subscribe(keys_to_subscribe, "full")
+                print(f"Subscribed to instruments")
         except Exception as e:
             print(f"Subscription error: {e}")
 
@@ -421,7 +423,6 @@ class DataStreamer:
 
     def on_close(self, *args):
         print(f"WebSocket closed")
-        self.streamer = None
 
     def _connect_ws(self, configuration):
         self.streamer = upstox_client.MarketDataStreamerV3(

@@ -12,6 +12,9 @@ interface Tick {
 interface Props {
   ticks: Tick[];
   entryPrice: number | null;
+  entryTime?: string | null;
+  exitTime?: string | null;
+  exitPrice?: number | null;
   currentSl: number | null;
   tpLevels?: number[];
   color?: string;
@@ -38,7 +41,7 @@ function buildLevels(entryPrice: number | null, currentSl: number | null, tpLeve
 }
 
 export default function PriceDiagram({
-  ticks, entryPrice, currentSl,
+  ticks, entryPrice, entryTime, exitTime, exitPrice, currentSl,
   tpLevels = [], color = "#6366f1"
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,6 +49,11 @@ export default function PriceDiagram({
   const outerRef = useRef<HTMLDivElement>(null);
   const [chartH, setChartH] = useState(200);
   const atEndRef = useRef(true);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const entryPosRef = useRef<{ x: number; y: number } | null>(null);
+  const entryLabelRef = useRef<string>("");
+  const exitPosRef = useRef<{ x: number; y: number } | null>(null);
+  const exitLabelRef = useRef<string>("");
 
   const { left: leftLevels, right: slLevel } = useMemo(
     () => buildLevels(entryPrice, currentSl, tpLevels),
@@ -172,11 +180,65 @@ export default function PriceDiagram({
       ctx.fill();
     }
 
+    // entry marker
+    entryPosRef.current = null;
+    if (entryTime && ticks.length > 0) {
+      const entryIdx = ticks.findIndex(t => t.timestamp >= entryTime);
+      if (entryIdx >= 0) {
+        const et = ticks[entryIdx].timestamp;
+        const short = `${+et.slice(0, 2)}:${et.slice(3, 5)}`;
+        const ex = xPos(entryIdx);
+        const ey = yPos(entryPrice);
+        entryPosRef.current = { x: ex, y: ey };
+        entryLabelRef.current = `Entry ${short}`;
+        ctx.save();
+        ctx.fillStyle = "#22c55e";
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(ex, ey - 7);
+        ctx.lineTo(ex + 7, ey);
+        ctx.lineTo(ex, ey + 7);
+        ctx.lineTo(ex - 7, ey);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // exit marker
+    exitPosRef.current = null;
+    if (exitTime && exitPrice != null && ticks.length > 0) {
+      const exitIdx = ticks.findIndex(t => t.timestamp >= exitTime);
+      if (exitIdx >= 0) {
+        const xt = ticks[exitIdx].timestamp;
+        const short = `${+xt.slice(0, 2)}:${xt.slice(3, 5)}`;
+        const ex = xPos(exitIdx);
+        const ey = yPos(exitPrice);
+        exitPosRef.current = { x: ex, y: ey };
+        exitLabelRef.current = `Exit ${short}`;
+        ctx.save();
+        ctx.fillStyle = "#ef4444";
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(ex, ey - 7);
+        ctx.lineTo(ex + 7, ey);
+        ctx.lineTo(ex, ey + 7);
+        ctx.lineTo(ex - 7, ey);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     // auto-scroll only if user hasn't scrolled left
     if (atEndRef.current) {
       scrollEl.scrollLeft = scrollEl.scrollWidth - scrollEl.clientWidth;
     }
-  }, [ticks, entryPrice, currentSl, tpLevels, color, chartH]);
+  }, [ticks, entryPrice, entryTime, exitTime, exitPrice, currentSl, tpLevels, color, chartH]);
 
   if (entryPrice === null) {
     return (
@@ -184,6 +246,22 @@ export default function PriceDiagram({
         Idle
       </div>
     );
+  }
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mx = e.clientX - rect.left + e.currentTarget.scrollLeft;
+    const my = e.clientY - rect.top;
+    const hit = (pos: { x: number; y: number } | null) =>
+      pos && Math.sqrt((mx - pos.x) ** 2 + (my - pos.y) ** 2) < 15;
+
+    if (hit(entryPosRef.current)) {
+      setTooltip({ x: e.clientX, y: e.clientY + 12, text: entryLabelRef.current });
+    } else if (hit(exitPosRef.current)) {
+      setTooltip({ x: e.clientX, y: e.clientY + 12, text: exitLabelRef.current });
+    } else {
+      setTooltip(null);
+    }
   }
 
   const H = chartH;
@@ -233,8 +311,17 @@ export default function PriceDiagram({
           const el = e.currentTarget;
           atEndRef.current = el.scrollWidth - el.scrollLeft - el.clientWidth < 10;
         }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setTooltip(null)}
       >
         <canvas ref={canvasRef} className="block" />
+        {tooltip && (
+          <div className="fixed z-50 pointer-events-none" style={{ left: tooltip.x, top: tooltip.y }}>
+            <div className={`bg-gray-900 text-[10px] font-mono px-1.5 py-0.5 rounded border border-gray-700 whitespace-nowrap shadow-lg ${tooltip.text.startsWith("Entry") ? "text-green-400" : "text-red-400"}`}>
+              {tooltip.text}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* LTP + P&L overlay (kept between left labels and right SL label) */}

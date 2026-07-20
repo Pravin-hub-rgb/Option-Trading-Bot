@@ -29,7 +29,17 @@ interface TickData {
   currentSl: number | null;
   pnl: number | null;
   entryPrice: number | null;
+  entryTime: string | null;
+  exitTime: string | null;
+  exitPrice: number | null;
   tpLevels: number[];
+}
+
+function extractTime(iso: string): string {
+  const m = iso.match(/T(\d{2}:\d{2}:\d{2})\.?(\d*)/);
+  if (!m) return iso;
+  const ms = (m[2] || "000").slice(0, 3).padEnd(3, "0");
+  return `${m[1]}.${ms}`;
 }
 
 const INITIAL_TICK_DATA: TickData = {
@@ -37,13 +47,26 @@ const INITIAL_TICK_DATA: TickData = {
   currentSl: null,
   pnl: null,
   entryPrice: null,
+  entryTime: null,
+  exitTime: null,
+  exitPrice: null,
   tpLevels: [],
 };
+
+function fmtTime(ts: string): string {
+  const m = ts.match(/^(\d{2}):(\d{2})/);
+  if (m) return `${+m[1]}:${m[2]}`;
+  const d = new Date(ts);
+  if (!isNaN(d.getTime())) return `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return ts;
+}
 
 export default function TerminalQuadrant({ instrument, slot, initialPos }: Props) {
   const [state, setState] = useState<string>("idle");
   const [tickData, setTickData] = useState<TickData>(INITIAL_TICK_DATA);
   const [synced, setSynced] = useState(false);
+  const [enteredAt, setEnteredAt] = useState<string | null>(null);
+  const [exitedAt, setExitedAt] = useState<string | null>(null);
   const frozenRef = useRef(false);
 
   const isCe = instrument === "CE";
@@ -72,6 +95,9 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
           currentSl: pos.current_sl ?? null,
           pnl: pos.pnl ?? null,
           entryPrice: pos.entry_price ?? null,
+          entryTime: null,
+          exitTime: null,
+          exitPrice: null,
           tpLevels: [],
         });
       } else if (pos.state === "exited_win" || pos.state === "exited_loss") {
@@ -82,6 +108,9 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
           currentSl: null,
           pnl: pos.pnl ?? null,
           entryPrice: pos.entry_price ?? null,
+          entryTime: null,
+          exitTime: null,
+          exitPrice: null,
           tpLevels: [],
         });
       }
@@ -104,6 +133,9 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
               currentSl: pos.current_sl ?? null,
               pnl: pos.pnl ?? null,
               entryPrice: pos.entry_price ?? null,
+              entryTime: null,
+              exitTime: null,
+              exitPrice: null,
               tpLevels: [],
             });
           } else if (pos.state === "exited_win" || pos.state === "exited_loss") {
@@ -114,6 +146,9 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
               currentSl: null,
               pnl: pos.pnl ?? null,
               entryPrice: pos.entry_price ?? null,
+              entryTime: null,
+              exitTime: null,
+              exitPrice: null,
               tpLevels: [],
             });
           }
@@ -142,6 +177,9 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
               currentSl: msg.sl,
               pnl: msg.pnl,
               entryPrice: msg.entry ?? prev.entryPrice,
+              entryTime: msg.entry_time ?? prev.entryTime,
+              exitTime: prev.exitTime,
+              exitPrice: prev.exitPrice,
               tpLevels: msg.tp_levels ?? prev.tpLevels,
             }));
           }
@@ -149,11 +187,14 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
             if (msg.action === "entry") {
               frozenRef.current = false;
               setState("in_position");
-              setTickData((prev) => ({ ...prev, entryPrice: msg.price }));
+              setEnteredAt(fmtTime(msg.timestamp));
+              setTickData((prev) => ({ ...prev, entryPrice: msg.price, entryTime: extractTime(msg.timestamp) }));
             }
             if (msg.action === "exit") {
               frozenRef.current = true;
               setState(msg.pnl > 0 ? "exited_win" : "exited_loss");
+              setExitedAt(fmtTime(msg.timestamp));
+              setTickData((prev) => ({ ...prev, exitTime: extractTime(msg.timestamp), exitPrice: msg.price }));
             }
           }
         } catch {
@@ -186,6 +227,12 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
         <h3 className="text-xs font-bold tracking-tight flex items-center gap-1.5">
           <Icon icon={isCe ? "lucide:trending-up" : "lucide:trending-down"} className={isCe ? "text-indigo-400" : "text-amber-400"} width={14} />
           {instrument} Trade {slot}
+          {enteredAt && (
+            <span className="text-[9px] font-mono font-normal text-green-400 ml-0.5">entered {enteredAt}</span>
+          )}
+          {exitedAt && (
+            <span className="text-[9px] font-mono font-normal text-red-400 ml-0.5">exit {exitedAt}</span>
+          )}
         </h3>
         <span
           className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
@@ -200,7 +247,7 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
       </div>
 
       <div className="flex-1 min-h-0 mt-1">
-        <PriceDiagram ticks={tickData.ticks} entryPrice={tickData.entryPrice} currentSl={tickData.currentSl} tpLevels={tickData.tpLevels} color={accent} />
+        <PriceDiagram ticks={tickData.ticks} entryPrice={tickData.entryPrice} entryTime={tickData.entryTime} exitTime={tickData.exitTime} exitPrice={tickData.exitPrice} currentSl={tickData.currentSl} tpLevels={tickData.tpLevels} color={accent} />
       </div>
     </div>
   );

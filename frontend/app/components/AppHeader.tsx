@@ -164,7 +164,7 @@ export default function AppHeader() {
                   isProfit ? "text-[#10b981]" : "text-[#ef4444]"
                 }`}
               >
-                {`${isProfit ? "+" : ""}₹${netPnl.toFixed(2)}`}
+                {`${isProfit ? "+" : ""}${netPnl.toFixed(2)} pts`}
               </span>
             </div>
             <div className="flex flex-col items-end">

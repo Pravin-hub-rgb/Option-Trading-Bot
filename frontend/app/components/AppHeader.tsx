@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { fetchStatus, startBot, stopBot, checkToken } from "../lib/api";
 import type { BotStatus } from "../lib/types";
 import TokenModal from "./TokenModal";
+import { useMaximize } from "../MaximizeContext";
 
 export default function AppHeader() {
   const pathname = usePathname();
@@ -13,6 +14,7 @@ export default function AppHeader() {
   const [time, setTime] = useState("");
   const [busy, setBusy] = useState(false);
   const [tokenModal, setTokenModal] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
+  const { toggle } = useMaximize();
 
   useEffect(() => {
     const load = () => fetchStatus().then(setS).catch(() => {});
@@ -191,6 +193,14 @@ export default function AppHeader() {
               </a>
             );
           })}
+          <div className="flex-1" />
+          <button
+            onClick={toggle}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-white hover:bg-white/[0.04] transition-all"
+            title="Maximize"
+          >
+            <Icon icon="lucide:maximize-2" className="text-sm" />
+          </button>
         </nav>
       </header>
 

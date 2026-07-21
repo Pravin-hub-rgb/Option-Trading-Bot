@@ -97,8 +97,7 @@ export default function PriceDiagram({
 
     const totalPathW = (ticks.length - 1) * PX_PER_TICK;
     const scrollW = scrollEl.clientWidth;
-    const needsScroll = totalPathW > scrollW;
-    const canvasW = needsScroll ? totalPathW + 120 : scrollW;
+    const canvasW = Math.max(scrollW, totalPathW + 280);
 
     canvas.width = canvasW * dpr;
     canvas.height = containerH * dpr;
@@ -110,29 +109,15 @@ export default function PriceDiagram({
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, canvasW, containerH);
 
-    const xPos = (i: number) => {
-      if (needsScroll) return 120 + i * PX_PER_TICK;
-      return 120 + (i / (ticks.length - 1)) * (scrollW - 120);
-    };
-
-    // grid lines
-    ctx.strokeStyle = "#1e293b";
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 5; i++) {
-      const y = T + (ch / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvasW, y);
-      ctx.stroke();
-    }
+    const xPos = (i: number) => 120 + i * PX_PER_TICK;
 
     // reference lines
     ctx.textBaseline = "middle";
     levels.forEach(lvl => {
       const y = yPos(lvl.price);
       ctx.strokeStyle = lvl.color;
-      ctx.globalAlpha = 0.35;
-      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.6;
+      ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 3]);
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -256,9 +241,9 @@ export default function PriceDiagram({
       pos && Math.sqrt((mx - pos.x) ** 2 + (my - pos.y) ** 2) < 15;
 
     if (hit(entryPosRef.current)) {
-      setTooltip({ x: e.clientX, y: e.clientY + 12, text: entryLabelRef.current });
+      setTooltip({ x: e.clientX, y: e.clientY + 6, text: entryLabelRef.current });
     } else if (hit(exitPosRef.current)) {
-      setTooltip({ x: e.clientX, y: e.clientY + 12, text: exitLabelRef.current });
+      setTooltip({ x: e.clientX, y: e.clientY + 6, text: exitLabelRef.current });
     } else {
       setTooltip(null);
     }
@@ -278,8 +263,14 @@ export default function PriceDiagram({
           return (
             <div
               key={i}
-              className="absolute right-1 leading-none"
-              style={{ top: y, transform: "translateY(-50%)" }}
+              className="absolute right-1 leading-none px-1.5 py-0.5 rounded"
+              style={{
+                top: y,
+                transform: "translateY(-50%)",
+                backgroundColor: "rgba(10, 10, 10, 0.7)",
+                backdropFilter: "blur(4px)",
+                WebkitBackdropFilter: "blur(4px)",
+              }}
             >
               <span className="font-mono text-[9px] font-bold whitespace-nowrap" style={{ color: lvl.color }}>
                 {lvl.label}
@@ -293,8 +284,14 @@ export default function PriceDiagram({
       {slLevel && (
         <div className="absolute right-0 top-0 bottom-0 w-[100px] z-10 pointer-events-none">
           <div
-            className="absolute left-1 leading-none"
-            style={{ top: yPos(slLevel.price), transform: "translateY(-50%)" }}
+            className="absolute left-1 leading-none px-1.5 py-0.5 rounded"
+            style={{
+              top: yPos(slLevel.price),
+              transform: "translateY(-50%)",
+              backgroundColor: "rgba(10, 10, 10, 0.7)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+            }}
           >
             <span className="font-mono text-[9px] font-bold whitespace-nowrap" style={{ color: slLevel.color }}>
               {slLevel.label}
@@ -315,13 +312,17 @@ export default function PriceDiagram({
         onMouseLeave={() => setTooltip(null)}
       >
         <canvas ref={canvasRef} className="block" />
-        {tooltip && (
-          <div className="fixed z-50 pointer-events-none" style={{ left: tooltip.x, top: tooltip.y }}>
-            <div className={`bg-gray-900 text-[10px] font-mono px-1.5 py-0.5 rounded border border-gray-700 whitespace-nowrap shadow-lg ${tooltip.text.startsWith("Entry") ? "text-green-400" : "text-red-400"}`}>
-              {tooltip.text}
+        {tooltip && (() => {
+          const tipW = 120;
+          const clampedX = Math.min(tooltip.x, window.innerWidth - tipW - 8);
+          return (
+            <div className="fixed z-50 pointer-events-none" style={{ left: clampedX, top: tooltip.y }}>
+              <div className={`bg-gray-900 text-[10px] font-mono px-1.5 py-0.5 rounded border border-gray-700 whitespace-nowrap shadow-lg ${tooltip.text.startsWith("Entry") ? "text-green-400" : "text-red-400"}`}>
+                {tooltip.text}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* LTP + P&L overlay (kept between left labels and right SL label) */}

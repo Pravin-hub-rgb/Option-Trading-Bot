@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AppHeader from "./components/AppHeader";
+import LayoutClient from "./LayoutClient";
 
 export const metadata: Metadata = {
   title: "Options Trading Bot",
@@ -22,10 +22,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen flex flex-col bg-[#0a0a0a] text-[#e5e7eb]">
-        <AppHeader />
-        <main className="flex-1 p-0 overflow-y-auto">{children}</main>
-      </body>
+      <LayoutClient>{children}</LayoutClient>
     </html>
   );
 }

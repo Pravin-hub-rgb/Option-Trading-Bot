@@ -69,11 +69,7 @@ class PositionManager:
         
         self.position['last_ltp'] = current_ltp
         
-        # Track highest price reached
-        if current_ltp > self.position['highest_price']:
-            self.position['highest_price'] = current_ltp
-        
-        profit = self.position['highest_price'] - self.position['entry_price']
+        profit = current_ltp - self.position['entry_price']
         old_sl = self.position['stop_loss']
         
         # Calculate new SL based on profit milestones

@@ -30,9 +30,9 @@ class DataStreamer:
             raise ValueError("CE and PE keys must be provided")
 
         self.CE_KEY = ce_key
-        self.CE_SYMBOL = ce_key
+        self.CE_SYMBOL = f"{ce_strike} CE" if ce_strike else ce_key
         self.PE_KEY = pe_key
-        self.PE_SYMBOL = pe_key
+        self.PE_SYMBOL = f"{pe_strike} PE" if pe_strike else pe_key
         self.CE_STRIKE = ce_strike
         self.PE_STRIKE = pe_strike
 
@@ -112,14 +112,17 @@ class DataStreamer:
         if not trade_summary:
             return
         
-        comp['trade_logger'].log_exit(
-            symbol=comp['symbol'],
-            exit_price=exit_price,
-            stop_loss=trade_summary['sl_final'],
-            exit_time=exit_time,
-            exit_reason=exit_reason,
-            pnl=trade_summary['pnl']
-        )
+        try:
+            comp['trade_logger'].log_exit(
+                symbol=comp['symbol'],
+                exit_price=exit_price,
+                stop_loss=trade_summary['sl_final'],
+                exit_time=exit_time,
+                exit_reason=exit_reason,
+                pnl=trade_summary['pnl']
+            )
+        except Exception as e:
+            print(f"[ERROR] exit_position: log_exit failed: {e}")
         
         comp['strategy'].reset()
 
@@ -173,8 +176,8 @@ class DataStreamer:
             if comp['position_manager'].check_exit(ltp) and not comp.get('_exiting', False):
                 comp['_exiting'] = True
                 try:
-                    self._broadcast_tick(inst_type, ltp, timestamp)
                     self.exit_position(inst_type, ltp, timestamp, "Trailing SL Hit")
+                    self._broadcast_tick(inst_type, ltp, timestamp)
                 finally:
                     comp['_exiting'] = False
                 return
@@ -423,6 +426,7 @@ class DataStreamer:
 
     def on_close(self, *args):
         print(f"WebSocket closed")
+        self.running = False
 
     def _connect_ws(self, configuration):
         self.streamer = upstox_client.MarketDataStreamerV3(

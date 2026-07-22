@@ -1,53 +1,58 @@
-import csv
 import os
+import sys
 from datetime import datetime
 import pytz
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from db import get_conn, init_db
+
 IST = pytz.timezone('Asia/Kolkata')
 
-LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "logs")
 
 class TradeLogger:
     def __init__(self, session_name, symbol):
         self.symbol = symbol
-        date_str = datetime.now(IST).strftime('%d_%b_%y').lower()
-        self.trade_log_file = os.path.join(LOGS_DIR, f"trade_log_{date_str}_{session_name}.csv")
-        self.init_log()
-
-    def init_log(self):
-        os.makedirs(LOGS_DIR, exist_ok=True)
-        if not os.path.exists(self.trade_log_file):
-            with open(self.trade_log_file, 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(['time', 'symbol', 'type', 'price', 'stop_loss', 'target', 'exit_reason', 'pnl'])
+        self.session_name = session_name
+        init_db()
 
     def log_entry(self, symbol, entry_price, stop_loss, entry_time):
-        with open(self.trade_log_file, 'a', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                entry_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
-                symbol,
-                'entry',
-                f"{entry_price:.2f}",
-                f"{stop_loss:.2f}",
-                '',
-                '',
-                ''
-            ])
+        conn = get_conn()
+        conn.execute("""
+            INSERT INTO trades (symbol, entry_time, entry_price, stop_loss)
+            VALUES (?, ?, ?, ?)
+        """, (
+            symbol,
+            entry_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
+            entry_price,
+            stop_loss,
+        ))
+        conn.commit()
+        conn.close()
 
     def log_exit(self, symbol, exit_price, stop_loss, exit_time, exit_reason, pnl):
-        with open(self.trade_log_file, 'a', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                exit_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
-                symbol,
-                'exit',
-                f"{exit_price:.2f}",
-                f"{stop_loss:.2f}",
-                '',
-                exit_reason,
-                f"{pnl:.2f}"
-            ])
+        conn = get_conn()
+        try:
+            exit_time_str = exit_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            cursor = conn.execute("""
+                SELECT id FROM trades
+                WHERE symbol = ? AND (exit_time IS NULL OR exit_time = '')
+                ORDER BY id DESC LIMIT 1
+            """, (symbol,))
+            row = cursor.fetchone()
+            if row:
+                conn.execute("""
+                    UPDATE trades
+                    SET exit_time = ?, exit_price = ?, exit_reason = ?, pnl = ?
+                    WHERE id = ?
+                """, (exit_time_str, exit_price, exit_reason, pnl, row[0]))
+            else:
+                print(f"[WARN] log_exit: no open trade found for {symbol} (exit not recorded)")
+            conn.commit()
+        except Exception as e:
+            print(f"[ERROR] log_exit: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
 
     def close(self):
-        pass  # File written incrementally
+        pass

@@ -1,83 +1,33 @@
-import csv
 import os
-from datetime import datetime
+import sys
 from collections import defaultdict
 
-LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from db import get_conn, init_db
 
-def _parse_trade_log(filepath):
-    trades = []
-    try:
-        with open(filepath, "r") as f:
-            reader = csv.DictReader(f)
-            entry = None
-            for row in reader:
-                row_type = row.get("type", "").strip()
-                if row_type == "entry":
-                    entry = {
-                        "entry_time": row.get("time", ""),
-                        "symbol": row.get("symbol", ""),
-                        "entry_price": _safe_float(row.get("price")),
-                        "stop_loss": _safe_float(row.get("stop_loss")),
-                    }
-                elif row_type == "exit" and entry:
-                    trade = {
-                        **entry,
-                        "exit_time": row.get("time", ""),
-                        "exit_price": _safe_float(row.get("price")),
-                        "exit_reason": row.get("exit_reason", ""),
-                        "pnl": _safe_float(row.get("pnl")),
-                    }
-                    trades.append(trade)
-                    entry = None
-    except (IOError, csv.Error):
-        pass
-    return trades
-
-def _safe_float(val):
-    if not val:
-        return None
-    try:
-        return float(val)
-    except ValueError:
-        return None
-
-def _parse_date_from_time(time_str):
-    try:
-        return datetime.strptime(time_str[:10], "%Y-%m-%d")
-    except (ValueError, IndexError):
-        return None
-
-def _scan_csvs(directory):
-    results = []
-    if not os.path.isdir(directory):
-        return results
-    for fname in os.listdir(directory):
-        if fname.endswith(".csv"):
-            results.append(os.path.join(directory, fname))
-        elif os.path.isdir(os.path.join(directory, fname)):
-            results.extend(_scan_csvs(os.path.join(directory, fname)))
-    return results
 
 def load_all_trades(year=None):
-    all_trades = []
-    for filepath in _scan_csvs(LOGS_DIR):
-        trades = _parse_trade_log(filepath)
-        if year is not None:
-            trades = [t for t in trades if _parse_date_from_time(t.get("entry_time", ""))
-                     and _parse_date_from_time(t["entry_time"]).year == year]
-        all_trades.extend(trades)
-    all_trades.sort(key=lambda t: t.get("entry_time", ""))
-    return all_trades
+    init_db()
+    conn = get_conn()
+    if year is not None:
+        rows = conn.execute(
+            "SELECT * FROM trades WHERE substr(entry_time, 1, 4) = ? ORDER BY entry_time DESC",
+            (str(year),)
+        ).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM trades ORDER BY entry_time DESC").fetchall()
+    conn.close()
+    return [_row_to_dict(r) for r in rows]
+
 
 def load_trade_pnl(year=None):
     trades = load_all_trades(year=year)
     day_map = defaultdict(lambda: {"trade_count": 0, "net_pnl": 0.0})
     for t in trades:
-        dt = _parse_date_from_time(t.get("entry_time", ""))
-        if not dt:
+        entry_time = t.get("entry_time", "")
+        date_str = entry_time[:10] if len(entry_time) >= 10 else None
+        if not date_str:
             continue
-        date_str = dt.strftime("%Y-%m-%d")
         day_map[date_str]["trade_count"] += 1
         if t.get("pnl") is not None:
             day_map[date_str]["net_pnl"] += t["pnl"]
@@ -90,6 +40,7 @@ def load_trade_pnl(year=None):
             "net_pnl": round(entry["net_pnl"], 2) if entry["trade_count"] > 0 else None,
         })
     return result
+
 
 def load_trade_stats():
     trades = load_all_trades()
@@ -115,4 +66,17 @@ def load_trade_stats():
         "avg_loss": avg_loss,
         "largest_win": largest_win,
         "largest_loss": largest_loss,
+    }
+
+
+def _row_to_dict(row):
+    return {
+        "entry_time": row["entry_time"],
+        "symbol": row["symbol"],
+        "entry_price": row["entry_price"],
+        "stop_loss": row["stop_loss"],
+        "exit_time": row["exit_time"] or "",
+        "exit_price": row["exit_price"],
+        "exit_reason": row["exit_reason"] or "",
+        "pnl": row["pnl"],
     }

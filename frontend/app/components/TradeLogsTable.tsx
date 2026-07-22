@@ -11,6 +11,14 @@ export default function TradeLogsTable() {
     fetchTrades().then((res) => setTrades(res.trades));
   }, []);
 
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function formatDate(iso: string | undefined) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
   if (trades.length === 0) {
     return <div className="text-sm text-[#64748b] py-4">No trades recorded</div>;
   }
@@ -32,9 +40,9 @@ export default function TradeLogsTable() {
         <tbody>
           {trades.map((t, i) => (
             <tr key={i} className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)]">
-              <td className="py-2 pr-3 font-mono">{t.entry_time?.slice(0, 10)}</td>
+              <td className="py-2 pr-3">{formatDate(t.entry_time)}</td>
               <td className="py-2 pr-3 font-mono">{t.entry_time?.slice(11, 19)}</td>
-              <td className="py-2 pr-3">{t.symbol?.slice(-10)}</td>
+              <td className="py-2 pr-3 font-mono">{t.symbol}</td>
               <td className="py-2 pr-3 text-right font-mono">{t.entry_price?.toFixed(2)}</td>
               <td className="py-2 pr-3 text-right font-mono">{t.exit_price?.toFixed(2) ?? "—"}</td>
               <td

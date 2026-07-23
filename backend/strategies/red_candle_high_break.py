@@ -54,6 +54,11 @@ class RedCandleHighBreak:
                 if self.is_red_candle(last_candle):
                     self.reference_candle = last_candle
                     self.candles_since_reference = 0
+                    print(f"[STRATEGY] Reference SET: "
+                          f"{last_candle['timestamp'].strftime('%H:%M')} "
+                          f"O={last_candle['open']:.2f} H={last_candle['high']:.2f} "
+                          f"L={last_candle['low']:.2f} C={last_candle['close']:.2f} | "
+                          f"current_ltp={current_ltp:.2f}")
                     # Don't enter yet, just set reference
                     return None
             return None
@@ -64,6 +69,11 @@ class RedCandleHighBreak:
         if self.allow_reference_shift and candle_history:
             last_candle = candle_history[-1]
             if self.is_red_candle(last_candle) and last_candle != self.reference_candle:
+                print(f"[STRATEGY] Reference SHIFTED: "
+                      f"{last_candle['timestamp'].strftime('%H:%M')} "
+                      f"O={last_candle['open']:.2f} H={last_candle['high']:.2f} "
+                      f"L={last_candle['low']:.2f} C={last_candle['close']:.2f} | "
+                      f"current_ltp={current_ltp:.2f}")
                 self.reference_candle = last_candle
                 self.candles_since_reference = 0
                 return None

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchTrades } from "../lib/api";
+import { Icon } from "@iconify/react";
+import { fetchTrades, deleteTrade } from "../lib/api";
 import type { TradeEntry } from "../lib/types";
 
 export default function TradeLogsTable() {
@@ -10,6 +11,17 @@ export default function TradeLogsTable() {
   useEffect(() => {
     fetchTrades().then((res) => setTrades(res.trades));
   }, []);
+
+  async function handleDelete(id: number) {
+    try {
+      const res = await deleteTrade(id);
+      if (res.status === "deleted") {
+        setTrades((prev) => prev.filter((t) => t.id !== id));
+      }
+    } catch {
+      // silently ignore
+    }
+  }
 
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -35,11 +47,12 @@ export default function TradeLogsTable() {
             <th className="text-right py-2 pr-3">Exit</th>
             <th className="text-right py-2 pr-3">P&L</th>
             <th className="text-left py-2 pr-3">Reason</th>
+            <th className="py-2"></th>
           </tr>
         </thead>
         <tbody>
           {trades.map((t, i) => (
-            <tr key={i} className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)]">
+            <tr key={t.id ?? i} className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)] group">
               <td className="py-2 pr-3">{formatDate(t.entry_time)}</td>
               <td className="py-2 pr-3 font-mono">{t.entry_time?.slice(11, 19)}</td>
               <td className="py-2 pr-3 font-mono">{t.symbol}</td>
@@ -52,6 +65,14 @@ export default function TradeLogsTable() {
                 {t.pnl !== null ? `${t.pnl >= 0 ? "+" : ""}${t.pnl.toFixed(2)}` : "—"}
               </td>
               <td className="py-2 pr-3 text-[#64748b]">{t.exit_reason || "—"}</td>
+              <td className="py-2">
+                <button
+                  onClick={() => handleDelete(t.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[#64748b] hover:text-[#ef4444]"
+                >
+                  <Icon icon="lucide:trash-2" width={13} />
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

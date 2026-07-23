@@ -134,7 +134,7 @@ class DataStreamer:
                 if pos:
                     pos['state'] = 'exited_win' if trade_summary['pnl'] > 0 else 'exited_loss'
                     pos['exit_price'] = exit_price
-                    pos['exit_time'] = exit_time.isoformat()
+                    pos['exit_time'] = exit_time.strftime("%H:%M:%S.%f")[:-3]
                     pos['exit_reason'] = exit_reason
                     pos['pnl'] = trade_summary['pnl']
                     pos['duration_seconds'] = trade_summary['duration_seconds']
@@ -148,7 +148,7 @@ class DataStreamer:
                 "trade_slot": slot,
                 "action": "exit",
                 "price": exit_price,
-                "timestamp": exit_time.isoformat(),
+                "timestamp": exit_time.strftime("%H:%M:%S.%f")[:-3],
                 "pnl": trade_summary['pnl'],
                 "reason": exit_reason,
             })
@@ -214,7 +214,7 @@ class DataStreamer:
                             'trade_slot': slot,
                             'entry_price': entry_signal['entry_price'],
                             'current_sl': entry_signal['stop_loss'],
-                            'entry_time': timestamp.isoformat(),
+                            'entry_time': timestamp.strftime("%H:%M:%S.%f")[:-3],
                         }
 
                 print(f"[{inst_type}] ENTRY at {entry_signal['entry_price']:.2f} | SL: {entry_signal['stop_loss']:.2f} (slot {slot})")
@@ -226,13 +226,13 @@ class DataStreamer:
                         "trade_slot": slot,
                         "action": "entry",
                         "price": entry_signal['entry_price'],
-                        "timestamp": timestamp.isoformat(),
+                        "timestamp": timestamp.strftime("%H:%M:%S.%f")[:-3],
                         "sl": entry_signal['stop_loss'],
                     })
 
         self._broadcast_tick(inst_type, ltp, timestamp)
 
-    def process_ohlc_candles(self, inst_type, ohlc_list):
+    def process_ohlc_candles(self, inst_type, ohlc_list, feed_time=None):
         comp = self.components[inst_type]
         
         i1_candles = [c for c in ohlc_list if c.get('interval') == 'I1']
@@ -252,10 +252,15 @@ class DataStreamer:
                 open_price=open_price,
                 high_price=high_price,
                 low_price=low_price,
-                close_price=close_price
+                close_price=close_price,
+                feed_time=feed_time
             )
             
             if is_new:
+                color = 'RED' if open_price > close_price else 'GREEN'
+                print(f"[{inst_type}] CANDLE {candle_ts.strftime('%H:%M')} "
+                      f"O={open_price:.2f} H={high_price:.2f} L={low_price:.2f} "
+                      f"C={close_price:.2f} {color} (feed_time={feed_time.strftime('%H:%M:%S.%f')[:-3] if feed_time else 'N/A'})")
                 comp['strategy'].on_new_candle_closed()
 
     def on_message(self, message):
@@ -321,7 +326,7 @@ class DataStreamer:
                         timestamp = datetime.now(IST)
                     
                     if ohlc_list:
-                        self.process_ohlc_candles(inst_type, ohlc_list)
+                        self.process_ohlc_candles(inst_type, ohlc_list, feed_time=timestamp)
                     
                     self.process_tick(inst_type, ltp, timestamp)
                 
@@ -381,7 +386,7 @@ class DataStreamer:
                                                 'close': ohlc_data.close
                                             })
                                     if ohlc_list:
-                                        self.process_ohlc_candles(inst_type, ohlc_list)
+                                        self.process_ohlc_candles(inst_type, ohlc_list, feed_time=timestamp)
                         
                         elif feed_data.HasField('ltpc'):
                             ltpc = feed_data.ltpc

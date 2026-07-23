@@ -81,7 +81,8 @@ export default function TerminalLogs() {
   function detectType(msg: string): { label: string; color: string } {
     if (msg.includes("ENTRY") || msg.includes("EXIT") || msg.includes("Order")) return { label: "EXECUTION", color: "#10b981" };
     if (msg.includes("SL") || msg.includes("Trailing") || msg.includes("Stop Loss")) return { label: "RISK", color: "#f59e0b" };
-    if (msg.includes("Error") || msg.includes("❌") || msg.includes("failed")) return { label: "SYSTEM", color: "#3b82f6" };
+    if (msg.includes("CANDLE") || msg.includes("Reference SET") || msg.includes("Reference SHIFTED")) return { label: "STRATEGY", color: "#6366f1" };
+    if (msg.includes("Error") || msg.includes("❌") || msg.includes("failed")) return { label: "SYSTEM", color: "#ef4444" };
     if (msg.includes("Strategy") || msg.includes("candle") || msg.includes("breakout")) return { label: "STRATEGY", color: "#6366f1" };
     return { label: "SYSTEM", color: "#3b82f6" };
   }

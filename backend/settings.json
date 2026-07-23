@@ -30,7 +30,7 @@
     "category": "timing"
   },
   "max_wait_candles": {
-    "value": "3",
+    "value": "2",
     "type": "number",
     "label": "Max Wait Candles",
     "category": "strategy"
@@ -91,7 +91,7 @@
     "category": "logging"
   },
   "access_token": {
-    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YTVlZTk0ODg3NzI5MDU0YWJhNTNjOTYiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc4NDYwNTAwMCwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzg0NjcxMjAwfQ.6D2XuC46JEKJZTVlZBTu7Ht_2pCDTP4wdbZVTGVZ6Q8",
+    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YTYxODkzNzU1NmJhNzJjYTY5ZjdlN2MiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc4NDc3NzAxNSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzg0ODQ0MDAwfQ.CB1vexBFyrgpcAYooci8OIP36RCbKuQQCUQOuN3II8M",
     "type": "password",
     "label": "Upstox Access Token",
     "category": "credentials"

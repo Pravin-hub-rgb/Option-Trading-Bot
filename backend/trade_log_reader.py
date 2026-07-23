@@ -71,6 +71,7 @@ def load_trade_stats():
 
 def _row_to_dict(row):
     return {
+        "id": row["id"],
         "entry_time": row["entry_time"],
         "symbol": row["symbol"],
         "entry_price": row["entry_price"],

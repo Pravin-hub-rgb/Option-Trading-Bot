@@ -71,6 +71,11 @@ export async function updateSetting(key: string, value: string): Promise<{ statu
   return res.json();
 }
 
+export async function deleteTrade(id: number): Promise<{ status: string }> {
+  const res = await fetch(`${API}/api/trades/${id}`, { method: "DELETE" });
+  return res.json();
+}
+
 export async function resetSettings(): Promise<{ status: string }> {
   const res = await fetch(`${API}/api/settings/reset`, { method: "POST" });
   return res.json();

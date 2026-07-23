@@ -30,6 +30,7 @@ export interface BotStatus {
 }
 
 export interface TradeEntry {
+  id: number;
   entry_time: string;
   exit_time: string;
   symbol: string;

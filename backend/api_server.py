@@ -19,7 +19,7 @@ def create_app(bot_manager):
         CORSMiddleware,
         allow_origins=["http://localhost:3001", "http://127.0.0.1:3001"],
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["*"],
     )
 
@@ -74,6 +74,18 @@ def create_app(bot_manager):
     async def reset_settings_endpoint():
         reset_settings()
         return {"status": "reset"}
+
+    @app.delete("/api/trades/{trade_id}")
+    async def delete_trade(trade_id: int):
+        from db import get_conn, init_db
+        init_db()
+        conn = get_conn()
+        result = conn.execute("DELETE FROM trades WHERE id = ?", (trade_id,))
+        conn.commit()
+        conn.close()
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Trade not found")
+        return {"status": "deleted"}
 
     @app.get("/api/token/status")
     async def token_status():

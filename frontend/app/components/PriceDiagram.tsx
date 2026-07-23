@@ -17,6 +17,8 @@ interface Props {
   exitPrice?: number | null;
   currentSl: number | null;
   tpLevels?: number[];
+  belowSlCount?: number;
+  slStep?: number;
   color?: string;
 }
 
@@ -24,8 +26,9 @@ const PX_PER_TICK = 2.5;
 
 type Level = { label: string; price: number; color: string };
 
-function buildLevels(entryPrice: number | null, currentSl: number | null, tpLevels: number[]): { left: Level[]; right: Level | null } {
+function buildLevels(entryPrice: number | null, currentSl: number | null, tpLevels: number[], belowSlCount: number, slStep: number): { left: Level[]; right: Level | null; below: Level[] } {
   const left: Level[] = [];
+  const below: Level[] = [];
   let right: Level | null = null;
   if (currentSl !== null)
     right = { label: `SL ${currentSl.toFixed(2)}`, price: currentSl, color: "#ef4444" };
@@ -33,35 +36,48 @@ function buildLevels(entryPrice: number | null, currentSl: number | null, tpLeve
     left.push({ label: `Entry ${entryPrice.toFixed(2)}`, price: entryPrice, color: "#94a3b8" });
     tpLevels.forEach((tp, i) => {
       const diff = tp - entryPrice;
-      left.push({ label: `TP${i + 1} +${diff.toFixed(1)} ${tp.toFixed(2)}`, price: tp, color: "#10b981" });
+      left.push({ label: tp.toFixed(2), price: tp, color: "#10b981" });
     });
   }
+  if (currentSl !== null) {
+    for (let i = 1; i <= belowSlCount; i++) {
+      const price = currentSl - i * slStep;
+      below.push({ label: price.toFixed(2), price, color: "#94a3b8" });
+    }
+  }
   left.sort((a, b) => a.price - b.price);
-  return { left, right };
+  return { left, right, below };
 }
 
 export default function PriceDiagram({
   ticks, entryPrice, entryTime, exitTime, exitPrice, currentSl,
-  tpLevels = [], color = "#6366f1"
+  tpLevels = [], belowSlCount = 3, slStep = 5, color = "#6366f1"
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const outerRef = useRef<HTMLDivElement>(null);
   const [chartH, setChartH] = useState(200);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({ dragging: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 });
   const atEndRef = useRef(true);
+  const offsetRef = useRef({ x: 0, y: 0 });
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const entryPosRef = useRef<{ x: number; y: number } | null>(null);
   const entryLabelRef = useRef<string>("");
   const exitPosRef = useRef<{ x: number; y: number } | null>(null);
   const exitLabelRef = useRef<string>("");
 
-  const { left: leftLevels, right: slLevel } = useMemo(
-    () => buildLevels(entryPrice, currentSl, tpLevels),
-    [entryPrice, currentSl, tpLevels]
+  const { left: leftLevels, right: slLevel, below: belowLevels } = useMemo(
+    () => buildLevels(entryPrice, currentSl, tpLevels, belowSlCount, slStep),
+    [entryPrice, currentSl, tpLevels, belowSlCount, slStep]
   );
   const levels = useMemo(
     () => slLevel ? [...leftLevels, slLevel] : leftLevels,
     [leftLevels, slLevel]
+  );
+  const allLevels = useMemo(
+    () => belowLevels.length > 0 ? [...levels, ...belowLevels] : levels,
+    [levels, belowLevels]
   );
 
   useEffect(() => {
@@ -83,21 +99,20 @@ export default function PriceDiagram({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const scrollEl = scrollRef.current;
-    if (!canvas || !scrollEl || entryPrice === null || ticks.length === 0) return;
+    if (!canvas || entryPrice === null || ticks.length === 0) return;
 
     const dpr = window.devicePixelRatio || 1;
     const containerH = outerRef.current?.clientHeight || chartH;
+    const containerW = outerRef.current?.clientWidth || 800;
     if (containerH === 0) return;
 
     const T = 4;
     const B = 4;
     const ch = containerH - T - B;
-    const yPos = (p: number) => T + ch - ((p - lo) / range) * ch;
+    const yPos = (p: number) => T + ch - ((p - lo) / range) * ch + offset.y;
 
     const totalPathW = (ticks.length - 1) * PX_PER_TICK;
-    const scrollW = scrollEl.clientWidth;
-    const canvasW = Math.max(scrollW, totalPathW + 280);
+    const canvasW = Math.max(containerW, totalPathW + 280);
 
     canvas.width = canvasW * dpr;
     canvas.height = containerH * dpr;
@@ -109,11 +124,11 @@ export default function PriceDiagram({
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, canvasW, containerH);
 
-    const xPos = (i: number) => 120 + i * PX_PER_TICK;
+    const xPos = (i: number) => 120 + i * PX_PER_TICK + offset.x;
 
     // reference lines
     ctx.textBaseline = "middle";
-    levels.forEach(lvl => {
+    allLevels.forEach(lvl => {
       const y = yPos(lvl.price);
       ctx.strokeStyle = lvl.color;
       ctx.globalAlpha = 0.6;
@@ -195,35 +210,44 @@ export default function PriceDiagram({
     // exit marker
     exitPosRef.current = null;
     if (exitTime && exitPrice != null && ticks.length > 0) {
-      const exitIdx = ticks.findIndex(t => t.timestamp >= exitTime);
-      if (exitIdx >= 0) {
-        const xt = ticks[exitIdx].timestamp;
-        const short = `${+xt.slice(0, 2)}:${xt.slice(3, 5)}`;
-        const ex = xPos(exitIdx);
-        const ey = yPos(exitPrice);
-        exitPosRef.current = { x: ex, y: ey };
-        exitLabelRef.current = `Exit ${short}`;
-        ctx.save();
-        ctx.fillStyle = "#ef4444";
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(ex, ey - 7);
-        ctx.lineTo(ex + 7, ey);
-        ctx.lineTo(ex, ey + 7);
-        ctx.lineTo(ex - 7, ey);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
+      let exitIdx = ticks.findIndex(t => t.timestamp >= exitTime);
+      if (exitIdx < 0) {
+        // Fallback: use last tick if no matching tick found
+        // (this happens when exit occurs after the last tick was received)
+        exitIdx = ticks.length - 1;
+      }
+      const xt = ticks[exitIdx].timestamp;
+      const short = `${+xt.slice(0, 2)}:${xt.slice(3, 5)}`;
+      const ex = xPos(exitIdx);
+      const ey = yPos(exitPrice);
+      exitPosRef.current = { x: ex, y: ey };
+      exitLabelRef.current = `Exit ${short}`;
+      ctx.save();
+      ctx.fillStyle = "#ef4444";
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(ex, ey - 7);
+      ctx.lineTo(ex + 7, ey);
+      ctx.lineTo(ex, ey + 7);
+      ctx.lineTo(ex - 7, ey);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // auto-scroll to end if user hasn't dragged away
+    if (atEndRef.current) {
+      const endX = containerW - 280 - (ticks.length - 1) * PX_PER_TICK;
+      const targetX = Math.min(0, endX);
+      if (Math.abs(offset.x - targetX) > 0.5) {
+        offsetRef.current = { x: targetX, y: offset.y };
+        setOffset(prev => ({ ...prev, x: targetX }));
       }
     }
 
-    // auto-scroll only if user hasn't scrolled left
-    if (atEndRef.current) {
-      scrollEl.scrollLeft = scrollEl.scrollWidth - scrollEl.clientWidth;
-    }
-  }, [ticks, entryPrice, entryTime, exitTime, exitPrice, currentSl, tpLevels, color, chartH]);
+  }, [ticks, entryPrice, entryTime, exitTime, exitPrice, currentSl, tpLevels, color, chartH, offset]);
 
   if (entryPrice === null) {
     return (
@@ -233,9 +257,31 @@ export default function PriceDiagram({
     );
   }
 
+  function handleMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    drag.dragging = true;
+    setIsDragging(true);
+    drag.startX = e.clientX;
+    drag.startY = e.clientY;
+    drag.offsetX = offset.x;
+    drag.offsetY = offset.y;
+    atEndRef.current = false;
+  }
+
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (drag.dragging) {
+      const dx = e.clientX - drag.startX;
+      const dy = e.clientY - drag.startY;
+      const newX = drag.offsetX + dx;
+      const newY = drag.offsetY + dy;
+      offsetRef.current = { x: newX, y: newY };
+      setOffset({ x: newX, y: newY });
+      return;
+    }
+
     const rect = e.currentTarget.getBoundingClientRect();
-    const mx = e.clientX - rect.left + e.currentTarget.scrollLeft;
+    const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     const hit = (pos: { x: number; y: number } | null) =>
       pos && Math.sqrt((mx - pos.x) ** 2 + (my - pos.y) ** 2) < 15;
@@ -249,20 +295,33 @@ export default function PriceDiagram({
     }
   }
 
+  function handleMouseUp() {
+    dragRef.current.dragging = false;
+    setIsDragging(false);
+
+    if (ticks.length > 0) {
+      const containerW = outerRef.current?.clientWidth || 800;
+      const lastTickX = 120 + (ticks.length - 1) * PX_PER_TICK + offsetRef.current.x;
+      if (lastTickX < containerW - 100) {
+        atEndRef.current = true;
+      }
+    }
+  }
+
   const H = chartH;
-  const yPos = (p: number) => 4 + (H - 8) - ((p - lo) / range) * (H - 8);
+  const yPos = (p: number) => 4 + (H - 8) - ((p - lo) / range) * (H - 8) + offset.y;
 
   const lastTick = ticks[ticks.length - 1];
 
   return (
     <div ref={outerRef} className="relative h-full overflow-hidden">
-      {/* Left Y-axis labels (Entry, TP's) */}
+      {/* Left Y-axis labels (Entry, TP's, below SL) */}
       <div className="absolute left-0 top-0 bottom-0 w-[102px] z-10 pointer-events-none">
         {leftLevels.map((lvl, i) => {
           const y = yPos(lvl.price);
           return (
             <div
-              key={i}
+              key={`l-${i}`}
               className="absolute right-1 leading-none px-1.5 py-0.5 rounded"
               style={{
                 top: y,
@@ -272,7 +331,27 @@ export default function PriceDiagram({
                 WebkitBackdropFilter: "blur(4px)",
               }}
             >
-              <span className="font-mono text-[9px] font-bold whitespace-nowrap" style={{ color: lvl.color }}>
+              <span className="font-mono text-[11px] font-bold whitespace-nowrap" style={{ color: lvl.color }}>
+                {lvl.label}
+              </span>
+            </div>
+          );
+        })}
+        {belowLevels.map((lvl, i) => {
+          const y = yPos(lvl.price);
+          return (
+            <div
+              key={`b-${i}`}
+              className="absolute right-1 leading-none px-1.5 py-0.5 rounded"
+              style={{
+                top: y,
+                transform: "translateY(-50%)",
+                backgroundColor: "rgba(10, 10, 10, 0.7)",
+                backdropFilter: "blur(4px)",
+                WebkitBackdropFilter: "blur(4px)",
+              }}
+            >
+              <span className="font-mono text-[11px] font-bold whitespace-nowrap" style={{ color: lvl.color }}>
                 {lvl.label}
               </span>
             </div>
@@ -293,23 +372,21 @@ export default function PriceDiagram({
               WebkitBackdropFilter: "blur(4px)",
             }}
           >
-            <span className="font-mono text-[9px] font-bold whitespace-nowrap" style={{ color: slLevel.color }}>
+            <span className="font-mono text-[11px] font-bold whitespace-nowrap" style={{ color: slLevel.color }}>
               {slLevel.label}
             </span>
           </div>
         </div>
       )}
 
-      {/* Scrollable chart */}
+      {/* Draggable chart area */}
       <div
-        ref={scrollRef}
-        className="absolute left-0 right-0 top-0 bottom-0 overflow-x-auto"
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          atEndRef.current = el.scrollWidth - el.scrollLeft - el.clientWidth < 10;
-        }}
+        className="absolute left-0 right-0 top-0 bottom-0 overflow-hidden select-none"
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseLeave={() => setTooltip(null)}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
         <canvas ref={canvasRef} className="block" />
         {tooltip && (() => {

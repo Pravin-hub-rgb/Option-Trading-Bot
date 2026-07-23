@@ -23,7 +23,7 @@ class CandleAggregator:
     def now(self):
         return datetime.now(IST).strftime("%H:%M:%S.%f")[:-3]
 
-    def update_from_ohlc(self, timestamp, open_price, high_price, low_price, close_price):
+    def update_from_ohlc(self, timestamp, open_price, high_price, low_price, close_price, feed_time=None):
         minute = timestamp.replace(second=0, microsecond=0)
         minute_key = minute.strftime('%Y-%m-%d %H:%M')
         
@@ -39,7 +39,13 @@ class CandleAggregator:
             'symbol': self.symbol
         }
         
-        current_time = datetime.now(IST).replace(second=0, microsecond=0)
+        # Use the feed's own trade timestamp (ltt) to decide if a candle is
+        # complete, NOT datetime.now() at processing time. Wall-clock time can
+        # be milliseconds late relative to the minute boundary, which would
+        # otherwise let a still-forming candle get committed to history early
+        # with only a partial high/low.
+        ref_time = feed_time if feed_time else datetime.now(IST)
+        current_time = ref_time.replace(second=0, microsecond=0)
         
         if minute < current_time:
             self.candle_history.append(candle)

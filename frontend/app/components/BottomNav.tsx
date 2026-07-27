@@ -24,10 +24,10 @@ export default function BottomNav() {
           >
             <Icon
               icon={item.icon}
-              className={`transition-colors ${active ? "text-indigo-400" : "text-gray-500 group-hover:text-indigo-400"}`}
+              className={`transition-colors ${active ? "text-indigo-400" : "text-gray-400 group-hover:text-indigo-400"}`}
             />
             <span
-              className={`text-[9px] uppercase font-bold transition-colors ${active ? "text-white" : "text-gray-500 group-hover:text-white"}`}
+              className={`text-[9px] uppercase font-bold transition-colors ${active ? "text-white" : "text-gray-400 group-hover:text-white"}`}
             >
               {item.label}
             </span>

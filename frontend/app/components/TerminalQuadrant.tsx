@@ -16,6 +16,8 @@ interface InitialPos {
   entry_price: number | null;
   current_sl: number | null;
   pnl: number | null;
+  exit_price?: number | null;
+  exit_time?: string | null;
 }
 
 interface Props {
@@ -109,8 +111,8 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
           pnl: pos.pnl ?? null,
           entryPrice: pos.entry_price ?? null,
           entryTime: null,
-          exitTime: null,
-          exitPrice: null,
+          exitTime: pos.exit_time ?? null,
+          exitPrice: pos.exit_price ?? null,
           tpLevels: [],
         });
       }
@@ -147,8 +149,8 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
               pnl: pos.pnl ?? null,
               entryPrice: pos.entry_price ?? null,
               entryTime: null,
-              exitTime: null,
-              exitPrice: null,
+              exitTime: pos.exit_time ?? null,
+              exitPrice: pos.exit_price ?? null,
               tpLevels: [],
             });
           }
@@ -194,7 +196,7 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
               frozenRef.current = true;
               setState(msg.pnl > 0 ? "exited_win" : "exited_loss");
               setExitedAt(fmtTime(msg.timestamp));
-              setTickData((prev) => ({ ...prev, exitTime: extractTime(msg.timestamp), exitPrice: msg.price }));
+              setTickData((prev) => ({ ...prev, exitTime: extractTime(msg.timestamp), exitPrice: msg.price, pnl: msg.pnl }));
             }
           }
         } catch {
@@ -228,10 +230,10 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
           <Icon icon={isCe ? "lucide:trending-up" : "lucide:trending-down"} className={isCe ? "text-indigo-400" : "text-amber-400"} width={14} />
           {instrument} Trade {slot}
           {enteredAt && (
-            <span className="text-[9px] font-mono font-normal text-green-400 ml-0.5">entered {enteredAt}</span>
+            <span className="text-xs font-mono font-semibold text-green-300 ml-1">entered {enteredAt}</span>
           )}
           {exitedAt && (
-            <span className="text-[9px] font-mono font-normal text-red-400 ml-0.5">exit {exitedAt}</span>
+            <span className="text-xs font-mono font-semibold text-red-300 ml-1">exit {exitedAt}</span>
           )}
         </h3>
         <span
@@ -247,7 +249,7 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
       </div>
 
       <div className="flex-1 min-h-0 mt-1">
-        <PriceDiagram ticks={tickData.ticks} entryPrice={tickData.entryPrice} entryTime={tickData.entryTime} exitTime={tickData.exitTime} exitPrice={tickData.exitPrice} currentSl={tickData.currentSl} tpLevels={tickData.tpLevels} color={accent} />
+        <PriceDiagram ticks={tickData.ticks} entryPrice={tickData.entryPrice} entryTime={tickData.entryTime} exitTime={tickData.exitTime} exitPrice={tickData.exitPrice} currentSl={tickData.currentSl} tpLevels={tickData.tpLevels} color={accent} realizedPnl={tickData.pnl} />
       </div>
     </div>
   );

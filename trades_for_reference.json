@@ -1,0 +1,22 @@
+[
+  {
+    "date": "27 Jul 2026",
+    "time": "09:20:16",
+    "strike": "23900 CE",
+    "entry": 105.45,
+    "exit": 110.30,
+    "pnl": 4.85,
+    "reason": "Trailing SL Hit",
+    "slot_showed": 5.50
+  },
+  {
+    "date": "27 Jul 2026",
+    "time": "09:23:17",
+    "strike": "24000 PE",
+    "entry": 105.80,
+    "exit": 110.75,
+    "pnl": 4.95,
+    "reason": "Trailing SL Hit",
+    "slot_showed": 6.85
+  }
+]

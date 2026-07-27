@@ -20,6 +20,7 @@ interface Props {
   belowSlCount?: number;
   slStep?: number;
   color?: string;
+  realizedPnl?: number | null;
 }
 
 const PX_PER_TICK = 2.5;
@@ -51,7 +52,7 @@ function buildLevels(entryPrice: number | null, currentSl: number | null, tpLeve
 
 export default function PriceDiagram({
   ticks, entryPrice, entryTime, exitTime, exitPrice, currentSl,
-  tpLevels = [], belowSlCount = 3, slStep = 5, color = "#6366f1"
+  tpLevels = [], belowSlCount = 3, slStep = 5, color = "#6366f1", realizedPnl
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const outerRef = useRef<HTMLDivElement>(null);
@@ -251,7 +252,7 @@ export default function PriceDiagram({
 
   if (entryPrice === null) {
     return (
-      <div className="flex items-center justify-center text-gray-500 text-xs tracking-wider uppercase h-full">
+      <div className="flex items-center justify-center text-gray-400 text-xs tracking-wider uppercase h-full">
         Idle
       </div>
     );
@@ -404,12 +405,15 @@ export default function PriceDiagram({
 
       {/* LTP + P&L overlay (kept between left labels and right SL label) */}
       <div className="absolute left-[102px] right-[100px] bottom-0 h-5 pointer-events-none flex items-center justify-between px-2 text-[10px] font-mono font-bold bg-gradient-to-t from-[#0a0a0a] to-transparent">
-        <span style={{ color }}>{lastTick?.ltp.toFixed(2)}</span>
-        {lastTick?.pnl != null && (
-          <span style={{ color: lastTick.pnl >= 0 ? "#10b981" : "#ef4444" }}>
-            {lastTick.pnl >= 0 ? "+" : ""}{lastTick.pnl.toFixed(2)}
-          </span>
-        )}
+        <span style={{ color }}>{lastTick?.ltp.toFixed(2) ?? (exitPrice != null ? exitPrice.toFixed(2) : "")}</span>
+        {(() => {
+          const displayPnl = realizedPnl ?? lastTick?.pnl;
+          return displayPnl != null ? (
+            <span style={{ color: displayPnl >= 0 ? "#10b981" : "#ef4444" }}>
+              {displayPnl >= 0 ? "+" : ""}{displayPnl.toFixed(2)}
+            </span>
+          ) : null;
+        })()}
       </div>
     </div>
   );

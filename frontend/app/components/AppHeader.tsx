@@ -86,49 +86,45 @@ export default function AppHeader() {
   return (
     <>
       <header className="main-nav">
-        <div className="flex items-center justify-between bg-[#111] border border-white/10 rounded-xl px-6 py-3 shadow-2xl mx-4 mt-4">
-          <div className="flex items-center gap-6">
+        <div className="flex items-center justify-between bg-[#111] border border-white/10 rounded-xl px-4 py-1.5 shadow-2xl mx-4 mt-4">
+          <div className="flex items-center gap-4">
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">Strategy Control</span>
-              <button className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 py-1.5 rounded-lg hover:border-indigo-500/50 transition-all text-sm font-medium">
-                Red Candle High Break
-                <Icon icon="lucide:chevron-down" className="text-xs opacity-50" />
+              <span className="text-[9px] uppercase tracking-widest text-white/70 font-bold">Strategy</span>
+              <button className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/30 px-2 py-0.5 rounded hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all text-xs font-medium text-indigo-300 whitespace-nowrap">
+                Red C...
+                <Icon icon="lucide:chevron-down" className="text-[10px]" />
               </button>
             </div>
-            <div className="h-8 w-px bg-white/5" />
-            <div className="flex items-center gap-6">
+            <div className="h-6 w-px bg-white/10" />
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] uppercase tracking-widest text-white/70 font-bold">Live</span>
+              <span className={`flex h-2 w-2 rounded-full ${connected ? "bg-blue-500 pulse-dot" : "bg-red-500"}`} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] uppercase tracking-widest text-white/70 font-bold">Bot</span>
+              <span className={`flex items-center gap-1 text-xs font-semibold ${running ? "text-[#10b981]" : "text-[#64748b]"}`}>
+                <span className={`flex h-1.5 w-1.5 rounded-full ${running ? "bg-[#10b981] pulse-dot" : "bg-[#64748b]"}`} />
+                {running ? "ON" : "OFF"}
+              </span>
+            </div>
+            <div className="h-6 w-px bg-white/10" />
+            <div className="flex items-center gap-3">
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">Connection</span>
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <span className={`flex h-2 w-2 rounded-full ${connected ? "bg-blue-500 pulse-dot" : "bg-red-500"}`} />
-                  <span className={connected ? "text-blue-500" : "text-red-500"}>{connected ? "DATA" : "OFFLINE"}</span>
-                </div>
+                <span className="text-[9px] uppercase tracking-widest text-white/70 font-bold">CE</span>
+                <span className="font-['JetBrains_Mono',monospace] text-xs font-bold text-indigo-400">{ceStrike}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">Bot</span>
-                <div className="flex items-center gap-1.5 text-sm font-semibold">
-                  <span className={`flex h-2 w-2 rounded-full ${running ? "bg-[#10b981] pulse-dot" : "bg-[#64748b]"}`} />
-                  <span className={running ? "text-[#10b981]" : "text-[#64748b]"}>
-                    {running ? (s?.mode === "starting" ? "STARTING" : "RUNNING") : "STOPPED"}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">CE Strike</span>
-                <span className="font-['JetBrains_Mono',monospace] text-sm font-bold text-indigo-400">{ceStrike}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">PE Strike</span>
-                <span className="font-['JetBrains_Mono',monospace] text-sm font-bold text-amber-400">{peStrike}</span>
+                <span className="text-[9px] uppercase tracking-widest text-white/70 font-bold">PE</span>
+                <span className="font-['JetBrains_Mono',monospace] text-xs font-bold text-amber-400">{peStrike}</span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <button
               onClick={running ? handleStop : handleStart}
               disabled={busy || connecting}
               suppressHydrationWarning
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                 running
                   ? "bg-red-600/20 text-red-400 border border-red-600/30 hover:bg-red-600/30"
                   : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20"
@@ -156,26 +152,25 @@ export default function AppHeader() {
                 </>
               )}
             </button>
-            <div className="h-8 w-px bg-white/5" />
+            <div className="h-6 w-px bg-white/10" />
             <div className="flex flex-col items-end">
-              <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">Account Net P&L</span>
+              <span className="text-[9px] uppercase tracking-widest text-white/70 font-bold">P&L</span>
               <span
-                className={`font-['JetBrains_Mono',monospace] text-xl font-bold tracking-tighter ${
+                className={`font-['JetBrains_Mono',monospace] text-sm font-bold tracking-tighter ${
                   isProfit ? "text-[#10b981]" : "text-[#ef4444]"
                 }`}
               >
-                {`${isProfit ? "+" : ""}${netPnl.toFixed(2)} pts`}
+                {`${isProfit ? "+" : ""}${netPnl.toFixed(2)}`}
               </span>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">Time</span>
-              <span className="font-['JetBrains_Mono',monospace] text-sm font-bold tracking-tighter text-gray-300">
+              <span className="font-['JetBrains_Mono',monospace] text-[10px] font-bold text-white/70 leading-none">
                 {time || "--"}
               </span>
             </div>
           </div>
         </div>
-        <nav className="flex items-center gap-1 px-8 py-3">
+        <nav className="flex items-center gap-1 px-8 py-2">
           {tabs.map((tab) => {
             const active = pathname === tab.href;
             return (
@@ -185,7 +180,7 @@ export default function AppHeader() {
                 className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm transition-all ${
                   active
                     ? "bg-indigo-500/10 text-indigo-400 font-semibold"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.04]"
+                    : "text-gray-400 hover:text-gray-300 hover:bg-white/[0.04]"
                 }`}
               >
                 <Icon icon={tab.icon} className="text-sm" />
@@ -196,7 +191,7 @@ export default function AppHeader() {
           <div className="flex-1" />
           <button
             onClick={toggle}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-white hover:bg-white/[0.04] transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/[0.04] transition-all"
             title="Maximize"
           >
             <Icon icon="lucide:maximize-2" className="text-sm" />

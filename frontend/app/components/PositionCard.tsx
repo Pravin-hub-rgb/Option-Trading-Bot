@@ -36,9 +36,9 @@ export default function PositionCard({ instrument, slot, position }: Props) {
           <div>
             <h3 className="text-sm font-bold tracking-tight">
               {instrument} Trade {slot}
-              {position?.exit_price && <span className="text-gray-500 font-normal ml-1">(Closed)</span>}
+              {position?.exit_price && <span className="text-gray-400 font-normal ml-1">(Closed)</span>}
             </h3>
-            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">
               {inPosition ? "Active Position" : position?.state === "exited_win" ? "Closed - Win" : position?.state === "exited_loss" ? "Closed - Loss" : "No Position"}
             </p>
           </div>
@@ -54,15 +54,15 @@ export default function PositionCard({ instrument, slot, position }: Props) {
         {/* Entry / LTP / P&L */}
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Entry</span>
+            <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Entry</span>
             <div className="font-['JetBrains_Mono',monospace] text-lg font-bold">₹{entryPrice.toFixed(2)}</div>
           </div>
           <div>
-            <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">LTP</span>
+            <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">LTP</span>
             <div className="font-['JetBrains_Mono',monospace] text-lg font-bold" style={{ color: accent }}>₹{ltp.toFixed(2)}</div>
           </div>
           <div>
-            <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">P&L</span>
+            <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">P&L</span>
             <div className={`font-['JetBrains_Mono',monospace] text-lg font-bold ${isProfit ? "text-[#10b981]" : "text-[#ef4444]"}`}>
               {isProfit ? "+" : ""}₹{pnl.toFixed(2)}
             </div>
@@ -72,8 +72,8 @@ export default function PositionCard({ instrument, slot, position }: Props) {
         {/* P&L Progress Bar */}
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-gray-500 font-mono">{pnlPct.toFixed(1)}%</span>
-            <span className="text-gray-500 font-mono">100%</span>
+            <span className="text-gray-400 font-mono">{pnlPct.toFixed(1)}%</span>
+            <span className="text-gray-400 font-mono">100%</span>
           </div>
           <div className="h-2 bg-[#333] rounded-full overflow-hidden">
             <div
@@ -94,19 +94,19 @@ export default function PositionCard({ instrument, slot, position }: Props) {
         {/* Risk Metrics */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-black/30 rounded-lg p-3">
-            <span className="text-[9px] uppercase tracking-widest text-gray-500 font-bold">Current SL</span>
+            <span className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">Current SL</span>
             <div className="font-['JetBrains_Mono',monospace] text-sm font-bold mt-1">
               {position?.current_sl ? `₹${position.current_sl.toFixed(2)}` : "—"}
             </div>
           </div>
           <div className="bg-black/30 rounded-lg p-3">
-            <span className="text-[9px] uppercase tracking-widest text-gray-500 font-bold">Trail SL</span>
+            <span className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">Trail SL</span>
             <div className="font-['JetBrains_Mono',monospace] text-sm font-bold mt-1">
               {position?.highest_price ? `₹${position.highest_price.toFixed(2)}` : "—"}
             </div>
           </div>
           <div className="bg-black/30 rounded-lg p-3">
-            <span className="text-[9px] uppercase tracking-widest text-gray-500 font-bold">Risk %</span>
+            <span className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">Risk %</span>
             <div className="font-['JetBrains_Mono',monospace] text-sm font-bold mt-1">
               {entryPrice > 0 ? `${((entryPrice - (position?.current_sl ?? entryPrice)) / entryPrice * 100).toFixed(1)}%` : "—"}
             </div>
@@ -117,7 +117,7 @@ export default function PositionCard({ instrument, slot, position }: Props) {
         {inPosition && (
           <div>
             <div className="flex items-center justify-between text-xs mb-2">
-              <span className="text-gray-500">SL: ₹{slValue.toFixed(2)}</span>
+              <span className="text-gray-400">SL: ₹{slValue.toFixed(2)}</span>
             </div>
             <input
               type="range"
@@ -150,7 +150,7 @@ export default function PositionCard({ instrument, slot, position }: Props) {
 
         {/* Order Details */}
         {position?.exit_price && (
-          <div className="text-[10px] text-gray-500 border-t border-white/5 pt-3 mt-1">
+          <div className="text-[10px] text-gray-400 border-t border-white/5 pt-3 mt-1">
             <div className="grid grid-cols-2 gap-2">
               <div><span className="text-gray-600">Exit Price:</span> ₹{position.exit_price.toFixed(2)}</div>
               <div><span className="text-gray-600">Exit Reason:</span> {position.exit_reason || "—"}</div>

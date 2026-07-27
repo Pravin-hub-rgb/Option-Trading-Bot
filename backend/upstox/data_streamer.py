@@ -88,10 +88,18 @@ class DataStreamer:
             self.live_feed_server.broadcast_sync(msg)
 
     def _broadcast_tick(self, inst_type, ltp, timestamp):
+        comp = self.components[inst_type]
+        pm = comp['position_manager']
+        in_pos = pm.is_in_position()
+
+        if in_pos and self.bot_manager:
+            with self.bot_manager.lock:
+                slot_key = f"trade{comp.get('trade_slot', 1)}"
+                pos = self.bot_manager.positions[inst_type][slot_key]
+                if pos and pos.get('state') == 'in_position':
+                    pos['pnl'] = pm.get_unrealized_pnl(ltp)
+
         if self.live_feed_server:
-            comp = self.components[inst_type]
-            pm = comp['position_manager']
-            in_pos = pm.is_in_position()
             msg = {
                 "type": "tick",
                 "instrument": inst_type,

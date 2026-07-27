@@ -100,7 +100,7 @@ export default function TerminalLogs() {
         </div>
         <Icon
           icon="lucide:chevron-down"
-          className="text-gray-500 transition-transform duration-200"
+          className="text-gray-400 transition-transform duration-200"
           style={{ transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)" }}
         />
       </div>

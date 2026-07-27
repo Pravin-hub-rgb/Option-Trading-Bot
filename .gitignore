@@ -8,9 +8,7 @@ dist/
 build/
 
 # Large data
-data/
-old-option-trading-bot/
-data_saver/
+archive/
 *.rar
 *.zip
 *.7z

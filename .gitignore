@@ -8,6 +8,7 @@ dist/
 build/
 
 # Large data
+archive/
 *.rar
 *.zip
 *.7z

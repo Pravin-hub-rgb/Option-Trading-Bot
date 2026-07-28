@@ -320,11 +320,23 @@ class TradingScheduler:
         # No hardcoded timing - strategy starts when data is available
         self.log(f"📊 Waiting for first OHLC candle to start strategy...")
         
-        # STEP 5: Wait until market end (silent wait)
+        # STEP 5: Wait until market end with streamer health watchdog
+        STALE_THRESHOLD = timedelta(seconds=90)
         s = get_as_dict()
         market_end = s.get('market_end', '15:30')
         while self.is_running and self.get_current_time_str() < market_end:
-            time.sleep(60)  # Check every minute without logging
+            time.sleep(30)
+            ds = self.data_streamer
+            if ds:
+                tick_times = [t for t in ds.last_tick_time.values() if t is not None]
+                if tick_times:
+                    newest = max(tick_times)
+                    gap = datetime.now(IST) - newest
+                    if gap > STALE_THRESHOLD:
+                        self.log(f"🔴 No ticks for {gap.seconds}s — streamer may be dead")
+                        if not ds.running:
+                            self.log("🔴 Streamer confirmed dead — stopping session")
+                            break
         self.stop_streaming()
         self.log(f"✅ Done for today")
         self.is_running = False

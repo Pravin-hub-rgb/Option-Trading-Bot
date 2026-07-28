@@ -67,6 +67,8 @@ Real broker order placement (`upstox_client.OrderApi`) abhi implement nahi hua �
 
 ## 🔴 CRITICAL — Feed disconnect ke time koi protection nahi (directly #1 se juda hua)
 
+`✅ Verified Jul 28 — 2/2 mid-session reconnects passed, merged to main`
+
 `scheduler.py`/`data_streamer.py` mein reconnect logic hai (`max_reconnect=20`, exponential-ish backoff) — **acchi baat hai**. Par jab tak WebSocket reconnect ho raha hai (kuch second se lekar ~30 second tak, worst case), us window mein:
 - Koi tick nahi aa rahi
 - `check_exit()` call hi nahi ho sakta

@@ -10,16 +10,20 @@ from settings_db import get_setting, get_as_dict
 
 IST = pytz.timezone('Asia/Kolkata')
 
+GAP_THRESHOLD_SECONDS = 5  # placeholder — derive from real tick-gap distribution
+
 class DataStreamer:
     def __init__(self, session_name="day", instruments=None, ce_key=None, pe_key=None,
                  live_feed_server=None, bot_manager=None, access_token=None,
                  ce_strike=None, pe_strike=None):
         self.session_name = session_name
         self.running = True
+        self._stop_requested = False
         self.streamer = None
         self.last_running_print = {}
         self.tick_count = {}
         self.last_candle_count = {}
+        self.last_tick_time = {}
 
         self.active_instruments = instruments if instruments else ['CE', 'PE']
         self.live_feed_server = live_feed_server
@@ -66,6 +70,7 @@ class DataStreamer:
             self.last_running_print[inst] = 0
             self.tick_count[inst] = 0
             self.last_candle_count[inst] = 0
+            self.last_tick_time[inst] = None
 
         print(f"Trading: {', '.join(self.active_instruments)}")
 
@@ -178,13 +183,26 @@ class DataStreamer:
         comp = self.components[inst_type]
         self.tick_count[inst_type] += 1
         
+        prev_tick_time = self.last_tick_time.get(inst_type)
+        self.last_tick_time[inst_type] = timestamp
+        gap_seconds = (timestamp - prev_tick_time).total_seconds() if prev_tick_time else 0
+        
         candle_history = comp['candle_aggregator'].get_candle_history()
         
         if comp['position_manager'].is_in_position():
             if comp['position_manager'].check_exit(ltp) and not comp.get('_exiting', False):
                 comp['_exiting'] = True
                 try:
-                    self.exit_position(inst_type, ltp, timestamp, "Trailing SL Hit")
+                    is_gap = gap_seconds > GAP_THRESHOLD_SECONDS
+                    if is_gap:
+                        sl_price = comp['position_manager'].get_current_sl()
+                        slippage = sl_price - ltp
+                        reason = f"Trailing SL Hit — gap {gap_seconds:.0f}s, slippage {slippage:.2f}"
+                        print(f"[{inst_type}] GAP EXIT: SL was {sl_price:.2f}, filled at {ltp:.2f} "
+                              f"(slippage {slippage:.2f}) after {gap_seconds:.0f}s gap")
+                    else:
+                        reason = "Trailing SL Hit"
+                    self.exit_position(inst_type, ltp, timestamp, reason)
                     self._broadcast_tick(inst_type, ltp, timestamp)
                 finally:
                     comp['_exiting'] = False
@@ -418,6 +436,7 @@ class DataStreamer:
             traceback.print_exc()
 
     def on_open(self):
+        self.running = True
         print(f"WebSocket connected")
         time.sleep(2)
         
@@ -449,6 +468,7 @@ class DataStreamer:
         self.streamer.on("message", self.on_message)
         self.streamer.on("error", self.on_error)
         self.streamer.on("close", self.on_close)
+        self.streamer.auto_reconnect(False)
         print(f"Connecting to market data...")
         self.streamer.connect()
 
@@ -460,29 +480,37 @@ class DataStreamer:
         max_reconnect = 20
         base_delay = 2
         
-        while self.running and reconnect_attempts < max_reconnect:
+        while not self._stop_requested and reconnect_attempts < max_reconnect:
             try:
+                self.running = True
                 self._connect_ws(configuration)
                 reconnect_attempts = 0
                 
-                while self.running:
+                while self.running and not self._stop_requested:
                     time.sleep(1)
+                
+                if self._stop_requested:
+                    break
+                
+                reconnect_attempts += 1
+                delay = min(base_delay * reconnect_attempts, 30)
+                print(f"Disconnected — reconnecting in {delay}s (attempt {reconnect_attempts}/{max_reconnect})")
+                time.sleep(delay)
                     
             except Exception as e:
                 reconnect_attempts += 1
                 delay = min(base_delay * reconnect_attempts, 30)
                 print(f"Connection failed (attempt {reconnect_attempts}/{max_reconnect}): {e}")
-                print(f"Reconnecting in {delay}s...")
-                
-                if reconnect_attempts >= max_reconnect:
-                    print(f"Max reconnection attempts reached")
-                    for inst in self.active_instruments:
-                        self.components[inst]['trade_logger'].close()
-                    raise
-                
                 time.sleep(delay)
+        
+        if reconnect_attempts >= max_reconnect and not self._stop_requested:
+            print("Max reconnection attempts reached — giving up")
+            for inst in self.active_instruments:
+                self.components[inst]['trade_logger'].close()
+            self.running = False
 
     def close(self):
+        self._stop_requested = True
         self.running = False
         if self.streamer:
             self.streamer.disconnect()

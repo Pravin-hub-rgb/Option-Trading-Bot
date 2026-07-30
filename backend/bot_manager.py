@@ -79,7 +79,7 @@ class BotManager:
         try:
             from settings_db import get_setting
 
-            def create_streamer(session_name, ce_key, pe_key, ce_strike=None, pe_strike=None):
+            def create_streamer(session_name, ce_key=None, pe_key=None, ce_strike=None, pe_strike=None, prescan_keys=None):
                 ds = DataStreamer(
                     session_name=session_name,
                     instruments=instruments,
@@ -87,13 +87,15 @@ class BotManager:
                     pe_key=pe_key,
                     ce_strike=ce_strike,
                     pe_strike=pe_strike,
+                    prescan_keys=prescan_keys,
                     live_feed_server=self.live_feed_server,
                     bot_manager=self,
                     access_token=get_setting("access_token"),
                 )
                 with self.lock:
                     self._data_streamer = ds
-                    self.strikes = {"CE": str(ce_strike or ""), "PE": str(pe_strike or "")}
+                    if ce_strike:
+                        self.strikes = {"CE": str(ce_strike), "PE": str(pe_strike or "")}
                 return ds
 
             self._scheduler = TradingScheduler(create_streamer)

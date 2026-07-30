@@ -15,7 +15,7 @@ GAP_THRESHOLD_SECONDS = 5  # placeholder — derive from real tick-gap distribut
 class DataStreamer:
     def __init__(self, session_name="day", instruments=None, ce_key=None, pe_key=None,
                  live_feed_server=None, bot_manager=None, access_token=None,
-                 ce_strike=None, pe_strike=None):
+                 ce_strike=None, pe_strike=None, prescan_keys=None):
         self.session_name = session_name
         self.running = True
         self._stop_requested = False
@@ -30,49 +30,65 @@ class DataStreamer:
         self.bot_manager = bot_manager
         self._access_token = access_token or get_setting("access_token") or ""
 
-        if not ce_key or not pe_key:
-            raise ValueError("CE and PE keys must be provided")
+        self._prescan_keys = prescan_keys
+        self._prescan_aggregators = {}
 
-        self.CE_KEY = ce_key
-        self.CE_SYMBOL = f"{ce_strike} CE" if ce_strike else ce_key
-        self.PE_KEY = pe_key
-        self.PE_SYMBOL = f"{pe_strike} PE" if pe_strike else pe_key
-        self.CE_STRIKE = ce_strike
-        self.PE_STRIKE = pe_strike
+        if prescan_keys:
+            self.CE_KEY = None
+            self.PE_KEY = None
+            self.CE_SYMBOL = None
+            self.PE_SYMBOL = None
+            self.CE_STRIKE = None
+            self.PE_STRIKE = None
+            self.components = {}
+            for key in prescan_keys:
+                agg = CandleAggregator(symbol=key)
+                self._prescan_aggregators[key] = agg
+            print(f"Pre-subscribe mode: {len(prescan_keys)} instruments loaded")
+        else:
+            if not ce_key or not pe_key:
+                raise ValueError("CE and PE keys must be provided")
 
-        print(f"Using strikes: CE={self.CE_SYMBOL}, PE={self.PE_SYMBOL}")
+            self.CE_KEY = ce_key
+            self.CE_SYMBOL = f"{ce_strike} CE" if ce_strike else ce_key
+            self.PE_KEY = pe_key
+            self.PE_SYMBOL = f"{pe_strike} PE" if pe_strike else pe_key
+            self.CE_STRIKE = ce_strike
+            self.PE_STRIKE = pe_strike
 
-        s = self._settings = get_as_dict()
+            print(f"Using strikes: CE={self.CE_SYMBOL}, PE={self.PE_SYMBOL}")
 
-        self.components = {}
-        for inst in self.active_instruments:
-            symbol = self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL
-            aggregator = CandleAggregator(symbol=symbol)
-            aggregator.add_listener(lambda e, c, i=inst: self._on_candle_event(i, e, c))
-            self.components[inst] = {
-                'candle_aggregator': aggregator,
-                'strategy': RedCandleHighBreak(
-                    max_wait_candles=s.get('max_wait_candles'),
-                    allow_reference_shift=s.get('allow_reference_shift'),
-                    initial_sl_points=s.get('initial_sl_points'),
-                ),
-                'position_manager': PositionManager(
-                    initial_sl_points=s.get('initial_sl_points'),
-                    trailing_trigger=s.get('trailing_trigger'),
-                    trailing_step=s.get('trailing_step'),
-                ),
-                'trade_logger': TradeLogger(session_name=session_name, symbol=symbol),
-                'trades_taken': 0,
-                'trade_slot': 1,
-                'can_trade': True,
-                'symbol': symbol,
-            }
-            self.last_running_print[inst] = 0
-            self.tick_count[inst] = 0
-            self.last_candle_count[inst] = 0
-            self.last_tick_time[inst] = None
+            s = self._settings = get_as_dict()
 
-        print(f"Trading: {', '.join(self.active_instruments)}")
+            self.components = {}
+            for inst in self.active_instruments:
+                symbol = self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL
+                aggregator = CandleAggregator(symbol=symbol)
+                aggregator.add_listener(lambda e, c, i=inst: self._on_candle_event(i, e, c))
+                self.components[inst] = {
+                    'candle_aggregator': aggregator,
+                    'strategy': RedCandleHighBreak(
+                        max_wait_candles=s.get('max_wait_candles'),
+                        allow_reference_shift=s.get('allow_reference_shift'),
+                        initial_sl_points=s.get('initial_sl_points'),
+                    ),
+                    'position_manager': PositionManager(
+                        initial_sl_points=s.get('initial_sl_points'),
+                        trailing_trigger=s.get('trailing_trigger'),
+                        trailing_step=s.get('trailing_step'),
+                    ),
+                    'trade_logger': TradeLogger(session_name=session_name, symbol=symbol),
+                    'trades_taken': 0,
+                    'trade_slot': 1,
+                    'can_trade': True,
+                    'symbol': symbol,
+                }
+                self.last_running_print[inst] = 0
+                self.tick_count[inst] = 0
+                self.last_candle_count[inst] = 0
+                self.last_tick_time[inst] = None
+
+            print(f"Trading: {', '.join(self.active_instruments)}")
 
     def now(self):
         return datetime.now(IST).strftime("%H:%M:%S.%f")[:-3]
@@ -118,6 +134,84 @@ class DataStreamer:
                 "tp_levels": pm.get_tp_levels(current_ltp=ltp) if in_pos else [],
             }
             self.live_feed_server.broadcast_sync(msg)
+
+    def _update_prescan_ohlc(self, instrument_key, ohlc_list, feed_time=None):
+        agg = self._prescan_aggregators.get(instrument_key)
+        if not agg:
+            return
+        i1_candles = [c for c in ohlc_list if c.get('interval') == 'I1']
+        i1_candles.sort(key=lambda c: int(c.get('ts', 0)), reverse=True)
+        for candle_data in i1_candles[:2]:
+            ts_ms = int(candle_data.get('ts', 0))
+            candle_ts = datetime.fromtimestamp(ts_ms / 1000, IST)
+            open_price = float(candle_data.get('open', 0))
+            high_price = float(candle_data.get('high', 0))
+            low_price = float(candle_data.get('low', 0))
+            close_price = float(candle_data.get('close', 0))
+            agg.update_from_ohlc(
+                timestamp=candle_ts,
+                open_price=open_price,
+                high_price=high_price,
+                low_price=low_price,
+                close_price=close_price,
+                feed_time=feed_time
+            )
+
+    def finalize_selection(self, ce_key, pe_key, ce_strike=None, pe_strike=None):
+        if not self._prescan_aggregators:
+            print(f"[ERROR] finalize_selection called without prescan aggregators")
+            return
+        self.CE_KEY = ce_key
+        self.PE_KEY = pe_key
+        self.CE_STRIKE = ce_strike
+        self.PE_STRIKE = pe_strike
+        self.CE_SYMBOL = f"{ce_strike} CE" if ce_strike else ce_key
+        self.PE_SYMBOL = f"{pe_strike} PE" if pe_strike else pe_key
+
+        s = self._settings = get_as_dict()
+
+        for inst, key, strike in [('CE', ce_key, ce_strike), ('PE', pe_key, pe_strike)]:
+            prescan_agg = self._prescan_aggregators.pop(key, None)
+            if not prescan_agg:
+                print(f"[WARN] No prescan aggregator for {key}, creating fresh")
+                prescan_agg = CandleAggregator(symbol=self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL)
+            else:
+                prescan_agg.symbol = self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL
+
+            prescan_agg.add_listener(lambda e, c, i=inst: self._on_candle_event(i, e, c))
+            self.components[inst] = {
+                'candle_aggregator': prescan_agg,
+                'strategy': RedCandleHighBreak(
+                    max_wait_candles=s.get('max_wait_candles'),
+                    allow_reference_shift=s.get('allow_reference_shift'),
+                    initial_sl_points=s.get('initial_sl_points'),
+                ),
+                'position_manager': PositionManager(
+                    initial_sl_points=s.get('initial_sl_points'),
+                    trailing_trigger=s.get('trailing_trigger'),
+                    trailing_step=s.get('trailing_step'),
+                ),
+                'trade_logger': TradeLogger(session_name=self.session_name, symbol=self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL),
+                'trades_taken': 0,
+                'trade_slot': 1,
+                'can_trade': True,
+                'symbol': self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL,
+            }
+            self.last_running_print[inst] = 0
+            self.tick_count[inst] = 0
+            self.last_candle_count[inst] = 0
+            self.last_tick_time[inst] = None
+
+        remaining = list(self._prescan_aggregators.keys())
+        self._prescan_aggregators.clear()
+        self._prescan_keys = None  # So reconnect subscribes only to the 2 selected keys
+        if remaining and self.streamer:
+            try:
+                self.streamer.unsubscribe(remaining)
+                print(f"Unsubscribed {len(remaining)} prescan instruments")
+            except Exception as e:
+                print(f"[WARN] Unsubscribe failed: {e}")
+        print(f"Finalized selection: CE={self.CE_SYMBOL}, PE={self.PE_SYMBOL} (prescan aggregators injected)")
 
     def exit_position(self, inst_type, exit_price, exit_time, exit_reason):
         comp = self.components[inst_type]
@@ -308,11 +402,14 @@ class DataStreamer:
                 feeds = message['feeds']
                 
                 for instrument_key, feed_data in feeds.items():
-                    if instrument_key == self.CE_KEY and 'CE' in self.active_instruments:
+                    inst_type = None
+                    is_prescan = self._prescan_aggregators and instrument_key in self._prescan_aggregators
+                    
+                    if self.components and instrument_key == self.CE_KEY and 'CE' in self.active_instruments:
                         inst_type = 'CE'
-                    elif instrument_key == self.PE_KEY and 'PE' in self.active_instruments:
+                    elif self.components and instrument_key == self.PE_KEY and 'PE' in self.active_instruments:
                         inst_type = 'PE'
-                    else:
+                    elif not is_prescan:
                         continue
                     
                     ltp = None
@@ -352,9 +449,13 @@ class DataStreamer:
                         timestamp = datetime.now(IST)
                     
                     if ohlc_list:
-                        self.process_ohlc_candles(inst_type, ohlc_list, feed_time=timestamp)
+                        if inst_type:
+                            self.process_ohlc_candles(inst_type, ohlc_list, feed_time=timestamp)
+                        elif is_prescan:
+                            self._update_prescan_ohlc(instrument_key, ohlc_list, feed_time=timestamp)
                     
-                    self.process_tick(inst_type, ltp, timestamp)
+                    if inst_type:
+                        self.process_tick(inst_type, ltp, timestamp)
                 
                 return
             
@@ -379,15 +480,19 @@ class DataStreamer:
                         return
                     
                     for instrument_key, feed_data in feed_response.feeds.items():
-                        if instrument_key == self.CE_KEY and 'CE' in self.active_instruments:
+                        inst_type = None
+                        is_prescan = self._prescan_aggregators and instrument_key in self._prescan_aggregators
+                        
+                        if self.components and instrument_key == self.CE_KEY and 'CE' in self.active_instruments:
                             inst_type = 'CE'
-                        elif instrument_key == self.PE_KEY and 'PE' in self.active_instruments:
+                        elif self.components and instrument_key == self.PE_KEY and 'PE' in self.active_instruments:
                             inst_type = 'PE'
-                        else:
+                        elif not is_prescan:
                             continue
                         
                         ltp = None
                         timestamp = None
+                        ohlc_list = []
                         
                         if feed_data.HasField('fullFeed'):
                             full_feed = feed_data.fullFeed
@@ -400,7 +505,6 @@ class DataStreamer:
                                 
                                 if market_ff.HasField('marketOHLC'):
                                     market_ohlc = market_ff.marketOHLC
-                                    ohlc_list = []
                                     for ohlc_data in market_ohlc.ohlc:
                                         if ohlc_data.interval == "I1":
                                             ohlc_list.append({
@@ -411,8 +515,6 @@ class DataStreamer:
                                                 'low': ohlc_data.low,
                                                 'close': ohlc_data.close
                                             })
-                                    if ohlc_list:
-                                        self.process_ohlc_candles(inst_type, ohlc_list, feed_time=timestamp)
                         
                         elif feed_data.HasField('ltpc'):
                             ltpc = feed_data.ltpc
@@ -422,7 +524,14 @@ class DataStreamer:
                         if ltp is None:
                             continue
                         
-                        self.process_tick(inst_type, ltp, timestamp)
+                        if ohlc_list:
+                            if inst_type:
+                                self.process_ohlc_candles(inst_type, ohlc_list, feed_time=timestamp)
+                            elif is_prescan:
+                                self._update_prescan_ohlc(instrument_key, ohlc_list, feed_time=timestamp)
+                        
+                        if inst_type:
+                            self.process_tick(inst_type, ltp, timestamp)
                     
                     return
                     
@@ -440,14 +549,16 @@ class DataStreamer:
         print(f"WebSocket connected")
         time.sleep(2)
         
-        keys_to_subscribe = []
-        if 'CE' in self.active_instruments:
-            keys_to_subscribe.append(self.CE_KEY)
-        if 'PE' in self.active_instruments:
-            keys_to_subscribe.append(self.PE_KEY)
-        
         try:
-            if self.streamer:
+            if self._prescan_keys:
+                self.streamer.subscribe(self._prescan_keys, "full")
+                print(f"Subscribed to {len(self._prescan_keys)} pre-subscribe instruments")
+            elif self.streamer:
+                keys_to_subscribe = []
+                if 'CE' in self.active_instruments:
+                    keys_to_subscribe.append(self.CE_KEY)
+                if 'PE' in self.active_instruments:
+                    keys_to_subscribe.append(self.PE_KEY)
                 self.streamer.subscribe(keys_to_subscribe, "full")
                 print(f"Subscribed to instruments")
         except Exception as e:
@@ -506,7 +617,9 @@ class DataStreamer:
         if reconnect_attempts >= max_reconnect and not self._stop_requested:
             print("Max reconnection attempts reached — giving up")
             for inst in self.active_instruments:
-                self.components[inst]['trade_logger'].close()
+                comp = self.components.get(inst)
+                if comp:
+                    comp['trade_logger'].close()
             self.running = False
 
     def close(self):
@@ -515,4 +628,6 @@ class DataStreamer:
         if self.streamer:
             self.streamer.disconnect()
         for inst in self.active_instruments:
-            self.components[inst]['trade_logger'].close()
+            comp = self.components.get(inst)
+            if comp:
+                comp['trade_logger'].close()

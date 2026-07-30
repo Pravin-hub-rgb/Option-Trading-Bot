@@ -58,7 +58,6 @@ class CandleAggregator:
                 self.current_candle = candle
                 self.current_minute = minute
             else:
-                self.current_candle['open'] = open_price
                 self.current_candle['high'] = max(self.current_candle['high'], high_price)
                 self.current_candle['low'] = min(self.current_candle['low'], low_price)
                 self.current_candle['close'] = close_price

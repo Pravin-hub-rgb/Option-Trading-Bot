@@ -6,6 +6,9 @@ import requests
 
 IST = pytz.timezone('Asia/Kolkata')
 
+NIFTY_STRIKE_INTERVAL = 50
+PRESCAN_STRIKE_RANGE = 25  # number of strikes above/below ATM to pre-subscribe
+PRESCAN_RANGE_PTS = PRESCAN_STRIKE_RANGE * NIFTY_STRIKE_INTERVAL  # 25 × 50 = 1250 pts
 class TradingScheduler:
     def __init__(self, data_streamer_factory):
         """
@@ -84,7 +87,8 @@ class TradingScheduler:
             ))
             if expiries:
                 expiry = expiries[0]
-                self.log(f"Expiry: {expiry}")
+                is_today = datetime.strptime(expiry, "%Y-%m-%d").date() == today
+                self.log(f"Expiry: {expiry}{' (TODAY — expiry day)' if is_today else ''}")
                 return expiry
         except Exception as e:
             self.log(f"Expiry fetch failed: {e}")
@@ -142,6 +146,36 @@ class TradingScheduler:
             self.log(f"Spot fetch failed: {e}")
         return None
 
+    def _get_chain_candidates(self, range_pts):
+        """Fetch chain and return candidates within range_pts of spot.
+        Returns list of {strike, key, type} or None on failure.
+        Shared by get_prescan_keys() and fetch_live_strikes()."""
+        expiry = self.get_expiry()
+        if not expiry:
+            self.log(f"❌ Could not get expiry")
+            return None
+        spot = self.get_spot()
+        if not spot:
+            self.log(f"❌ Could not get spot price")
+            return None
+        chain = self.fetch_chain(expiry)
+        if not chain:
+            self.log(f"❌ Could not fetch option chain")
+            return None
+        candidates = []
+        for entry in chain:
+            strike = int(float(entry.get('strike_price', 0)))
+            if abs(strike - spot) > range_pts:
+                continue
+            for opt, side in [(entry.get('call_options', {}), 'CE'),
+                              (entry.get('put_options', {}), 'PE')]:
+                if opt:
+                    key = opt.get('instrument_key', '')
+                    if key:
+                        candidates.append({'strike': strike, 'key': key, 'type': side})
+        self.log(f"🔍 Found {len([c for c in candidates if c['type'] == 'CE'])} CE and {len([c for c in candidates if c['type'] == 'PE'])} PE candidates within {range_pts} pts of spot")
+        return candidates
+
     def fetch_live_strikes(self):
         """
         Fetch live strikes using real-time LTP with spot-based filtering
@@ -168,7 +202,7 @@ class TradingScheduler:
                 self.log(f"❌ Could not fetch option chain")
                 return None
             
-            # Build CE/PE lists with numeric keys from chain (like test script)
+            # Build CE/PE lists with numeric keys from chain
             ce_list = []
             pe_list = []
             
@@ -183,12 +217,12 @@ class TradingScheduler:
                 ce = entry.get('call_options', {})
                 if ce:
                     ltp = float(ce.get('market_data', {}).get('ltp', 0))
-                    key = ce.get('instrument_key', '')  # NUMERIC format: NSE_FO|12345
+                    key = ce.get('instrument_key', '')
                     if ltp > 0 and key:
                         ce_list.append({
                             'strike': strike,
                             'premium': ltp,
-                            'key': key,  # NUMERIC key for WebSocket
+                            'key': key,
                             'diff': abs(ltp - 100)
                         })
                 
@@ -196,12 +230,12 @@ class TradingScheduler:
                 pe = entry.get('put_options', {})
                 if pe:
                     ltp = float(pe.get('market_data', {}).get('ltp', 0))
-                    key = pe.get('instrument_key', '')  # NUMERIC format: NSE_FO|12345
+                    key = pe.get('instrument_key', '')
                     if ltp > 0 and key:
                         pe_list.append({
                             'strike': strike,
                             'premium': ltp,
-                            'key': key,  # NUMERIC key for WebSocket
+                            'key': key,
                             'diff': abs(ltp - 100)
                         })
             
@@ -235,10 +269,10 @@ class TradingScheduler:
             self.log(f"✅ Selected: CE={ce_best['strike']}@{ce_best['premium']:.2f} ({ce_best['key']}), PE={pe_best['strike']}@{pe_best['premium']:.2f} ({pe_best['key']})")
             
             return {
-                'ce_key': ce_best['key'],  # NUMERIC format
+                'ce_key': ce_best['key'],
                 'ce_strike': ce_best['strike'],
                 'ce_premium': ce_best['premium'],
-                'pe_key': pe_best['key'],  # NUMERIC format
+                'pe_key': pe_best['key'],
                 'pe_strike': pe_best['strike'],
                 'pe_premium': pe_best['premium']
             }
@@ -247,21 +281,38 @@ class TradingScheduler:
             self.log(f"❌ Error in fetch_live_strikes: {e}")
             return None
 
-    def start_streaming(self, ce_key, pe_key, ce_strike=None, pe_strike=None):
-        """Start the data streamer with specific strikes"""
-        self.log(f"🚀 Starting streaming with strikes...")
+    def get_prescan_keys(self):
+        """Fetch option chain and return all candidate instrument keys for pre-subscribe"""
+        try:
+            candidates = self._get_chain_candidates(PRESCAN_RANGE_PTS)
+            if not candidates:
+                return None
+            return [c['key'] for c in candidates]
+        except Exception as e:
+            self.log(f"❌ Error in get_prescan_keys: {e}")
+            return None
+
+    def start_streaming(self, ce_key=None, pe_key=None, ce_strike=None, pe_strike=None, prescan_keys=None):
+        """Start the data streamer with specific strikes or prescan keys for Path A"""
+        if prescan_keys:
+            self.log(f"🚀 Starting pre-subscribe streaming with {len(prescan_keys)} instruments...")
+        else:
+            self.log(f"🚀 Starting streaming with strikes...")
         self.current_session = "day"
-        # Use factory to create data streamer with specific strikes
         self.data_streamer = self.data_streamer_factory(
             session_name="day",
             ce_key=ce_key,
             pe_key=pe_key,
             ce_strike=ce_strike,
             pe_strike=pe_strike,
+            prescan_keys=prescan_keys,
         )
         threading.Thread(target=self.data_streamer.run, daemon=True).start()
-        self.log(f"✅ Streaming started")
-        self.log(f"📊 Strategy will start automatically when first OHLC candle is received")
+        if prescan_keys:
+            self.log(f"✅ Pre-subscribe streaming started — waiting for strike selection")
+        else:
+            self.log(f"✅ Streaming started")
+            self.log(f"📊 Strategy will start automatically when first OHLC candle is received")
 
     def stop_streaming(self):
         if self.data_streamer:
@@ -282,45 +333,82 @@ class TradingScheduler:
         market_start = s.get('market_start', '09:15')
         market_end = s.get('market_end', '15:30')
         market_open_delay = int(s.get('market_open_delay', 40))
+        market_start_time = datetime.strptime(market_start, "%H:%M")
         
         if current_time > market_end:
             self.log(f"🔒 Market closed")
             return
         
-        # STEP 1: Wait until market_open + market_open_delay
-        market_start_time = datetime.strptime(market_start, "%H:%M")
         live_selection_time = (market_start_time + timedelta(seconds=market_open_delay)).strftime("%H:%M:%S")
         current_time_full = datetime.now(IST).strftime("%H:%M:%S")
         
-        if current_time_full < live_selection_time:
-            self.log(f"⏳ Waiting for live premium selection at {live_selection_time}")
-            self.wait_until(live_selection_time, "Live premium selection")
+        # Decide Path A (pre-subscribe) vs Path B (mid-session)
+        PATH_A_CUTOFF = "09:20"
+        is_path_a = current_time < PATH_A_CUTOFF
         
-        # STEP 2: Fetch live strikes (NEW APPROACH - happens BEFORE streaming starts!)
+        if is_path_a:
+            # ── Path A: Pre-subscribe ~200 strikes before market open ──
+            prescan_start = (market_start_time - timedelta(seconds=30)).strftime("%H:%M:%S")
+            self.log(f"⏳ Path A: Pre-subscribing at {prescan_start}")
+            self.wait_until(prescan_start, "Pre-subscribe start")
+            
+            prescan_keys = self.get_prescan_keys()
+            if prescan_keys:
+                self.start_streaming(prescan_keys=prescan_keys)
+                self.log(f"📡 Pre-subscribed {len(prescan_keys)} instruments — collecting pre-open OHLC")
+            else:
+                self.log(f"⚠️ Prescan keys unavailable, falling back to Path B")
+                is_path_a = False
+            
+            # Wait for live selection time (shared with Path B)
+            if current_time_full < live_selection_time:
+                self.log(f"⏳ Waiting for live premium selection at {live_selection_time}")
+                self.wait_until(live_selection_time, "Live premium selection")
+        else:
+            # ── Path B: Wait and start directly ──
+            if current_time_full < live_selection_time:
+                self.log(f"⏳ Waiting for live premium selection at {live_selection_time}")
+                self.wait_until(live_selection_time, "Live premium selection")
+        
+        # STEP: Fetch live strikes (shared by both paths)
         self.log(f"🔧 Fetching live strikes...")
         strikes = self.fetch_live_strikes()
         
         if not strikes:
             self.log(f"❌ Could not fetch strikes, exiting")
+            if is_path_a and self.data_streamer:
+                self.stop_streaming()
             return
         
-        # Log selected strikes
         self.log(f"✅ Selected strikes:")
         self.log(f"   CE: {strikes['ce_strike']} (Premium: ₹{strikes['ce_premium']:.2f}) | Key: {strikes['ce_key']}")
         self.log(f"   PE: {strikes['pe_strike']} (Premium: ₹{strikes['pe_premium']:.2f}) | Key: {strikes['pe_key']}")
         
-        # STEP 3: Start streaming with CORRECT strikes (happens AFTER we know which strikes to use!)
-        self.log(f"🚀 Starting streaming with selected strikes...")
-        self.start_streaming(
-            strikes['ce_key'], strikes['pe_key'],
-            ce_strike=strikes['ce_strike'], pe_strike=strikes['pe_strike']
-        )
+        # STEP: Finalize (Path A) or start streaming (Path B)
+        if is_path_a and self.data_streamer:
+            # If finalize_selection fails (shouldn't), fall back to Path B
+            if hasattr(self.data_streamer, '_prescan_aggregators') and not self.data_streamer._prescan_aggregators:
+                self.log(f"⚠️ Prescan aggregators already empty — switching to Path B")
+                is_path_a = False
+            else:
+                self.data_streamer.finalize_selection(
+                    ce_key=strikes['ce_key'],
+                    pe_key=strikes['pe_key'],
+                    ce_strike=strikes['ce_strike'],
+                    pe_strike=strikes['pe_strike']
+                )
+                self.log(f"📊 Strategy started — prescan aggregators injected")
+
+        if not is_path_a or not self.data_streamer:
+            if is_path_a and self.data_streamer:
+                self.stop_streaming()
+            self.start_streaming(
+                strikes['ce_key'], strikes['pe_key'],
+                ce_strike=strikes['ce_strike'], pe_strike=strikes['pe_strike']
+            )
+            self.log(f"📊 Waiting for first OHLC candle to start strategy...")
         
-        # STEP 4: Strategy will start automatically when first OHLC candle is received
-        # No hardcoded timing - strategy starts when data is available
-        self.log(f"📊 Waiting for first OHLC candle to start strategy...")
-        
-        # STEP 5: Wait until market end with streamer health watchdog
+        # STEP: Wait until market end with streamer health watchdog
         STALE_THRESHOLD = timedelta(seconds=90)
         s = get_as_dict()
         market_end = s.get('market_end', '15:30')

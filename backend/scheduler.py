@@ -329,13 +329,13 @@ class TradingScheduler:
                             ts = prev.get('ts', 0)
                             ct = datetime.fromtimestamp(ts / 1000, IST).strftime('%H:%M') if ts else '?'
                             color = 'GREEN' if float(c) >= float(o) else 'RED'
-                            self.log(f"[REST-{label}] @09:16:{offset:02d} CANDLE {ct} O={o} H={h} L={l} C={c} {color}")
+                            print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} CANDLE {ct} O={o} H={h} L={l} C={c} {color}")
                         else:
-                            self.log(f"[REST-{label}] @09:16:{offset:02d} — prev_ohlc not available")
+                            print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} — prev_ohlc not available")
                     else:
-                        self.log(f"[REST-{label}] @09:16:{offset:02d} — API error")
+                        print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} — API error")
                 except Exception as e:
-                    self.log(f"[REST-{label}] @09:16:{offset:02d} — fetch failed: {e}")
+                    print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} — fetch failed: {e}")
 
     def start_streaming(self, ce_key=None, pe_key=None, ce_strike=None, pe_strike=None, prescan_keys=None):
         """Start the data streamer with specific strikes or prescan keys for Path A"""

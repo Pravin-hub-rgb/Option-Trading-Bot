@@ -292,6 +292,51 @@ class TradingScheduler:
             self.log(f"❌ Error in get_prescan_keys: {e}")
             return None
 
+    def _poll_rest_ohlc(self, ce_key, pe_key):
+        """Phase 1: Poll REST OHLC at multiple offsets to find when 09:15 candle stabilizes.
+        Runs as background thread, logs only — no strategy impact."""
+        POLL_OFFSETS = [10, 12, 15, 18, 20]
+        base_url = "https://api.upstox.com/v3"
+        for offset in POLL_OFFSETS:
+            target = f"09:16:{offset:02d}"
+            while self.is_running:
+                if self.seconds_until(target) < 1:
+                    break
+                time.sleep(0.5)
+            if not self.is_running:
+                return
+            for key, label in [(ce_key, 'CE'), (pe_key, 'PE')]:
+                try:
+                    headers = {
+                        'Authorization': f'Bearer {self._get_token()}',
+                        'Accept': 'application/json'
+                    }
+                    resp = requests.get(
+                        f"{base_url}/market-quote/ohlc",
+                        headers=headers,
+                        params={'instrument_key': key, 'interval': 'I1'},
+                        timeout=10
+                    )
+                    data = resp.json()
+                    if data.get('status') == 'success':
+                        inst_data = data.get('data', {}).get(key, {})
+                        prev = inst_data.get('prev_ohlc', {}).get('I1', {})
+                        if prev:
+                            o = prev.get('open', 0)
+                            h = prev.get('high', 0)
+                            l = prev.get('low', 0)
+                            c = prev.get('close', 0)
+                            ts = prev.get('ts', 0)
+                            ct = datetime.fromtimestamp(ts / 1000, IST).strftime('%H:%M') if ts else '?'
+                            color = 'GREEN' if float(c) >= float(o) else 'RED'
+                            self.log(f"[REST-{label}] @09:16:{offset:02d} CANDLE {ct} O={o} H={h} L={l} C={c} {color}")
+                        else:
+                            self.log(f"[REST-{label}] @09:16:{offset:02d} — prev_ohlc not available")
+                    else:
+                        self.log(f"[REST-{label}] @09:16:{offset:02d} — API error")
+                except Exception as e:
+                    self.log(f"[REST-{label}] @09:16:{offset:02d} — fetch failed: {e}")
+
     def start_streaming(self, ce_key=None, pe_key=None, ce_strike=None, pe_strike=None, prescan_keys=None):
         """Start the data streamer with specific strikes or prescan keys for Path A"""
         if prescan_keys:
@@ -398,6 +443,11 @@ class TradingScheduler:
                     pe_strike=strikes['pe_strike']
                 )
                 self.log(f"📊 Strategy started — prescan aggregators injected")
+                threading.Thread(
+                    target=self._poll_rest_ohlc,
+                    args=(strikes['ce_key'], strikes['pe_key']),
+                    daemon=True
+                ).start()
 
         if not is_path_a or not self.data_streamer:
             if is_path_a and self.data_streamer:

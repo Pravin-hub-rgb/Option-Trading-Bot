@@ -202,42 +202,65 @@ class TradingScheduler:
                 self.log(f"❌ Could not fetch option chain")
                 return None
             
-            # Build CE/PE lists with numeric keys from chain
-            ce_list = []
-            pe_list = []
-            
+            # Collect all strikes near spot (±500 pts) from chain (keys only)
+            near = []
             for entry in chain:
                 strike = int(float(entry.get('strike_price', 0)))
-                
-                # Only process strikes near spot (±500 points)
                 if abs(strike - spot) > 500:
                     continue
-                
-                # CE - get numeric instrument_key from chain
-                ce = entry.get('call_options', {})
-                if ce:
-                    ltp = float(ce.get('market_data', {}).get('ltp', 0))
-                    key = ce.get('instrument_key', '')
-                    if ltp > 0 and key:
-                        ce_list.append({
+                for opt, side in [(entry.get('call_options', {}), 'CE'),
+                                  (entry.get('put_options', {}), 'PE')]:
+                    if opt and opt.get('instrument_key'):
+                        near.append({
                             'strike': strike,
-                            'premium': ltp,
-                            'key': key,
-                            'diff': abs(ltp - 100)
+                            'key': opt['instrument_key'],
+                            'type': side,
                         })
-                
-                # PE - get numeric instrument_key from chain
-                pe = entry.get('put_options', {})
-                if pe:
-                    ltp = float(pe.get('market_data', {}).get('ltp', 0))
-                    key = pe.get('instrument_key', '')
-                    if ltp > 0 and key:
-                        pe_list.append({
-                            'strike': strike,
-                            'premium': ltp,
-                            'key': key,
-                            'diff': abs(ltp - 100)
-                        })
+
+            self.log(f"🔍 Found {len([x for x in near if x['type'] == 'CE'])} CE and "
+                     f"{len([x for x in near if x['type'] == 'PE'])} PE strikes near spot")
+
+            # Batch live LTP (chunk 50 — Upstox limit)
+            keys = [x['key'] for x in near]
+            ltp_map = {}
+            base_url = "https://api.upstox.com/v2"
+            headers = {
+                'Authorization': f'Bearer {self._get_token()}',
+                'Accept': 'application/json'
+            }
+            for i in range(0, len(keys), 50):
+                chunk = keys[i:i+50]
+                try:
+                    resp = requests.get(
+                        f"{base_url}/market-quote/ltp",
+                        headers=headers,
+                        params={'instrument_key': ','.join(chunk)},
+                        timeout=10
+                    )
+                    data = resp.json().get('data', {})
+                    for k, v in data.items():
+                        token = v.get('instrument_token') or k.replace(':', '|')
+                        ltp_map[token] = float(v.get('last_price', 0))
+                        ltp_map[k] = float(v.get('last_price', 0))
+                except Exception as e:
+                    self.log(f"⚠️ LTP batch failed: {e}")
+
+            ce_list = []
+            pe_list = []
+            for x in near:
+                prem = ltp_map.get(x['key'], 0) or ltp_map.get(x['key'].replace('|', ':'), 0)
+                if prem <= 0:
+                    continue
+                row = {
+                    'strike': x['strike'],
+                    'premium': prem,
+                    'key': x['key'],
+                    'diff': abs(prem - 100),
+                }
+                if x['type'] == 'CE':
+                    ce_list.append(row)
+                else:
+                    pe_list.append(row)
             
             self.log(f"🔍 Found {len(ce_list)} CE and {len(pe_list)} PE strikes near spot")
             
@@ -292,17 +315,24 @@ class TradingScheduler:
             self.log(f"❌ Error in get_prescan_keys: {e}")
             return None
 
-    def _poll_rest_ohlc(self, ce_key, pe_key):
-        """Phase 1: Poll REST OHLC at multiple offsets to find when 09:15 candle stabilizes.
-        Runs as background thread, logs only — no strategy impact."""
+    def _poll_rest_ohlc(self, ce_key, pe_key, hold_minute):
+        """Poll REST OHLC for the held first candle at multiple offsets, then at
+        the last offset commit the confirmed candle (or fall back to the parked WS
+        candle). Poll lines only — no tick-level logging."""
         POLL_OFFSETS = [10, 12, 15, 18, 20]
         base_url = "https://api.upstox.com/v3"
-        for offset in POLL_OFFSETS:
-            target = f"09:16:{offset:02d}"
+        snap_history = {}
+        raw_dumped = False
+
+        def wait_until_offset(offset):
+            target_dt = hold_minute + timedelta(minutes=1, seconds=offset)
             while self.is_running:
-                if self.seconds_until(target) < 1:
-                    break
-                time.sleep(0.5)
+                if datetime.now(IST) >= target_dt:
+                    return
+                time.sleep(0.2)
+
+        for offset in POLL_OFFSETS:
+            wait_until_offset(offset)
             if not self.is_running:
                 return
             for key, label in [(ce_key, 'CE'), (pe_key, 'PE')]:
@@ -318,24 +348,182 @@ class TradingScheduler:
                         timeout=10
                     )
                     data = resp.json()
+                    if not raw_dumped:
+                        raw_dumped = True
+                        print(f"[{self.now()}] [REST-OHLC] raw response: {data}")
+
+                    prev = None
                     if data.get('status') == 'success':
-                        inst_data = data.get('data', {}).get(key, {})
-                        prev = inst_data.get('prev_ohlc', {}).get('I1', {})
-                        if prev:
-                            o = prev.get('open', 0)
-                            h = prev.get('high', 0)
-                            l = prev.get('low', 0)
-                            c = prev.get('close', 0)
-                            ts = prev.get('ts', 0)
-                            ct = datetime.fromtimestamp(ts / 1000, IST).strftime('%H:%M') if ts else '?'
-                            color = 'GREEN' if float(c) >= float(o) else 'RED'
-                            print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} CANDLE {ct} O={o} H={h} L={l} C={c} {color}")
-                        else:
-                            print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} — prev_ohlc not available")
-                    else:
-                        print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} — API error")
+                        for inst_data in data.get('data', {}).values():
+                            if inst_data.get('instrument_token') == key:
+                                prev = inst_data.get('prev_ohlc')
+                                break
+
+                    if not prev:
+                        print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} — prev_ohlc not available")
+                        continue
+
+                    ts_ms = prev.get('ts', 0)
+                    o = float(prev.get('open', 0))
+                    h = float(prev.get('high', 0))
+                    l = float(prev.get('low', 0))
+                    c = float(prev.get('close', 0))
+                    candle_ts = datetime.fromtimestamp(ts_ms / 1000, IST) if ts_ms else None
+                    ct_str = candle_ts.strftime('%H:%M') if candle_ts else '?'
+                    color = 'GREEN' if c >= o else 'RED'
+                    snap = (candle_ts, o, h, l, c)
+                    history = snap_history.setdefault(label, [])
+                    history.append(snap)
+                    stable = len(history) >= 2 and history[-1] == history[-2]
+                    tag = " STABLE (unchanged)" if stable else ""
+                    print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} CANDLE {ct_str} "
+                          f"O={o} H={h} L={l} C={c} {color}{tag}")
                 except Exception as e:
                     print(f"[{self.now()}] [REST-{label}] @09:16:{offset:02d} — fetch failed: {e}")
+
+        if not self.is_running:
+            return
+
+        ds = self.data_streamer
+        if ds is None:
+            self.log("REST OHLC commit skipped — streamer gone")
+            return
+
+        for key, label in [(ce_key, 'CE'), (pe_key, 'PE')]:
+            history = snap_history.get(label, [])
+            confirmed = False
+            # Commit only if the last two polls agree (stability check) and the
+            # candle's timestamp matches the held minute.
+            if len(history) >= 2 and history[-1] == history[-2]:
+                snap = history[-1]
+                candle_ts = snap[0]
+                if candle_ts is not None and candle_ts.replace(second=0, microsecond=0) == hold_minute:
+                    o, h, l, c = snap[1], snap[2], snap[3], snap[4]
+
+                    # Sanity: reject impossible OHLC (e.g. Monday's H<O on PE)
+                    if h < o or l > o or h < c or l > c or h < l:
+                        print(f"[{self.now()}] [REST-{label}] REJECTED impossible OHLC "
+                              f"O={o} H={h} L={l} C={c} — falling back to WS")
+                    else:
+                        held = None
+                        comp = ds.components.get(label)
+                        if comp:
+                            held = comp['candle_aggregator'].get_pending_held()
+
+                        if held is not None:
+                            hw, lw = held['high'], held['low']
+                            print(f"[{self.now()}] [REST-{label}] WS held: "
+                                  f"O={held['open']:.2f} H={hw:.2f} "
+                                  f"L={lw:.2f} C={held['close']:.2f}")
+                            print(f"[{self.now()}] [REST-{label}] REST snap: "
+                                  f"O={o} H={h} L={l} C={c}")
+                            # Take the wider, more complete range; keep REST open/close.
+                            h = max(h, hw)
+                            l = min(l, lw)
+                            if abs(held['open'] - o) > 1:
+                                print(f"[{self.now()}] [REST-{label}] OPEN_MISMATCH "
+                                      f"O_ws={held['open']:.2f} O_rest={o:.2f} (diff {abs(held['open'] - o):.2f}) — "
+                                      f"kept REST open, flagged for Tuesday comparison")
+
+                        confirmed = True
+                        candle = {
+                            'timestamp': candle_ts,
+                            'open': o,
+                            'high': h,
+                            'low': l,
+                            'close': c,
+                        }
+                        ds.commit_confirmed_candle(label, candle)
+                        print(f"[{self.now()}] [REST-{label}] COMMITTED confirmed 09:15 candle "
+                              f"O={o} H={h} L={l} C={c}")
+            if not confirmed:
+                ds.commit_ws_fallback(label)
+                print(f"[{self.now()}] [REST-{label}] no stable REST confirm — WS fallback")
+
+        # Diagnostic only (no behavior change): compare the chart-backed Intraday Candle
+        # historical API for the held minute, then retry once ~35s in for CDN-settled data.
+        self._historical_diagnostic(ce_key, pe_key, hold_minute)
+
+    def _historical_diagnostic(self, ce_key, pe_key, hold_minute):
+        """Log the chart-backed historical candle for the held minute (Tuesday comparison).
+
+        Two passes: immediately after commit (may lag) and again ~35s later (CDN-settled).
+        Logs the candle matching hold_minute and the latest candle present in the response.
+        """
+        try:
+            targets = [(ce_key, 'CE'), (pe_key, 'PE')]
+            passes = [
+                (timedelta(seconds=3), 'pass1'),
+                (timedelta(minutes=1, seconds=35), 'pass2'),
+            ]
+            for delay, tag in passes:
+                target_dt = hold_minute + delay
+                while self.is_running and datetime.now(IST) < target_dt:
+                    time.sleep(0.5)
+                if not self.is_running:
+                    return
+                for key, label in targets:
+                    self._fetch_historical_candle(key, label, hold_minute, tag)
+        except Exception as e:
+            print(f"[{self.now()}] [HIST] diagnostic aborted: {e}")
+
+    def _parse_candle_ts(self, value):
+        """Parse a historical-candle timestamp. Upstox V3 returns ISO datetime
+        strings ('2026-08-04T09:15:00+05:30'); fall back to epoch-ms ints."""
+        try:
+            if isinstance(value, (int, float)):
+                return datetime.fromtimestamp(value / 1000, IST)
+            s = str(value)
+            try:
+                parsed = datetime.fromisoformat(s)
+            except ValueError:
+                parsed = datetime.fromtimestamp(int(s) / 1000, IST)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=IST)
+            return parsed.astimezone(IST)
+        except (ValueError, TypeError, OverflowError):
+            return None
+
+    def _fetch_historical_candle(self, key, label, hold_minute, tag):
+        """Fetch Intraday Candle V3 (chart-backed) and log the held-minute candle."""
+        try:
+            headers = {
+                'Authorization': f'Bearer {self._get_token()}',
+                'Accept': 'application/json',
+            }
+            today = datetime.now(IST).strftime('%Y-%m-%d')
+            resp = requests.get(
+                f"https://api.upstox.com/v3/historical-candle/intraday/{key}/minutes/1",
+                headers=headers,
+                params={'to_date': today},
+                timeout=10,
+            )
+            data = resp.json()
+            candles = (data.get('data') or {}).get('candles', [])
+            if not candles:
+                print(f"[{self.now()}] [HIST-{label}] [{tag}] no candles in historical response")
+                return
+            target = None
+            for row in candles:
+                if len(row) >= 6:
+                    cts = self._parse_candle_ts(row[0])
+                    if cts is not None and cts.replace(second=0, microsecond=0) == hold_minute:
+                        target = row
+            last_ts = '?'
+            if candles:
+                last_ts_parsed = self._parse_candle_ts(candles[-1][0])
+                if last_ts_parsed is not None:
+                    last_ts = last_ts_parsed.strftime('%H:%M')
+            if target:
+                o, h, l, c = float(target[1]), float(target[2]), float(target[3]), float(target[4])
+                color = 'GREEN' if c >= o else 'RED'
+                print(f"[{self.now()}] [HIST-{label}] [{tag}] CANDLE {hold_minute.strftime('%H:%M')} "
+                      f"O={o} H={h} L={l} C={c} {color} (latest in response: {last_ts})")
+            else:
+                print(f"[{self.now()}] [HIST-{label}] [{tag}] {hold_minute.strftime('%H:%M')} candle "
+                      f"not in historical yet (CDN lag) — latest available: {last_ts}")
+        except Exception as e:
+            print(f"[{self.now()}] [HIST-{label}] [{tag}] fetch failed: {e}")
 
     def start_streaming(self, ce_key=None, pe_key=None, ce_strike=None, pe_strike=None, prescan_keys=None):
         """Start the data streamer with specific strikes or prescan keys for Path A"""
@@ -436,16 +624,25 @@ class TradingScheduler:
                 self.log(f"⚠️ Prescan aggregators already empty — switching to Path B")
                 is_path_a = False
             else:
+                hold_minute = datetime.now(IST).replace(second=0, microsecond=0)
                 self.data_streamer.finalize_selection(
                     ce_key=strikes['ce_key'],
                     pe_key=strikes['pe_key'],
                     ce_strike=strikes['ce_strike'],
-                    pe_strike=strikes['pe_strike']
+                    pe_strike=strikes['pe_strike'],
+                    hold_minute=hold_minute,
                 )
                 self.log(f"📊 Strategy started — prescan aggregators injected")
+                # Publish the finalized strikes so the dashboard navbar (bot_manager.strikes)
+                # stops showing CE-- / PE-- on Path A runs.
+                if self.data_streamer and self.data_streamer.bot_manager:
+                    self.data_streamer.bot_manager.strikes = {
+                        "CE": str(strikes['ce_strike']),
+                        "PE": str(strikes['pe_strike']),
+                    }
                 threading.Thread(
                     target=self._poll_rest_ohlc,
-                    args=(strikes['ce_key'], strikes['pe_key']),
+                    args=(strikes['ce_key'], strikes['pe_key'], hold_minute),
                     daemon=True
                 ).start()
 
@@ -466,6 +663,21 @@ class TradingScheduler:
             time.sleep(30)
             ds = self.data_streamer
             if ds:
+                # Auto-stop: if both sides have finished all their trades (can_trade False
+                # on CE and PE, and neither is holding a position), end the session early.
+                comps = getattr(ds, 'components', None)
+                if comps:
+                    sides = [c for inst, c in comps.items() if inst in ('CE', 'PE')]
+                    if len(sides) == 2 and all(
+                        not c.get('can_trade', False)
+                        and not c['position_manager'].is_in_position()
+                        for c in sides
+                    ):
+                        self.log("🛑 All trades complete — auto-stopping session")
+                        self.stop_streaming()
+                        self.log(f"✅ Done for today")
+                        self.is_running = False
+                        return
                 tick_times = [t for t in ds.last_tick_time.values() if t is not None]
                 if tick_times:
                     newest = max(tick_times)

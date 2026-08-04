@@ -11,6 +11,15 @@ from settings_db import get_setting, get_as_dict
 IST = pytz.timezone('Asia/Kolkata')
 
 GAP_THRESHOLD_SECONDS = 5  # placeholder — derive from real tick-gap distribution
+BREAKEVEN_BAND = 1.0  # |pnl| <= this is treated as breakeven (neither win nor loss), in points
+
+def _classify_pnl(pnl):
+    """Classify a realised P&L (in points) as 'win', 'loss' or 'breakeven'."""
+    if pnl > BREAKEVEN_BAND:
+        return 'win'
+    if pnl < -BREAKEVEN_BAND:
+        return 'loss'
+    return 'breakeven'
 
 class DataStreamer:
     def __init__(self, session_name="day", instruments=None, ce_key=None, pe_key=None,
@@ -71,6 +80,7 @@ class DataStreamer:
                         max_wait_candles=s.get('max_wait_candles'),
                         allow_reference_shift=s.get('allow_reference_shift'),
                         initial_sl_points=s.get('initial_sl_points'),
+                        label=inst,
                     ),
                     'position_manager': PositionManager(
                         initial_sl_points=s.get('initial_sl_points'),
@@ -157,50 +167,73 @@ class DataStreamer:
                 feed_time=feed_time
             )
 
-    def finalize_selection(self, ce_key, pe_key, ce_strike=None, pe_strike=None):
+    def finalize_selection(self, ce_key, pe_key, ce_strike=None, pe_strike=None, hold_minute=None):
         if not self._prescan_aggregators:
             print(f"[ERROR] finalize_selection called without prescan aggregators")
             return
-        self.CE_KEY = ce_key
-        self.PE_KEY = pe_key
-        self.CE_STRIKE = ce_strike
-        self.PE_STRIKE = pe_strike
-        self.CE_SYMBOL = f"{ce_strike} CE" if ce_strike else ce_key
-        self.PE_SYMBOL = f"{pe_strike} PE" if pe_strike else pe_key
 
         s = self._settings = get_as_dict()
 
+        if hold_minute is None:
+            hold_minute = datetime.now(IST).replace(second=0, microsecond=0)
+        hold_minute = hold_minute.replace(second=0, microsecond=0)
+
+        # Build all components in a local dict FIRST so the WS thread can never
+        # observe a half-constructed component (the race that caused KeyError 'PE').
+        new_components = {}
         for inst, key, strike in [('CE', ce_key, ce_strike), ('PE', pe_key, pe_strike)]:
+            symbol = f"{strike} {inst}" if strike else key
+
             prescan_agg = self._prescan_aggregators.pop(key, None)
             if not prescan_agg:
                 print(f"[WARN] No prescan aggregator for {key}, creating fresh")
-                prescan_agg = CandleAggregator(symbol=self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL)
+                prescan_agg = CandleAggregator(symbol=symbol)
             else:
-                prescan_agg.symbol = self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL
+                prescan_agg.symbol = symbol
 
             prescan_agg.add_listener(lambda e, c, i=inst: self._on_candle_event(i, e, c))
-            self.components[inst] = {
+            # Gate the 09:15 candle: strategy must not see it until REST confirms.
+            prescan_agg.arm_hold(hold_minute)
+
+            new_components[inst] = {
                 'candle_aggregator': prescan_agg,
                 'strategy': RedCandleHighBreak(
                     max_wait_candles=s.get('max_wait_candles'),
                     allow_reference_shift=s.get('allow_reference_shift'),
                     initial_sl_points=s.get('initial_sl_points'),
+                    label=inst,
                 ),
                 'position_manager': PositionManager(
                     initial_sl_points=s.get('initial_sl_points'),
                     trailing_trigger=s.get('trailing_trigger'),
                     trailing_step=s.get('trailing_step'),
                 ),
-                'trade_logger': TradeLogger(session_name=self.session_name, symbol=self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL),
+                'trade_logger': TradeLogger(session_name=self.session_name, symbol=symbol),
                 'trades_taken': 0,
                 'trade_slot': 1,
                 'can_trade': True,
-                'symbol': self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL,
+                'symbol': symbol,
             }
+
+        # Atomic swap: publish all components at once.
+        self.components = new_components
+
+        for inst in self.active_instruments:
+            if inst not in ('CE', 'PE'):
+                continue
             self.last_running_print[inst] = 0
             self.tick_count[inst] = 0
             self.last_candle_count[inst] = 0
             self.last_tick_time[inst] = None
+
+        # Keys/symbols published LAST so on_message routing only sees them once
+        # self.components is fully built.
+        self.CE_KEY = ce_key
+        self.PE_KEY = pe_key
+        self.CE_STRIKE = ce_strike
+        self.PE_STRIKE = pe_strike
+        self.CE_SYMBOL = f"{ce_strike} CE" if ce_strike else ce_key
+        self.PE_SYMBOL = f"{pe_strike} PE" if pe_strike else pe_key
 
         remaining = list(self._prescan_aggregators.keys())
         self._prescan_aggregators.clear()
@@ -211,7 +244,44 @@ class DataStreamer:
                 print(f"Unsubscribed {len(remaining)} prescan instruments")
             except Exception as e:
                 print(f"[WARN] Unsubscribe failed: {e}")
-        print(f"Finalized selection: CE={self.CE_SYMBOL}, PE={self.PE_SYMBOL} (prescan aggregators injected)")
+        print(f"Finalized selection: CE={self.CE_SYMBOL}, PE={self.PE_SYMBOL} "
+              f"(prescan aggregators injected, {hold_minute.strftime('%H:%M')} candle held for REST confirm)")
+
+    def _commit_candle(self, inst_type, candle, source):
+        comp = self.components.get(inst_type)
+        if not comp:
+            print(f"[ERROR] _commit_candle: no component for {inst_type}")
+            return
+        o, h, l, c = candle['open'], candle['high'], candle['low'], candle['close']
+        if h < o or l > o or h < c or l > c or h < l:
+            print(f"[ERROR] {inst_type}: refusing to commit impossible candle "
+                  f"O={o} H={h} L={l} C={c} ({source})")
+            return
+        candle['symbol'] = comp['symbol']
+        if not comp['candle_aggregator'].commit_corrected_candle(candle):
+            return
+        color = 'RED' if o > c else 'GREEN'
+        print(f"[{inst_type}] CANDLE {candle['timestamp'].strftime('%H:%M')} "
+              f"O={o:.2f} H={h:.2f} L={l:.2f} C={c:.2f} {color} ({source})")
+        comp['strategy'].on_new_candle_closed()
+
+    def commit_confirmed_candle(self, inst_type, candle):
+        """Called by the REST poller with the verified 09:15 candle."""
+        self._commit_candle(inst_type, candle, "REST-confirmed 09:16:20")
+
+    def commit_ws_fallback(self, inst_type):
+        """Called by the REST poller when no confirmed candle is available;
+        commits the WS candle that the gate parked (today's behavior)."""
+        comp = self.components.get(inst_type)
+        if not comp:
+            print(f"[ERROR] commit_ws_fallback: no component for {inst_type}")
+            return
+        held = comp['candle_aggregator'].release_hold()
+        if held is None:
+            print(f"[ERROR] {inst_type}: held 09:15 candle was never received from WS "
+                  f"before commit time — no reference set for this side")
+            return
+        self._commit_candle(inst_type, held, "WS fallback (REST unavailable)")
 
     def exit_position(self, inst_type, exit_price, exit_time, exit_reason):
         comp = self.components[inst_type]
@@ -234,19 +304,22 @@ class DataStreamer:
         comp['strategy'].reset()
 
         slot = comp['trade_slot']
+        outcome = _classify_pnl(trade_summary['pnl'])
+        state_map = {'win': 'exited_win', 'loss': 'exited_loss', 'breakeven': 'exited_breakeven'}
         if self.bot_manager:
             with self.bot_manager.lock:
                 slot_key = f"trade{slot}"
                 pos = self.bot_manager.positions[inst_type][slot_key]
                 if pos:
-                    pos['state'] = 'exited_win' if trade_summary['pnl'] > 0 else 'exited_loss'
+                    pos['state'] = state_map[outcome]
                     pos['exit_price'] = exit_price
                     pos['exit_time'] = exit_time.strftime("%H:%M:%S.%f")[:-3]
                     pos['exit_reason'] = exit_reason
                     pos['pnl'] = trade_summary['pnl']
                     pos['duration_seconds'] = trade_summary['duration_seconds']
 
-        print(f"[{inst_type}] EXIT at {exit_price:.2f} | P&L: {trade_summary['pnl']:.2f} | Reason: {exit_reason}")
+        print(f"[{inst_type}] EXIT at {exit_price:.2f} | P&L: {trade_summary['pnl']:.2f} "
+              f"({outcome}) | Reason: {exit_reason}")
         
         if self.live_feed_server:
             self.live_feed_server.broadcast_sync({
@@ -258,10 +331,11 @@ class DataStreamer:
                 "timestamp": exit_time.strftime("%H:%M:%S.%f")[:-3],
                 "pnl": trade_summary['pnl'],
                 "reason": exit_reason,
+                "outcome": outcome,
             })
 
         s = get_as_dict()
-        if trade_summary['pnl'] > 0:
+        if outcome == 'win':
             if s.get('stop_after_first_win', True):
                 comp['can_trade'] = False
                 print(f"[{inst_type}] First win achieved - No more trades today")

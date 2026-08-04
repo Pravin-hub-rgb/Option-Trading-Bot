@@ -1,6 +1,6 @@
 export interface PositionState {
   trade_slot: number;
-  state: "idle" | "watching" | "in_position" | "exited_win" | "exited_loss" | "stopped";
+  state: "idle" | "watching" | "in_position" | "exited_win" | "exited_loss" | "exited_breakeven" | "stopped";
   instrument: "CE" | "PE";
   entry_price: number | null;
   current_sl: number | null;

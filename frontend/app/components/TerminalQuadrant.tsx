@@ -83,6 +83,7 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
     in_position: "#10b981",
     exited_win: "#10b981",
     exited_loss: "#ef4444",
+    exited_breakeven: "#a3a3a3",
     stopped: "#ef4444",
   };
 
@@ -102,7 +103,7 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
           exitPrice: null,
           tpLevels: [],
         });
-      } else if (pos.state === "exited_win" || pos.state === "exited_loss") {
+      } else if (pos.state === "exited_win" || pos.state === "exited_loss" || pos.state === "exited_breakeven") {
         frozenRef.current = true;
         setState(pos.state);
         setTickData({
@@ -140,7 +141,7 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
               exitPrice: null,
               tpLevels: [],
             });
-          } else if (pos.state === "exited_win" || pos.state === "exited_loss") {
+          } else if (pos.state === "exited_win" || pos.state === "exited_loss" || pos.state === "exited_breakeven") {
             frozenRef.current = true;
             setState(pos.state);
             setTickData({
@@ -194,7 +195,8 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
             }
             if (msg.action === "exit") {
               frozenRef.current = true;
-              setState(msg.pnl > 0 ? "exited_win" : "exited_loss");
+              const outcome = msg.outcome === "breakeven" ? "exited_breakeven" : msg.pnl > 0 ? "exited_win" : "exited_loss";
+              setState(outcome);
               setExitedAt(fmtTime(msg.timestamp));
               setTickData((prev) => ({ ...prev, exitTime: extractTime(msg.timestamp), exitPrice: msg.price, pnl: msg.pnl }));
             }
@@ -217,6 +219,7 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
   }, [instrument]);
 
   const stateLabel = state === "in_position" ? "In Position"
+    : state === "exited_breakeven" ? "Breakeven"
     : state === "exited_win" ? "Exited Win"
     : state === "exited_loss" ? "Exited Loss"
     : state === "watching" ? "Watching"

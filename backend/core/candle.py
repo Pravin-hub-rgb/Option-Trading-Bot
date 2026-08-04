@@ -1,5 +1,6 @@
 from datetime import datetime
 import pytz
+import threading
 
 IST = pytz.timezone('Asia/Kolkata')
 
@@ -12,6 +13,9 @@ class CandleAggregator:
         self.current_minute = None
         self.processed_minutes = set()
         self.listeners = []
+        self._lock = threading.Lock()
+        self.hold_minute = None
+        self.pending_held_candle = None
 
     def add_listener(self, callback):
         self.listeners.append(callback)
@@ -22,6 +26,41 @@ class CandleAggregator:
 
     def now(self):
         return datetime.now(IST).strftime("%H:%M:%S.%f")[:-3]
+
+    def arm_hold(self, minute):
+        """Hold back the given minute's candle from history until confirmed.
+        Used for the 09:15 candle: strategy must not see it until REST confirms it."""
+        with self._lock:
+            self.hold_minute = minute
+
+    def release_hold(self):
+        """Release the held candle (WS fallback path). Returns it or None."""
+        with self._lock:
+            candle = self.pending_held_candle
+            self.pending_held_candle = None
+            self.hold_minute = None
+        return candle
+
+    def get_pending_held(self):
+        """Thread-safe read of the parked (held) candle without releasing it."""
+        with self._lock:
+            return self.pending_held_candle
+
+    def commit_corrected_candle(self, candle):
+        """Commit a corrected candle (REST-confirmed or WS fallback) into history.
+        Returns True if committed, False if the minute was already processed."""
+        with self._lock:
+            minute_key = candle['timestamp'].strftime('%Y-%m-%d %H:%M')
+            if minute_key in self.processed_minutes:
+                self.hold_minute = None
+                self.pending_held_candle = None
+                return False
+            self.candle_history.append(candle)
+            self.processed_minutes.add(minute_key)
+            self.hold_minute = None
+            self.pending_held_candle = None
+        self._notify("candle_closed", candle)
+        return True
 
     def update_from_ohlc(self, timestamp, open_price, high_price, low_price, close_price, feed_time=None):
         minute = timestamp.replace(second=0, microsecond=0)
@@ -48,8 +87,16 @@ class CandleAggregator:
         current_time = ref_time.replace(second=0, microsecond=0)
         
         if minute < current_time:
-            self.candle_history.append(candle)
-            self.processed_minutes.add(minute_key)
+            with self._lock:
+                # Re-check under lock: the REST commit thread may have already
+                # processed this minute while we were waiting.
+                if minute_key in self.processed_minutes:
+                    return False
+                if self.hold_minute is not None and minute == self.hold_minute:
+                    self.pending_held_candle = candle
+                    return False
+                self.candle_history.append(candle)
+                self.processed_minutes.add(minute_key)
             self._notify("candle_closed", candle)
             return True
         

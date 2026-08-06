@@ -346,6 +346,20 @@ class DataStreamer:
             print(f"[{instrument}] SL manually set to {new_sl:.2f}")
         return ok
 
+    def close_position_manual(self, instrument, slot):
+        comp = self.components.get(instrument)
+        if not comp:
+            return None
+        pm = comp['position_manager']
+        if not pm.is_in_position():
+            return None
+        last_ltp = pm.position['last_ltp']
+        entry_price = pm.position['entry_price']
+        pnl = last_ltp - entry_price
+        now = datetime.now(IST)
+        self.exit_position(instrument, last_ltp, now, "Manual Close")
+        return {"pnl": pnl, "exit_price": last_ltp}
+
     def process_tick(self, inst_type, ltp, timestamp):
         comp = self.components[inst_type]
         self.tick_count[inst_type] += 1

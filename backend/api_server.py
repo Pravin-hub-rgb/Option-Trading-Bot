@@ -106,6 +106,15 @@ def create_app(bot_manager):
             raise HTTPException(status_code=400, detail="No active position found")
         return {"status": "ok", "sl": body.sl}
 
+    @app.post("/api/position/{instrument}/{slot}/close")
+    async def close_position(instrument: str, slot: int):
+        if not bot_manager._data_streamer:
+            raise HTTPException(status_code=400, detail="Bot not running")
+        result = bot_manager._data_streamer.close_position_manual(instrument, slot)
+        if not result:
+            raise HTTPException(status_code=400, detail="No active position found")
+        return {"status": "closed", "pnl": result["pnl"], "exit_price": result["exit_price"]}
+
     @app.get("/api/token/status")
     async def token_status():
         token = get_setting("access_token")

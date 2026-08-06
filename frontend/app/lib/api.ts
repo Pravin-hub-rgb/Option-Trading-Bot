@@ -95,3 +95,10 @@ export async function modifySl(instrument: string, slot: number, sl: number): Pr
   });
   return res.json();
 }
+
+export async function closePosition(instrument: string, slot: number): Promise<{ status: string; pnl: number; exit_price: number }> {
+  const res = await fetch(`${API}/api/position/${instrument}/${slot}/close`, {
+    method: "POST",
+  });
+  return res.json();
+}

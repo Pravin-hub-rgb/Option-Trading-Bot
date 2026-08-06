@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Icon } from "@iconify/react";
 import PriceDiagram from "./PriceDiagram";
-import { fetchTickHistory, modifySl } from "../lib/api";
+import { fetchTickHistory, modifySl, closePosition } from "../lib/api";
 
 interface Tick {
   timestamp: string;
@@ -71,6 +71,13 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
   const [enteredAt, setEnteredAt] = useState<string | null>(null);
   const [exitedAt, setExitedAt] = useState<string | null>(null);
   const frozenRef = useRef(false);
+
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelPos, setPanelPos] = useState({ x: 0, y: 0 });
+  const [panelInited, setPanelInited] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState(false);
+  const panelDragRef = useRef({ active: false, startX: 0, startY: 0, origX: 0, origY: 0 });
 
   const isCe = instrument === "CE";
   const accent = isCe ? "#6366f1" : "#f59e0b";
@@ -239,6 +246,59 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
     }).catch(() => {});
   };
 
+  const handlePanelDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    panelDragRef.current = { active: true, startX: e.clientX, startY: e.clientY, origX: panelPos.x, origY: panelPos.y };
+    document.body.style.cursor = "move";
+    document.body.style.userSelect = "none";
+
+    const onMove = (ev: MouseEvent) => {
+      if (!panelDragRef.current.active) return;
+      const dx = ev.clientX - panelDragRef.current.startX;
+      const dy = ev.clientY - panelDragRef.current.startY;
+      setPanelPos({ x: panelDragRef.current.origX + dx, y: panelDragRef.current.origY + dy });
+    };
+
+    const onUp = () => {
+      panelDragRef.current.active = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [panelPos]);
+
+  const openPanel = useCallback(() => {
+    if (!panelInited) {
+      setPanelPos({ x: window.innerWidth / 2 - 140, y: window.innerHeight / 2 - 100 });
+      setPanelInited(true);
+    }
+    setPanelOpen(true);
+  }, [panelInited]);
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setCloseError(false);
+    closePosition(instrument, slot)
+      .then(() => setClosing(false))
+      .catch(() => {
+        setClosing(false);
+        setCloseError(true);
+        setTimeout(() => setCloseError(false), 2000);
+      });
+  }, [instrument, slot]);
+
+  useEffect(() => {
+    if (state !== "in_position") {
+      setPanelOpen(false);
+      setClosing(false);
+      setCloseError(false);
+    }
+  }, [state]);
+
   const lastTick = tickData.ticks[tickData.ticks.length - 1];
   const displayLtp = lastTick?.ltp ?? tickData.exitPrice ?? null;
   const displayPnl = tickData.pnl ?? lastTick?.pnl ?? null;
@@ -275,6 +335,19 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
               Locked {lockedPnl >= 0 ? "+" : ""}{lockedPnl.toFixed(2)}
             </span>
           )}
+          {state === "in_position" && (
+            <button
+              onClick={openPanel}
+              className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider cursor-pointer transition-all hover:brightness-125"
+              style={{
+                background: "#ef444420",
+                color: "#ef4444",
+                border: "1px solid #ef444440",
+              }}
+            >
+              ✕ Close
+            </button>
+          )}
           <span
             className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
             style={{
@@ -291,6 +364,67 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
       <div className="flex-1 min-h-0 mt-1">
         <PriceDiagram ticks={tickData.ticks} entryPrice={tickData.entryPrice} entryTime={tickData.entryTime} exitTime={tickData.exitTime} exitPrice={tickData.exitPrice} currentSl={tickData.currentSl} tpLevels={tickData.tpLevels} color={accent} realizedPnl={tickData.pnl} onSlChange={handleSlChange} isTrading={state === "in_position"} />
       </div>
+
+      {panelOpen && (
+        <div
+          className="fixed z-50 pointer-events-auto"
+          style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
+        >
+          <div className="w-[280px] bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+            <div
+              className="flex items-center justify-between px-3 py-2 bg-white/[0.04] cursor-move select-none"
+              onMouseDown={handlePanelDragStart}
+            >
+              <div className="flex items-center gap-1.5">
+                <Icon icon={isCe ? "lucide:trending-up" : "lucide:trending-down"} className={isCe ? "text-indigo-400" : "text-amber-400"} width={12} />
+                <span className="text-[11px] font-bold text-white">{instrument} — Trade {slot}</span>
+              </div>
+              <button
+                onClick={() => setPanelOpen(false)}
+                className="text-gray-500 hover:text-white text-xs cursor-pointer leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-3 py-3 space-y-2">
+              <div className="flex justify-between text-[10px]">
+                <span className="text-gray-500">Entry</span>
+                <span className="text-white font-mono font-bold">{tickData.entryPrice?.toFixed(2) ?? "—"}</span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-gray-500">LTP</span>
+                <span className="font-mono font-bold text-sm" style={{ color: accent }}>{displayLtp?.toFixed(2) ?? "—"}</span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-gray-500">P&L</span>
+                <span className="font-mono font-bold text-sm" style={{ color: (displayPnl ?? 0) >= 0 ? "#10b981" : "#ef4444" }}>
+                  {(displayPnl ?? 0) >= 0 ? "+" : ""}{displayPnl?.toFixed(2) ?? "—"}
+                </span>
+              </div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-gray-500">SL</span>
+                <span className="text-red-400 font-mono font-bold">{tickData.currentSl?.toFixed(2) ?? "—"}</span>
+              </div>
+            </div>
+
+            <div className="px-3 pb-3">
+              <button
+                onClick={handleClose}
+                disabled={closing}
+                className="w-full py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer transition-all hover:brightness-125 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: closeError ? "#f59e0b25" : closing ? "#64748b30" : "#ef444425",
+                  color: closeError ? "#f59e0b" : "#ef4444",
+                  border: `1px solid ${closeError ? "#f59e0b40" : "#ef444440"}`,
+                }}
+              >
+                {closeError ? "Failed — try again" : closing ? "Closing..." : "Close at CMP"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

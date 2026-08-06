@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import PriceDiagram from "./PriceDiagram";
+import { fetchTickHistory, modifySl } from "../lib/api";
 
 interface Tick {
   timestamp: string;
@@ -103,6 +104,9 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
           exitPrice: null,
           tpLevels: [],
         });
+        fetchTickHistory(instrument, slot).then((ticks) => {
+          setTickData((prev) => ({ ...prev, ticks }));
+        }).catch(() => {});
       } else if (pos.state === "exited_win" || pos.state === "exited_loss" || pos.state === "exited_breakeven") {
         frozenRef.current = true;
         setState(pos.state);
@@ -141,6 +145,9 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
               exitPrice: null,
               tpLevels: [],
             });
+            fetchTickHistory(instrument, slot).then((ticks) => {
+              setTickData((prev) => ({ ...prev, ticks }));
+            }).catch(() => {});
           } else if (pos.state === "exited_win" || pos.state === "exited_loss" || pos.state === "exited_breakeven") {
             frozenRef.current = true;
             setState(pos.state);
@@ -226,6 +233,19 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
     : state === "stopped" ? "Stopped"
     : "Idle";
 
+  const handleSlChange = (newSl: number) => {
+    modifySl(instrument, slot, newSl).then(() => {
+      setTickData((prev) => ({ ...prev, currentSl: newSl }));
+    }).catch(() => {});
+  };
+
+  const lastTick = tickData.ticks[tickData.ticks.length - 1];
+  const displayLtp = lastTick?.ltp ?? tickData.exitPrice ?? null;
+  const displayPnl = tickData.pnl ?? lastTick?.pnl ?? null;
+  const lockedPnl = tickData.currentSl !== null && tickData.entryPrice !== null
+    ? tickData.currentSl - tickData.entryPrice
+    : null;
+
   return (
     <div className={`card ${glowClass} p-2 flex flex-col ${dim ? "opacity-40" : ""}`}>
       <div className="flex items-center justify-between shrink-0">
@@ -239,20 +259,37 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
             <span className="text-xs font-mono font-semibold text-red-300 ml-1">exit {exitedAt}</span>
           )}
         </h3>
-        <span
-          className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
-          style={{
-            background: `${stateColors[state] || "#64748b"}15`,
-            color: stateColors[state] || "#64748b",
-            border: `1px solid ${stateColors[state] || "#64748b"}30`,
-          }}
-        >
-          {stateLabel}
-        </span>
+        <div className="flex items-center gap-2">
+          {displayLtp != null && (
+            <span className="text-[10px] font-mono font-bold" style={{ color: accent }}>
+              LTP {displayLtp.toFixed(2)}
+            </span>
+          )}
+          {displayPnl != null && (
+            <span className="text-[10px] font-mono font-bold" style={{ color: displayPnl >= 0 ? "#10b981" : "#ef4444" }}>
+              P&L {displayPnl >= 0 ? "+" : ""}{displayPnl.toFixed(2)}
+            </span>
+          )}
+          {lockedPnl != null && (
+            <span className="text-[10px] font-mono font-bold" style={{ color: lockedPnl >= 0 ? "#10b981" : "#ef4444" }}>
+              Locked {lockedPnl >= 0 ? "+" : ""}{lockedPnl.toFixed(2)}
+            </span>
+          )}
+          <span
+            className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
+            style={{
+              background: `${stateColors[state] || "#64748b"}15`,
+              color: stateColors[state] || "#64748b",
+              border: `1px solid ${stateColors[state] || "#64748b"}30`,
+            }}
+          >
+            {stateLabel}
+          </span>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 mt-1">
-        <PriceDiagram ticks={tickData.ticks} entryPrice={tickData.entryPrice} entryTime={tickData.entryTime} exitTime={tickData.exitTime} exitPrice={tickData.exitPrice} currentSl={tickData.currentSl} tpLevels={tickData.tpLevels} color={accent} realizedPnl={tickData.pnl} />
+        <PriceDiagram ticks={tickData.ticks} entryPrice={tickData.entryPrice} entryTime={tickData.entryTime} exitTime={tickData.exitTime} exitPrice={tickData.exitPrice} currentSl={tickData.currentSl} tpLevels={tickData.tpLevels} color={accent} realizedPnl={tickData.pnl} onSlChange={handleSlChange} isTrading={state === "in_position"} />
       </div>
     </div>
   );

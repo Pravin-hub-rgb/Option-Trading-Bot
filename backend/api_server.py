@@ -87,6 +87,25 @@ def create_app(bot_manager):
             raise HTTPException(status_code=404, detail="Trade not found")
         return {"status": "deleted"}
 
+    @app.get("/api/ticks/{instrument}/{slot}")
+    async def get_ticks(instrument: str, slot: int):
+        if not bot_manager.live_feed_server:
+            return {"ticks": []}
+        ticks = bot_manager.live_feed_server.get_tick_history(instrument, slot)
+        return {"ticks": ticks}
+
+    class SlBody(BaseModel):
+        sl: float
+
+    @app.post("/api/position/{instrument}/{slot}/sl")
+    async def modify_sl(instrument: str, slot: int, body: SlBody):
+        if not bot_manager._data_streamer:
+            raise HTTPException(status_code=400, detail="Bot not running")
+        ok = bot_manager._data_streamer.modify_sl(instrument, slot, body.sl)
+        if not ok:
+            raise HTTPException(status_code=400, detail="No active position found")
+        return {"status": "ok", "sl": body.sl}
+
     @app.get("/api/token/status")
     async def token_status():
         token = get_setting("access_token")

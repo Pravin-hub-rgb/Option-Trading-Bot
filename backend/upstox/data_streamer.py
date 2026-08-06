@@ -21,6 +21,18 @@ def _classify_pnl(pnl):
         return 'loss'
     return 'breakeven'
 
+def _first_candle_minute():
+    """The first candle the strategy may use as a reference, as an IST datetime
+    for today. Defaults to 09:16 (skip the unreliable 09:15 open candle)."""
+    s = get_as_dict()
+    raw = s.get('strategy_first_candle', '09:16')
+    try:
+        hh, mm = raw.strip().split(':')[:2]
+    except (ValueError, AttributeError):
+        hh, mm = '09', '16'
+    minute = datetime.now(IST).replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
+    return minute
+
 class DataStreamer:
     def __init__(self, session_name="day", instruments=None, ce_key=None, pe_key=None,
                  live_feed_server=None, bot_manager=None, access_token=None,
@@ -50,8 +62,10 @@ class DataStreamer:
             self.CE_STRIKE = None
             self.PE_STRIKE = None
             self.components = {}
+            first_minute = _first_candle_minute()
             for key in prescan_keys:
                 agg = CandleAggregator(symbol=key)
+                agg.set_start_minute(first_minute)
                 self._prescan_aggregators[key] = agg
             print(f"Pre-subscribe mode: {len(prescan_keys)} instruments loaded")
         else:
@@ -70,9 +84,11 @@ class DataStreamer:
             s = self._settings = get_as_dict()
 
             self.components = {}
+            first_minute = _first_candle_minute()
             for inst in self.active_instruments:
                 symbol = self.CE_SYMBOL if inst == 'CE' else self.PE_SYMBOL
                 aggregator = CandleAggregator(symbol=symbol)
+                aggregator.set_start_minute(first_minute)
                 aggregator.add_listener(lambda e, c, i=inst: self._on_candle_event(i, e, c))
                 self.components[inst] = {
                     'candle_aggregator': aggregator,
@@ -145,6 +161,14 @@ class DataStreamer:
             }
             self.live_feed_server.broadcast_sync(msg)
 
+            if in_pos:
+                self.live_feed_server.store_tick(inst_type, comp.get('trade_slot', 1), {
+                    "timestamp": timestamp.strftime("%H:%M:%S.%f")[:-3],
+                    "ltp": ltp,
+                    "sl": pm.get_current_sl(),
+                    "pnl": pm.get_unrealized_pnl(ltp),
+                })
+
     def _update_prescan_ohlc(self, instrument_key, ohlc_list, feed_time=None):
         agg = self._prescan_aggregators.get(instrument_key)
         if not agg:
@@ -167,20 +191,17 @@ class DataStreamer:
                 feed_time=feed_time
             )
 
-    def finalize_selection(self, ce_key, pe_key, ce_strike=None, pe_strike=None, hold_minute=None):
+    def finalize_selection(self, ce_key, pe_key, ce_strike=None, pe_strike=None):
         if not self._prescan_aggregators:
             print(f"[ERROR] finalize_selection called without prescan aggregators")
             return
 
         s = self._settings = get_as_dict()
 
-        if hold_minute is None:
-            hold_minute = datetime.now(IST).replace(second=0, microsecond=0)
-        hold_minute = hold_minute.replace(second=0, microsecond=0)
-
         # Build all components in a local dict FIRST so the WS thread can never
         # observe a half-constructed component (the race that caused KeyError 'PE').
         new_components = {}
+        first_minute = _first_candle_minute()
         for inst, key, strike in [('CE', ce_key, ce_strike), ('PE', pe_key, pe_strike)]:
             symbol = f"{strike} {inst}" if strike else key
 
@@ -192,8 +213,9 @@ class DataStreamer:
                 prescan_agg.symbol = symbol
 
             prescan_agg.add_listener(lambda e, c, i=inst: self._on_candle_event(i, e, c))
-            # Gate the 09:15 candle: strategy must not see it until REST confirms.
-            prescan_agg.arm_hold(hold_minute)
+            # Strategy starts from the first configurable candle (default 09:16);
+            # anything before it (the 09:15 open candle) is never used.
+            prescan_agg.set_start_minute(first_minute)
 
             new_components[inst] = {
                 'candle_aggregator': prescan_agg,
@@ -245,43 +267,7 @@ class DataStreamer:
             except Exception as e:
                 print(f"[WARN] Unsubscribe failed: {e}")
         print(f"Finalized selection: CE={self.CE_SYMBOL}, PE={self.PE_SYMBOL} "
-              f"(prescan aggregators injected, {hold_minute.strftime('%H:%M')} candle held for REST confirm)")
-
-    def _commit_candle(self, inst_type, candle, source):
-        comp = self.components.get(inst_type)
-        if not comp:
-            print(f"[ERROR] _commit_candle: no component for {inst_type}")
-            return
-        o, h, l, c = candle['open'], candle['high'], candle['low'], candle['close']
-        if h < o or l > o or h < c or l > c or h < l:
-            print(f"[ERROR] {inst_type}: refusing to commit impossible candle "
-                  f"O={o} H={h} L={l} C={c} ({source})")
-            return
-        candle['symbol'] = comp['symbol']
-        if not comp['candle_aggregator'].commit_corrected_candle(candle):
-            return
-        color = 'RED' if o > c else 'GREEN'
-        print(f"[{inst_type}] CANDLE {candle['timestamp'].strftime('%H:%M')} "
-              f"O={o:.2f} H={h:.2f} L={l:.2f} C={c:.2f} {color} ({source})")
-        comp['strategy'].on_new_candle_closed()
-
-    def commit_confirmed_candle(self, inst_type, candle):
-        """Called by the REST poller with the verified 09:15 candle."""
-        self._commit_candle(inst_type, candle, "REST-confirmed 09:16:20")
-
-    def commit_ws_fallback(self, inst_type):
-        """Called by the REST poller when no confirmed candle is available;
-        commits the WS candle that the gate parked (today's behavior)."""
-        comp = self.components.get(inst_type)
-        if not comp:
-            print(f"[ERROR] commit_ws_fallback: no component for {inst_type}")
-            return
-        held = comp['candle_aggregator'].release_hold()
-        if held is None:
-            print(f"[ERROR] {inst_type}: held 09:15 candle was never received from WS "
-                  f"before commit time — no reference set for this side")
-            return
-        self._commit_candle(inst_type, held, "WS fallback (REST unavailable)")
+              f"(prescan aggregators injected, strategy starts from {first_minute.strftime('%H:%M')})")
 
     def exit_position(self, inst_type, exit_price, exit_time, exit_reason):
         comp = self.components[inst_type]
@@ -333,6 +319,7 @@ class DataStreamer:
                 "reason": exit_reason,
                 "outcome": outcome,
             })
+            self.live_feed_server.clear_tick_history(inst_type, slot)
 
         s = get_as_dict()
         if outcome == 'win':
@@ -346,6 +333,18 @@ class DataStreamer:
             elif comp['can_trade']:
                 comp['trade_slot'] = 2
                 print(f"[{inst_type}] Moving to slot 2 for next trade")
+
+    def modify_sl(self, instrument, slot, new_sl):
+        comp = self.components.get(instrument)
+        if not comp:
+            return False
+        pm = comp['position_manager']
+        if not pm.is_in_position():
+            return False
+        ok = pm.set_manual_sl(new_sl)
+        if ok:
+            print(f"[{instrument}] SL manually set to {new_sl:.2f}")
+        return ok
 
     def process_tick(self, inst_type, ltp, timestamp):
         comp = self.components[inst_type]

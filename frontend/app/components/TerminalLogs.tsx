@@ -79,12 +79,12 @@ export default function TerminalLogs() {
   }, [height]);
 
   function detectType(msg: string): { label: string; color: string } {
-    if (msg.includes("ENTRY") || msg.includes("EXIT") || msg.includes("Order")) return { label: "EXECUTION", color: "#10b981" };
-    if (msg.includes("SL") || msg.includes("Trailing") || msg.includes("Stop Loss")) return { label: "RISK", color: "#f59e0b" };
-    if (msg.includes("CANDLE") || msg.includes("Reference SET") || msg.includes("Reference SHIFTED")) return { label: "STRATEGY", color: "#6366f1" };
-    if (msg.includes("Error") || msg.includes("❌") || msg.includes("failed")) return { label: "SYSTEM", color: "#ef4444" };
-    if (msg.includes("Strategy") || msg.includes("candle") || msg.includes("breakout")) return { label: "STRATEGY", color: "#6366f1" };
-    return { label: "SYSTEM", color: "#3b82f6" };
+    if (msg.includes("ENTRY") || msg.includes("EXIT") || msg.includes("Order")) return { label: "EXECUTION", color: "#34d399" };
+    if (msg.includes("SL") || msg.includes("Trailing") || msg.includes("Stop Loss")) return { label: "RISK", color: "#fbbf24" };
+    if (msg.includes("CANDLE") || msg.includes("Reference SET") || msg.includes("Reference SHIFTED")) return { label: "STRATEGY", color: "#818cf8" };
+    if (msg.includes("Error") || msg.includes("❌") || msg.includes("failed")) return { label: "SYSTEM", color: "#f87171" };
+    if (msg.includes("Strategy") || msg.includes("candle") || msg.includes("breakout")) return { label: "STRATEGY", color: "#818cf8" };
+    return { label: "SYSTEM", color: "#60a5fa" };
   }
 
   return (
@@ -122,10 +122,10 @@ export default function TerminalLogs() {
             {logs.map((log, i) => {
               const alt = i % 2 === 1;
               return (
-                <div key={i} className={`flex gap-3 py-1 px-2 ${alt ? "bg-white/[0.02]" : ""} ${i < logs.length - 3 ? "opacity-60" : "opacity-90"}`}>
-                  <span className="text-gray-600 shrink-0">[{log.timestamp}]</span>
+                <div key={i} className={`flex gap-3 py-1 px-2 ${alt ? "bg-white/[0.02]" : ""}`}>
+                  <span className="text-gray-300 shrink-0">[{log.timestamp}]</span>
                   <span className="font-bold shrink-0" style={{ color: log.color }}>{log.label}:</span>
-                  <span style={{ color: log.message.includes("❌") ? "#ef4444" : "#e5e7eb" }}>{log.message}</span>
+                  <span className="text-white">{log.message}</span>
                 </div>
               );
             })}

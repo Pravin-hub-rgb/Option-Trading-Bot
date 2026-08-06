@@ -91,9 +91,15 @@
     "category": "logging"
   },
   "access_token": {
-    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YTcxNThmMjI3ZjI2ODI1MzY5MDJiYzkiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc4NTgxMzIzNCwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzg1ODgwODAwfQ.0g_BzdVQwt4jlXx98sZkeLgUA65aDw_U0v0wGaV8vAA",
+    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YTczZWQ2ZmM0OTgzMjdlZTBiMjg0ODIiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc4NTk4MjMxOSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzg2MDUzNjAwfQ.Uf2VeamMzYxeTo5nvRedxjzZxtMlgUQ1VEanYBtit9k",
     "type": "password",
     "label": "Upstox Access Token",
     "category": "credentials"
+  },
+  "strategy_first_candle": {
+    "value": "09:16",
+    "type": "time",
+    "label": "First Candle (start strategy from)",
+    "category": "timing"
   }
 }

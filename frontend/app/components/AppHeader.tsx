@@ -76,7 +76,6 @@ export default function AppHeader() {
 
   const tabs = [
     { href: "/", label: "Terminal", icon: "lucide:terminal" },
-    { href: "/positions", label: "Positions", icon: "lucide:layout-dashboard" },
     { href: "/analytics", label: "Strategy", icon: "lucide:bar-chart-3" },
     { href: "/history", label: "History", icon: "lucide:clock" },
     { href: "/token", label: "Token", icon: "lucide:key-round" },

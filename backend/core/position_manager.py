@@ -100,7 +100,14 @@ class PositionManager:
             return False
         
         return current_ltp <= self.position['stop_loss']
-    
+
+    def set_manual_sl(self, value):
+        """Manually set SL. Auto-trailing can still move it UP from here."""
+        if not self.position:
+            return False
+        self.position['stop_loss'] = value
+        return True
+
     def close_position(self, exit_price, exit_time):
         """
         Close position and return trade summary

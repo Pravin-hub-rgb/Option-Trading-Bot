@@ -10,6 +10,7 @@ DEFAULT_SETTINGS = {
     "strategy_start": {"value": "09:15", "type": "time", "label": "Strategy Start", "category": "timing"},
     "entry_window_end": {"value": "15:00", "type": "time", "label": "Entry Window End", "category": "timing"},
     "market_open_delay": {"value": "40", "type": "number", "label": "Market Open Delay (s)", "category": "timing"},
+    "strategy_first_candle": {"value": "09:16", "type": "time", "label": "First Candle (start strategy from)", "category": "timing"},
     "max_wait_candles": {"value": "2", "type": "number", "label": "Max Wait Candles", "category": "strategy"},
     "allow_reference_shift": {"value": "true", "type": "boolean", "label": "Allow Reference Shift", "category": "strategy"},
     "initial_sl_points": {"value": "5", "type": "number", "label": "Initial SL (points)", "category": "risk"},

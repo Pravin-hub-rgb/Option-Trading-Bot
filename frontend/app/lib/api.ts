@@ -80,3 +80,18 @@ export async function resetSettings(): Promise<{ status: string }> {
   const res = await fetch(`${API}/api/settings/reset`, { method: "POST" });
   return res.json();
 }
+
+export async function fetchTickHistory(instrument: string, slot: number): Promise<{ timestamp: string; ltp: number; sl: number | null; pnl: number | null }[]> {
+  const res = await fetch(`${API}/api/ticks/${instrument}/${slot}`);
+  const data = await res.json();
+  return data.ticks || [];
+}
+
+export async function modifySl(instrument: string, slot: number, sl: number): Promise<{ status: string; sl: number }> {
+  const res = await fetch(`${API}/api/position/${instrument}/${slot}/sl`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sl }),
+  });
+  return res.json();
+}

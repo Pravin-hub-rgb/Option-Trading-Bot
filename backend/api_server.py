@@ -54,8 +54,8 @@ def create_app(bot_manager):
         return {"days": load_trade_pnl(year=year)}
 
     @app.get("/api/trades/stats")
-    async def get_trades_stats():
-        return load_trade_stats()
+    async def get_trades_stats(year: int | None = None):
+        return load_trade_stats(year=year)
 
     @app.get("/api/settings")
     async def get_settings():

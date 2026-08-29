@@ -42,7 +42,7 @@
     "category": "strategy"
   },
   "initial_sl_points": {
-    "value": "5",
+    "value": "4",
     "type": "number",
     "label": "Initial SL (points)",
     "category": "risk"

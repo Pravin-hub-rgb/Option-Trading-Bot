@@ -5,18 +5,29 @@ import { Icon } from "@iconify/react";
 import { fetchTrades, deleteTrade } from "../lib/api";
 import type { TradeEntry } from "../lib/types";
 
-export default function TradeLogsTable() {
+export default function TradeLogsTable({
+  year,
+  onDeleted,
+  breakevenTolerance,
+}: {
+  year: number;
+  onDeleted: () => void;
+  breakevenTolerance: number;
+}) {
   const [trades, setTrades] = useState<TradeEntry[]>([]);
 
   useEffect(() => {
-    fetchTrades().then((res) => setTrades(res.trades));
-  }, []);
+    fetchTrades(year)
+      .then((res) => setTrades(res.trades))
+      .catch(() => setTrades([]));
+  }, [year]);
 
   async function handleDelete(id: number) {
     try {
       const res = await deleteTrade(id);
       if (res.status === "deleted") {
         setTrades((prev) => prev.filter((t) => t.id !== id));
+        onDeleted();
       }
     } catch {
       // silently ignore
@@ -27,8 +38,8 @@ export default function TradeLogsTable() {
 
   function formatDate(iso: string | undefined) {
     if (!iso) return "—";
-    const d = new Date(iso);
-    return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    const [y, m, d] = iso.slice(0, 10).split("-");
+    return `${Number(d)} ${MONTHS[Number(m) - 1]} ${y}`;
   }
 
   if (trades.length === 0) {
@@ -46,6 +57,8 @@ export default function TradeLogsTable() {
             <th className="text-right py-2 pr-3">Entry</th>
             <th className="text-right py-2 pr-3">Exit</th>
             <th className="text-right py-2 pr-3">P&L</th>
+            <th className="text-right py-2 pr-3">Net</th>
+            <th className="text-right py-2 pr-3">Fees</th>
             <th className="text-left py-2 pr-3">Reason</th>
             <th className="py-2"></th>
           </tr>
@@ -60,9 +73,36 @@ export default function TradeLogsTable() {
               <td className="py-2 pr-3 text-right font-mono">{t.exit_price?.toFixed(2) ?? "—"}</td>
               <td
                 className="py-2 pr-3 text-right font-mono"
-                style={{ color: t.pnl !== null ? (t.pnl >= 0 ? "#10b981" : "#ef4444") : "#64748b" }}
+                style={{
+                  color:
+                    t.pnl !== null
+                      ? t.pnl > breakevenTolerance
+                        ? "#10b981"
+                        : t.pnl < -breakevenTolerance
+                          ? "#ef4444"
+                          : "#f59e0b"
+                      : "#64748b",
+                }}
               >
                 {t.pnl !== null ? `${t.pnl >= 0 ? "+" : ""}${t.pnl.toFixed(2)}` : "—"}
+              </td>
+              <td
+                className="py-2 pr-3 text-right font-mono"
+                style={{
+                  color:
+                    t.net_pnl !== null && t.net_pnl !== undefined
+                      ? t.net_pnl >= 0
+                        ? "#10b981"
+                        : "#ef4444"
+                      : "#64748b",
+                }}
+              >
+                {t.net_pnl !== null && t.net_pnl !== undefined
+                  ? `${t.net_pnl >= 0 ? "+" : "-"}₹${Math.abs(t.net_pnl).toFixed(2)}`
+                  : "—"}
+              </td>
+              <td className="py-2 pr-3 text-right font-mono text-[#64748b]">
+                {t.charges !== null && t.charges !== undefined ? `₹${t.charges.toFixed(2)}` : "—"}
               </td>
               <td className="py-2 pr-3 text-[#64748b]">{t.exit_reason || "—"}</td>
               <td className="py-2">

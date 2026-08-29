@@ -52,8 +52,9 @@ export async function validateToken(token: string): Promise<{ valid: boolean; me
   return res.json();
 }
 
-export async function fetchTradeStats(): Promise<TradeStats> {
-  const res = await fetch(`${API}/api/trades/stats`);
+export async function fetchTradeStats(year?: number): Promise<TradeStats> {
+  const params = year ? `?year=${year}` : "";
+  const res = await fetch(`${API}/api/trades/stats${params}`);
   return res.json();
 }
 

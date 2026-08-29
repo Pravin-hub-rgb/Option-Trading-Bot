@@ -11,7 +11,7 @@ from settings_db import get_setting, get_as_dict
 IST = pytz.timezone('Asia/Kolkata')
 
 GAP_THRESHOLD_SECONDS = 5  # placeholder — derive from real tick-gap distribution
-BREAKEVEN_BAND = 1.0  # |pnl| <= this is treated as breakeven (neither win nor loss), in points
+BREAKEVEN_BAND = 1.5  # |pnl| <= this is treated as breakeven (neither win nor loss), in points
 
 def _classify_pnl(pnl):
     """Classify a realised P&L (in points) as 'win', 'loss' or 'breakeven'."""
@@ -127,7 +127,8 @@ class DataStreamer:
     def is_entry_window_open(self):
         current_time = datetime.now(IST).strftime("%H:%M")
         s = get_as_dict()
-        return s.get('strategy_start', '09:15') <= current_time <= s.get('entry_window_end', '15:00')
+        end = min(s.get('entry_window_end', '15:00'), s.get('eod_exit_time', '14:59'))
+        return s.get('strategy_start', '09:15') <= current_time <= end
 
     def _on_candle_event(self, inst_type, event_type, candle):
         if self.live_feed_server:
@@ -365,6 +366,8 @@ class DataStreamer:
         self.tick_count[inst_type] += 1
         
         prev_tick_time = self.last_tick_time.get(inst_type)
+        if prev_tick_time and timestamp < prev_tick_time:
+            timestamp = prev_tick_time
         self.last_tick_time[inst_type] = timestamp
         gap_seconds = (timestamp - prev_tick_time).total_seconds() if prev_tick_time else 0
         
@@ -718,3 +721,21 @@ class DataStreamer:
             comp = self.components.get(inst)
             if comp:
                 comp['trade_logger'].close()
+
+    def force_exit_all(self, exit_reason):
+        """Close any open position at its last known LTP so no trade is left
+        unsettled in the DB. Safe to call multiple times (idempotent)."""
+        now = datetime.now(IST)
+        for inst_type in ['CE', 'PE']:
+            comp = self.components.get(inst_type)
+            if not comp:
+                continue
+            pm = comp.get('position_manager')
+            if not pm or not pm.is_in_position():
+                continue
+            last_ltp = pm.position['last_ltp']
+            print(f"[{inst_type}] FORCE EXIT at {last_ltp:.2f} ({exit_reason})")
+            try:
+                self.exit_position(inst_type, last_ltp, now, exit_reason)
+            except Exception as e:
+                print(f"[ERROR] Force exit failed for {inst_type}: {e}")

@@ -28,7 +28,7 @@ interface Props {
 
 function tickTime(ts: string): number {
   const today = new Date().toISOString().slice(0, 10);
-  return Math.floor(new Date(`${today}T${ts}`).getTime());
+  return Math.floor(new Date(`${today}T${ts}`).getTime() / 1000);
 }
 
 function createPriceLineOptions(price: number, color: string, title: string, dashed = true): Parameters<ISeriesApi<"Area">["createPriceLine"]>[0] {
@@ -50,7 +50,7 @@ export default function PriceDiagram({
   exitPrice,
   currentSl,
   tpLevels = [],
-  belowSlCount = 3,
+  belowSlCount = 1,
   slStep = 5,
   color = "#6366f1",
   realizedPnl,
@@ -67,10 +67,10 @@ export default function PriceDiagram({
   const tpLineRefs = useRef<IPriceLine[]>([]);
   const belowLineRefs = useRef<IPriceLine[]>([]);
 
-  const initialSlRef = useRef<number | null>(null);
   const atEndRef = useRef(true);
   const lastTickCountRef = useRef(0);
   const slOverrideRef = useRef<number | null>(null);
+  const prevEntryTimeRef = useRef<string | null | undefined>(null);
 
   const slDragRef = useRef({ active: false, startY: 0, startPrice: 0 });
   const [slDragState, setSlDragState] = useState({ active: false, price: 0 });
@@ -80,11 +80,6 @@ export default function PriceDiagram({
   const [, setScrollTick] = useState(0);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string; color: string } | null>(null);
   const [chartReady, setChartReady] = useState(false);
-
-  if (currentSl !== null && initialSlRef.current === null) {
-    initialSlRef.current = currentSl;
-  }
-  const initialSl = initialSlRef.current;
 
   const displaySl = slDragState.active ? slDragState.price : currentSl;
 
@@ -144,7 +139,7 @@ export default function PriceDiagram({
         timeVisible: true,
         secondsVisible: true,
         tickMarkFormatter: (time: number) => {
-          const d = new Date(time);
+          const d = new Date(time * 1000);
           return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
         },
       },
@@ -206,20 +201,32 @@ export default function PriceDiagram({
 
       const data = raw.length > 0
         ? raw.reduce<{ time: Time; value: number }[]>((acc, pt) => {
-            if (acc.length === 0 || (pt.time as number) > (acc[acc.length - 1].time as number)) {
+            if (acc.length === 0) {
               acc.push(pt);
-            } else {
+              return acc;
+            }
+            const lastTime = acc[acc.length - 1].time as number;
+            const curTime = pt.time as number;
+            if (curTime > lastTime) {
+              acc.push(pt);
+            } else if (curTime === lastTime) {
               acc[acc.length - 1] = pt;
             }
             return acc;
           }, [])
         : raw;
 
-      if (lastTickCountRef.current === 0) {
-        series.setData(data);
-      } else {
-        const last = data[data.length - 1];
-        if (last) series.update(last);
+      try {
+        if (lastTickCountRef.current === 0 || series.data().length === 0) {
+          lastTickCountRef.current = 0;
+          series.setData(data);
+        } else {
+          const last = data[data.length - 1];
+          if (last) series.update(last);
+        }
+      } catch {
+        lastTickCountRef.current = 0;
+        try { series.setData(data); } catch {}
       }
 
       lastTickCountRef.current = ticks.length;
@@ -227,10 +234,33 @@ export default function PriceDiagram({
       requestAnimationFrame(() => setScrollTick((v) => v + 1));
 
       if (atEndRef.current) {
-        chartRef.current?.timeScale().scrollToRealTime();
+        try { chartRef.current?.timeScale().scrollToRealTime(); } catch {}
       }
     }
   }, [ticks, chartReady]);
+
+  useEffect(() => {
+    if (prevEntryTimeRef.current === null) {
+      prevEntryTimeRef.current = entryTime;
+      return;
+    }
+    if (entryTime !== prevEntryTimeRef.current) {
+      prevEntryTimeRef.current = entryTime;
+      lastTickCountRef.current = 0;
+      atEndRef.current = true;
+      slOverrideRef.current = null;
+      slFiredRef.current = false;
+      isDraggingRef.current = false;
+      slDragRef.current = { active: false, startY: 0, startPrice: 0 };
+      setSlDragState({ active: false, price: 0 });
+      if (seriesRef.current) {
+        try { seriesRef.current.setData([]); } catch {}
+      }
+      if (chartRef.current) {
+        try { chartRef.current.timeScale().resetTimeScale(); } catch {}
+      }
+    }
+  }, [entryTime]);
 
   useEffect(() => {
     const series = seriesRef.current;
@@ -287,23 +317,16 @@ export default function PriceDiagram({
 
   useEffect(() => {
     const series = seriesRef.current;
-    if (!series) return;
+    if (!series || entryPrice === null) return;
 
     if (ghostSlLineRef.current) {
       try { series.removePriceLine(ghostSlLineRef.current); } catch {}
       ghostSlLineRef.current = null;
     }
 
-    if (initialSl !== null) {
-      ghostSlLineRef.current = series.createPriceLine({
-        price: initialSl,
-        color: "#94a3b8",
-        lineWidth: 1,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: `-${entryPrice !== null ? Math.round(entryPrice - initialSl) : slStep}`,
-      });
-    }
+    ghostSlLineRef.current = series.createPriceLine(
+      createPriceLineOptions(entryPrice - slStep, "#94a3b8", `-${slStep}`)
+    );
 
     return () => {
       if (ghostSlLineRef.current) {
@@ -311,7 +334,7 @@ export default function PriceDiagram({
         ghostSlLineRef.current = null;
       }
     };
-  }, [initialSl]);
+  }, [entryPrice, slStep]);
 
   useEffect(() => {
     const series = seriesRef.current;
@@ -340,22 +363,19 @@ export default function PriceDiagram({
 
   useEffect(() => {
     const series = seriesRef.current;
-    if (!series) return;
+    if (!series || entryPrice === null) return;
 
     belowLineRefs.current.forEach((line) => {
       try { series.removePriceLine(line); } catch {}
     });
     belowLineRefs.current = [];
 
-    const base = initialSl ?? currentSl;
-    if (base !== null) {
-      for (let i = 1; i <= belowSlCount; i++) {
-        const price = base - i * slStep;
-        const line = series.createPriceLine(
-          createPriceLineOptions(price, "#94a3b8", `-${(i + 1) * slStep}`)
-        );
-        belowLineRefs.current.push(line);
-      }
+    for (let i = 1; i <= belowSlCount; i++) {
+      const price = entryPrice - (i + 1) * slStep;
+      const line = series.createPriceLine(
+        createPriceLineOptions(price, "#94a3b8", `-${(i + 1) * slStep}`)
+      );
+      belowLineRefs.current.push(line);
     }
 
     return () => {
@@ -364,7 +384,7 @@ export default function PriceDiagram({
       });
       belowLineRefs.current = [];
     };
-  }, [initialSl, currentSl, belowSlCount, slStep]);
+  }, [entryPrice, belowSlCount, slStep]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -379,7 +399,7 @@ export default function PriceDiagram({
       if (!data || data.length === 0) return;
 
       const lastBar = data[data.length - 1] as { time: number };
-      const isAtEnd = range.to >= (lastBar.time ?? 0) - 2000;
+      const isAtEnd = range.to >= (lastBar.time ?? 0) - 2;
       atEndRef.current = isAtEnd;
 
       setScrollTick((v) => v + 1);

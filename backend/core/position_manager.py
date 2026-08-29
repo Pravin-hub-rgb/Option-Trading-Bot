@@ -4,14 +4,14 @@ Position Manager: Handles single position lifecycle with trailing stop loss
 from datetime import datetime
 
 class PositionManager:
-    def __init__(self, initial_sl_points=5, 
+    def __init__(self, initial_sl_points=4, 
                  trailing_trigger=5, 
                  trailing_step=5):
         """
         Initialize Position Manager
         
         Args:
-            initial_sl_points: Points below entry for initial SL (default: 5)
+            initial_sl_points: Points below entry for initial SL (default: 4)
             trailing_trigger: Profit points to trigger first SL move (default: 5)
             trailing_step: Points to trail by (default: 5)
         """
@@ -77,7 +77,12 @@ class PositionManager:
             # Reached at least +5 profit
             # Calculate how many milestones passed
             milestones_passed = int((profit - trailing_trigger) / trailing_step)
-            new_sl = self.position['entry_price'] + (milestones_passed * trailing_step)
+            # The first milestone (the +5 lock) moves SL to the true breakeven
+            # (entry + 1 pt to cover brokerage/STT/charges); higher rungs follow
+            # the normal trailing step.
+            new_sl = self.position['entry_price'] + (
+                1.0 if milestones_passed == 0 else milestones_passed * trailing_step
+            )
             
             # Only update if new SL is higher
             if new_sl > self.position['stop_loss']:

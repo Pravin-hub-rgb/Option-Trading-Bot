@@ -8,22 +8,34 @@ import type { DayPnl } from "../lib/types";
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function getHeatmapColor(day: DayPnl | undefined): string {
+function getHeatmapColor(day: DayPnl | undefined, tol: number): string {
   if (!day || day.trade_count === 0) return "#1e293b";
   if (day.net_pnl === null) return "#e2e8f0";
-  if (day.net_pnl > 0) return "#10b981";
-  return "#ef4444";
+  if (day.net_pnl > tol) return "#10b981";
+  if (day.net_pnl < -tol) return "#ef4444";
+  return "#64748b";
 }
 
-function getHeatmapTooltip(day: DayPnl | undefined, dateStr: string): string {
+function getHeatmapTooltip(day: DayPnl | undefined, dateStr: string, tol: number): string {
   if (!day || day.trade_count === 0) return `${dateStr}: No trades`;
-  if (day.net_pnl === null) return `${dateStr}: ${day.trade_count} trade(s), P&L not set`;
-  return `${dateStr}: ${day.trade_count} trade(s), ${day.net_pnl >= 0 ? "+" : ""}${day.net_pnl.toFixed(2)}`;
+  const rupees = day.net_rupees;
+  if (rupees === null || rupees === undefined) return `${dateStr}: ${day.trade_count} trade(s), P&L not set`;
+  const sign = rupees >= 0 ? "+" : "";
+  const be = day.net_pnl !== null && day.net_pnl >= -tol && day.net_pnl <= tol ? " (breakeven)" : "";
+  return `${dateStr}: ${day.trade_count} trade(s), ${sign}₹${rupees.toFixed(2)}${be}`;
 }
 
-export default function TradeCalendar() {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
+export default function TradeCalendar({
+  year,
+  onYearChange,
+  refreshKey,
+  breakevenTolerance,
+}: {
+  year: number;
+  onYearChange: (year: number) => void;
+  refreshKey: number;
+  breakevenTolerance: number;
+}) {
   const [days, setDays] = useState<Record<string, DayPnl>>({});
 
   useEffect(() => {
@@ -34,7 +46,7 @@ export default function TradeCalendar() {
         setDays(m);
       })
       .catch(() => setDays({}));
-  }, [year]);
+  }, [year, refreshKey]);
 
   const { weeks, monthGroups, monthEndCols } = useMemo(() => {
     const first = new Date(year, 0, 1);
@@ -87,14 +99,14 @@ export default function TradeCalendar() {
         </span>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setYear((y) => y - 1)}
+            onClick={() => onYearChange(year - 1)}
             className="text-[#64748b] hover:text-[#e5e7eb] transition-colors"
           >
             <Icon icon="lucide:chevron-left" width="18" />
           </button>
           <span className="text-sm font-bold text-[#f1f5f9] font-mono">{year}</span>
           <button
-            onClick={() => setYear((y) => y + 1)}
+            onClick={() => onYearChange(year + 1)}
             className="text-[#64748b] hover:text-[#e5e7eb] transition-colors"
           >
             <Icon icon="lucide:chevron-right" width="18" />
@@ -135,11 +147,11 @@ export default function TradeCalendar() {
                   const key = fmt(date);
                   const day = days[key];
                   const inYear = date.getFullYear() === year;
-                  const color = inYear ? getHeatmapColor(day) : "transparent";
+                  const color = inYear ? getHeatmapColor(day, breakevenTolerance) : "transparent";
                   return (
                     <div
                       key={di}
-                      title={inYear ? getHeatmapTooltip(day, date.toDateString()) : ""}
+                      title={inYear ? getHeatmapTooltip(day, date.toDateString(), breakevenTolerance) : ""}
                       className="rounded-[3px] transition-all duration-200"
                       style={{
                         width: 14,
@@ -171,6 +183,8 @@ export default function TradeCalendar() {
         <div className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: "#1e293b" }} />
         <span className="text-[#64748b] text-[0.65rem]">Unsettled</span>
         <div className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: "#e2e8f0" }} />
+        <span className="text-[#64748b] text-[0.65rem]">Breakeven</span>
+        <div className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: "#64748b" }} />
         <span className="text-[#64748b] text-[0.65rem]">Profit</span>
         <div className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: "#10b981" }} />
         <span className="text-[#64748b] text-[0.65rem]">Loss</span>

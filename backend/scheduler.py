@@ -442,10 +442,19 @@ class TradingScheduler:
         STALE_THRESHOLD = timedelta(seconds=90)
         s = get_as_dict()
         market_end = s.get('market_end', '15:30')
+        eod_exit_time = s.get('eod_exit_time', '14:59')
+        eod_exited = False
         while self.is_running and self.get_current_time_str() < market_end:
             time.sleep(30)
             ds = self.data_streamer
             if ds:
+                if not eod_exited and self.get_current_time_str() >= eod_exit_time:
+                    eod_exited = True
+                    self.log(f"⏰ EOD reached ({eod_exit_time}) — force-exiting all open positions")
+                    try:
+                        ds.force_exit_all("Market Close")
+                    except Exception as e:
+                        self.log(f"⚠️ EOD force-exit error: {e}")
                 # Auto-stop: if both sides have finished all their trades (can_trade False
                 # on CE and PE, and neither is holding a position), end the session early.
                 comps = getattr(ds, 'components', None)
@@ -469,6 +478,10 @@ class TradingScheduler:
                         self.log(f"🔴 No ticks for {gap.seconds}s — streamer may be dead")
                         if not ds.running:
                             self.log("🔴 Streamer confirmed dead — stopping session")
+                            try:
+                                ds.force_exit_all("Streamer Dead")
+                            except Exception as e:
+                                self.log(f"⚠️ Force-exit on dead streamer failed: {e}")
                             break
         self.stop_streaming()
         self.log(f"✅ Done for today")

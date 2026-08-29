@@ -39,17 +39,24 @@ export interface TradeEntry {
   stop_loss: number | null;
   pnl: number | null;
   exit_reason: string;
+  gross_pnl?: number | null;
+  net_pnl?: number | null;
+  charges?: number | null;
+  buy_value?: number | null;
+  sell_value?: number | null;
 }
 
 export interface DayPnl {
   date: string;
   trade_count: number;
   net_pnl: number | null;
+  net_rupees?: number | null;
 }
 
 export interface TradeStats {
   total_trades: number;
   profitable: number;
+  breakeven: number;
   losing: number;
   unsettled: number;
   win_rate: number;
@@ -58,6 +65,12 @@ export interface TradeStats {
   avg_loss: number;
   largest_win: number;
   largest_loss: number;
+  breakeven_tolerance?: number;
+  gross_total_pnl?: number;
+  total_charges?: number;
+  net_total_pnl?: number;
+  per_point?: number;
+  days_traded?: number;
 }
 
 export interface SettingMeta {

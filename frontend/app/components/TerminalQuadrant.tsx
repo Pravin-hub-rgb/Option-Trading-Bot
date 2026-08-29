@@ -205,14 +205,14 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
               frozenRef.current = false;
               setState("in_position");
               setEnteredAt(fmtTime(msg.timestamp));
-              setTickData((prev) => ({ ...prev, entryPrice: msg.price, entryTime: extractTime(msg.timestamp) }));
+              setTickData((prev) => ({ ...prev, entryPrice: msg.price, entryTime: extractTime(msg.timestamp), currentSl: msg.sl ?? prev.currentSl }));
             }
             if (msg.action === "exit") {
               frozenRef.current = true;
               const outcome = msg.outcome === "breakeven" ? "exited_breakeven" : msg.pnl > 0 ? "exited_win" : "exited_loss";
               setState(outcome);
               setExitedAt(fmtTime(msg.timestamp));
-              setTickData((prev) => ({ ...prev, exitTime: extractTime(msg.timestamp), exitPrice: msg.price, pnl: msg.pnl }));
+              setTickData((prev) => ({ ...prev, exitTime: extractTime(msg.timestamp), exitPrice: msg.price, pnl: msg.pnl, currentSl: null }));
             }
           }
         } catch {
@@ -367,7 +367,7 @@ export default function TerminalQuadrant({ instrument, slot, initialPos }: Props
 
       {panelOpen && (
         <div
-          className="fixed z-50 pointer-events-auto"
+          className="fixed top-0 left-0 z-50 pointer-events-auto"
           style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
         >
           <div className="w-[280px] bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden">

@@ -16,7 +16,7 @@ class RedCandleHighBreak:
     def __init__(self, max_wait_candles=None, allow_reference_shift=None, initial_sl_points=None, label=""):
         self._max_wait_candles = max_wait_candles if max_wait_candles is not None else 2
         self._allow_reference_shift = allow_reference_shift if allow_reference_shift is not None else True
-        self._initial_sl_points = initial_sl_points if initial_sl_points is not None else 5
+        self._initial_sl_points = initial_sl_points if initial_sl_points is not None else 4
         self.label = label
         self._lock = threading.RLock()
         self.reset()

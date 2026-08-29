@@ -900,3 +900,124 @@ Real dashboard panel:
 | Entry price     | Broker fill price (≥ `H + buffer`), not `H`                                  |
 | Race protection | Re-fetch order status immediately before any cancel/modify                   |
 | Rate limit      | Stay under 10 orders/sec (regular algo)                                      |
+
+---
+
+## Guider's Second-Round Refinements (merged into the plan)
+
+### Keep-as-is
+
+- Reference-candle + max_wait + allow_reference_shift logic cleanly in `on_candle_closed`
+- Entry price = broker fill price (not H)
+- Partial fill policy (accept + cancel remainder + SL for filled qty only)
+- Hard "never widen SL" rule
+- Race-condition protection
+- EOD force exit at 15:15 + hard kill at 15:25
+- Lot size 65
+- Mode toggle + confirm checkbox gate
+
+### Refinements to apply
+
+1. **Entry buffer default → 2.5 pts.** Set default `buffer_pts = 2.5`. Nifty options can jump 3–5 pts/sec on fast breakouts — a 1-pt buffer often leaves the order unfilled.
+
+2. **10–12 second re-price logic (gap on entry).** Add to entry flow:
+   - After SL-L triggers, if still unfilled after ~10–12s → cancel the SL-L → place a fresh LIMIT slightly above current LTP.
+   - Avoid converting to MARKET — still restricted under SEBI rules.
+   - The unfilled order dying naturally on next candle close remains the fallback.
+
+3. **PortfolioDataStreamer is primary, not backup.** WebSocket is the main path for fill detection. Candle-close polling is the safety net for disconnects only.
+
+4. **Manual close → LIMIT exit, not MARKET.** Place LIMIT SELL at LTP – small buffer. Fall back to MARKET only if LIMIT doesn't fill within a few seconds. MARKET from API still carries SEBI restrictions.
+
+5. **Reference shift → sequential cancel then place.** Cancel old entry SL-L first → wait for cancel confirmation → then place new SL-L at new high. Avoid two live entry orders simultaneously.
+
+6. **Track `filled_qty` permanently.** After partial fill, store `filled_qty` in the position object. All subsequent SL and exit orders use `filled_qty`, never the original requested quantity.
+
+7. **Second "Really go live?" confirmation on first trade each day.** Even after sandbox toggle + confirm checkbox, the first time real mode places an order each trading day should require one extra click.
+
+8. **State machine per slot:** `IDLE → WAITING_ENTRY → IN_POSITION → EXITING`.
+
+9. **When bot stops or mode switches to Paper → immediately cancel all pending entry SL-L orders.**
+
+10. **Log every order_id + status transition with timestamps.** Essential for debugging real fills.
+
+11. **Rate-limit counter.** Simple in-memory counter so we never exceed ~8 order calls/second even under bursty reference shifts.
+
+---
+
+## Partial Fill Handling — Detailed Spec
+
+### Goal
+
+When an SL-L entry order receives a **partial fill**, treat the filled quantity as the real position size, immediately cancel the unfilled remainder, and place the protective SL only for the filled quantity. Never leave a dangling partial order.
+
+### Exact Behaviour
+
+1. **Detection**
+   - Primary: PortfolioDataStreamer `order_update` event where `status == "complete"` or `"partially filled"` and `filled_quantity > 0`.
+   - Backup: On candle close, call `get_order_details(entry_order_id)` and inspect `filled_quantity` vs `quantity`.
+
+2. **On Partial Fill (or full fill)**
+
+   ```python
+   filled_qty = order.filled_quantity          # e.g. 65, 130, 45, etc.
+   remaining_qty = order.quantity - filled_qty
+
+   if remaining_qty > 0:
+       cancel_order(entry_order_id)            # cancel the unfilled portion
+       # Wait for cancel confirmation (or fire-and-forget with log)
+   ```
+
+3. **Position Opening**
+
+   ```python
+   pm.open_position(
+       instrument_token=...,
+       side="BUY",                             # or SELL for PE
+       quantity=filled_qty,                    # ← use filled_qty, never original
+       entry_price=order.average_price,        # broker fill price
+       ...
+   )
+   position.filled_qty = filled_qty            # store permanently
+   ```
+
+4. **Initial SL Placement**
+   - Place SELL SL-L **only for `filled_qty`**.
+   - `trigger = current_sl`
+   - `limit = trigger - buffer_pts`
+   - Store the new `sl_order_id`.
+
+5. **All Subsequent Orders Use `filled_qty`**
+   - Trailing SL modify
+   - Manual SL drag
+   - Manual close / EOD exit
+   - Any re-price logic
+     → Always pass `quantity=position.filled_qty`
+
+6. **Edge Cases**
+   - **Multiple partials** (rare but possible): Keep accumulating `filled_qty` until the order reaches terminal state or is cancelled. Only open the position once the first fill arrives, then update quantity if more fills come in before cancel.
+   - **Cancel fails**: Log loudly and retry once. If still fails, treat the remaining quantity as risk and place SL for the full original size as fallback (safety).
+   - **Fill arrives after we already cancelled**: WebSocket may deliver a late fill event. Ignore it if position is already open with a different order_id, or reconcile quantity if it belongs to the same order.
+
+7. **Logging (mandatory)**
+   ```
+   [PARTIAL] order_id=... requested=65 filled=45 remaining=20 average_price=248.75
+   [CANCEL]  remaining qty cancelled
+   [POSITION] opened with qty=45 @ 248.75
+   [SL]      placed SELL SL-L for qty=45 trigger=...
+   ```
+
+### Code-level responsibilities
+
+| Component             | Responsibility                                                                                 |
+| --------------------- | ---------------------------------------------------------------------------------------------- |
+| PortfolioDataStreamer | Emit fill/partial events with `filled_quantity` + `average_price`                              |
+| LiveExecutor          | On fill event → cancel remainder → open position with `filled_qty` → place SL for `filled_qty` |
+| PositionManager       | Store and expose `filled_qty`; never use original requested qty after open                     |
+| on_candle_closed      | Safety net: if entry order still shows partial + pending, force the same cancel + open logic   |
+
+### Why this is non-negotiable
+
+- Leaving the remainder open can produce a second fill at a much worse price.
+- Using original quantity for the SL would over-hedge and create unwanted risk.
+- Tracking `filled_qty` permanently keeps trailing, manual SL, and EOD exit consistent.

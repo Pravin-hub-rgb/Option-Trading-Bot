@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { createChart, ColorType, AreaSeries, type IChartApi, type ISeriesApi, type IPriceLine, type Time } from "lightweight-charts";
 
 interface Tick {
   timestamp: string;
@@ -21,400 +22,547 @@ interface Props {
   slStep?: number;
   color?: string;
   realizedPnl?: number | null;
+  onSlChange?: (newSl: number) => void;
+  isTrading?: boolean;
 }
 
-const PX_PER_TICK = 2.5;
+function tickTime(ts: string): number {
+  const today = new Date().toISOString().slice(0, 10);
+  return Math.floor(new Date(`${today}T${ts}`).getTime() / 1000);
+}
 
-type Level = { label: string; price: number; color: string };
-
-function buildLevels(entryPrice: number | null, currentSl: number | null, tpLevels: number[], belowSlCount: number, slStep: number): { left: Level[]; right: Level | null; below: Level[] } {
-  const left: Level[] = [];
-  const below: Level[] = [];
-  let right: Level | null = null;
-  if (currentSl !== null)
-    right = { label: `SL ${currentSl.toFixed(2)}`, price: currentSl, color: "#ef4444" };
-  if (entryPrice !== null) {
-    left.push({ label: `Entry ${entryPrice.toFixed(2)}`, price: entryPrice, color: "#94a3b8" });
-    tpLevels.forEach((tp, i) => {
-      const diff = tp - entryPrice;
-      left.push({ label: tp.toFixed(2), price: tp, color: "#10b981" });
-    });
-  }
-  if (currentSl !== null) {
-    for (let i = 1; i <= belowSlCount; i++) {
-      const price = currentSl - i * slStep;
-      below.push({ label: price.toFixed(2), price, color: "#94a3b8" });
-    }
-  }
-  left.sort((a, b) => a.price - b.price);
-  return { left, right, below };
+function createPriceLineOptions(price: number, color: string, title: string, dashed = true): Parameters<ISeriesApi<"Area">["createPriceLine"]>[0] {
+  return {
+    price,
+    color,
+    lineWidth: 1,
+    lineStyle: dashed ? 2 : 0,
+    axisLabelVisible: true,
+    title,
+  };
 }
 
 export default function PriceDiagram({
-  ticks, entryPrice, entryTime, exitTime, exitPrice, currentSl,
-  tpLevels = [], belowSlCount = 3, slStep = 5, color = "#6366f1", realizedPnl
+  ticks,
+  entryPrice,
+  entryTime,
+  exitTime,
+  exitPrice,
+  currentSl,
+  tpLevels = [],
+  belowSlCount = 1,
+  slStep = 5,
+  color = "#6366f1",
+  realizedPnl,
+  onSlChange,
+  isTrading,
 }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const outerRef = useRef<HTMLDivElement>(null);
-  const [chartH, setChartH] = useState(200);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef({ dragging: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
+
+  const entryLineRef = useRef<IPriceLine | null>(null);
+  const slLineRef = useRef<IPriceLine | null>(null);
+  const ghostSlLineRef = useRef<IPriceLine | null>(null);
+  const tpLineRefs = useRef<IPriceLine[]>([]);
+  const belowLineRefs = useRef<IPriceLine[]>([]);
+
   const atEndRef = useRef(true);
-  const offsetRef = useRef({ x: 0, y: 0 });
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
-  const entryPosRef = useRef<{ x: number; y: number } | null>(null);
-  const entryLabelRef = useRef<string>("");
-  const exitPosRef = useRef<{ x: number; y: number } | null>(null);
-  const exitLabelRef = useRef<string>("");
+  const lastTickCountRef = useRef(0);
+  const slOverrideRef = useRef<number | null>(null);
+  const prevEntryTimeRef = useRef<string | null | undefined>(null);
 
-  const { left: leftLevels, right: slLevel, below: belowLevels } = useMemo(
-    () => buildLevels(entryPrice, currentSl, tpLevels, belowSlCount, slStep),
-    [entryPrice, currentSl, tpLevels, belowSlCount, slStep]
-  );
-  const levels = useMemo(
-    () => slLevel ? [...leftLevels, slLevel] : leftLevels,
-    [leftLevels, slLevel]
-  );
-  const allLevels = useMemo(
-    () => belowLevels.length > 0 ? [...levels, ...belowLevels] : levels,
-    [levels, belowLevels]
+  const slDragRef = useRef({ active: false, startY: 0, startPrice: 0 });
+  const [slDragState, setSlDragState] = useState({ active: false, price: 0 });
+  const isDraggingRef = useRef(false);
+  const slFiredRef = useRef(false);
+
+  const [, setScrollTick] = useState(0);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string; color: string } | null>(null);
+  const [chartReady, setChartReady] = useState(false);
+
+  const displaySl = slDragState.active ? slDragState.price : currentSl;
+
+  const getMarkerXY = useCallback(
+    (tickTimestamp: string, price: number, fallbackToLastTick = false): { x: number; y: number } | null => {
+      const chart = chartRef.current;
+      const series = seriesRef.current;
+      if (!chart || !series) return null;
+
+      let time = tickTime(tickTimestamp) as Time;
+      let x = chart.timeScale().timeToCoordinate(time);
+      let y = series.priceToCoordinate(price);
+
+      if (fallbackToLastTick) {
+        const data = series.data();
+        if (data.length > 0) {
+          const lastPoint = data[data.length - 1] as { time: Time; value: number };
+          if (x === null) {
+            x = chart.timeScale().timeToCoordinate(lastPoint.time);
+          }
+          y = series.priceToCoordinate(lastPoint.value);
+        }
+      }
+
+      if (x === null || y === null) return null;
+      return { x, y };
+    },
+    []
   );
 
   useEffect(() => {
-    const el = outerRef.current;
-    if (!el || entryPrice === null) return;
-    setChartH(el.clientHeight);
-    const ro = new ResizeObserver(([entry]) => setChartH(entry.contentRect.height));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [entryPrice !== null]);
+    if (!containerRef.current) return;
 
-  const { lo, hi, range } = useMemo(() => {
-    const prices = ticks.map(t => t.ltp);
-    const allVals = [...prices, ...levels.map(l => l.price)];
-    const lo = Math.min(...allVals) - 0.4;
-    const hi = Math.max(...allVals) + 0.4;
-    return { lo, hi, range: hi - lo || 1 };
-  }, [ticks, levels]);
+    const w = containerRef.current.clientWidth || 400;
+    const h = containerRef.current.clientHeight || 200;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || entryPrice === null || ticks.length === 0) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const containerH = outerRef.current?.clientHeight || chartH;
-    const containerW = outerRef.current?.clientWidth || 800;
-    if (containerH === 0) return;
-
-    const T = 4;
-    const B = 4;
-    const ch = containerH - T - B;
-    const yPos = (p: number) => T + ch - ((p - lo) / range) * ch + offset.y;
-
-    const totalPathW = (ticks.length - 1) * PX_PER_TICK;
-    const canvasW = Math.max(containerW, totalPathW + 280);
-
-    canvas.width = canvasW * dpr;
-    canvas.height = containerH * dpr;
-    canvas.style.width = `${canvasW}px`;
-    canvas.style.height = `${containerH}px`;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, canvasW, containerH);
-
-    const xPos = (i: number) => 120 + i * PX_PER_TICK + offset.x;
-
-    // reference lines
-    ctx.textBaseline = "middle";
-    allLevels.forEach(lvl => {
-      const y = yPos(lvl.price);
-      ctx.strokeStyle = lvl.color;
-      ctx.globalAlpha = 0.6;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvasW, y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
+    const chart = createChart(containerRef.current, {
+      width: w,
+      height: h,
+      layout: {
+        background: { type: ColorType.Solid, color: "#0a0a0a" },
+        textColor: "#94a3b8",
+        fontFamily: '"SF Mono", "Fira Code", monospace',
+        fontSize: 10,
+      },
+      grid: {
+        vertLines: { color: "#1e293b" },
+        horzLines: { color: "#1e293b" },
+      },
+      crosshair: {
+        mode: 0,
+        vertLine: { color: "#6366f1", width: 1, style: 2, labelBackgroundColor: "#6366f1" },
+        horzLine: { color: "#6366f1", width: 1, style: 2, labelBackgroundColor: "#6366f1" },
+      },
+      timeScale: {
+        borderColor: "#1e293b",
+        timeVisible: true,
+        secondsVisible: true,
+        tickMarkFormatter: (time: number) => {
+          const d = new Date(time * 1000);
+          return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        },
+      },
+      rightPriceScale: {
+        borderColor: "#1e293b",
+        scaleMargins: {
+          top: 0.43,
+          bottom: 0.43,
+        },
+      },
+      handleScroll: { vertTouchDrag: false },
     });
 
-    // price path
-    if (ticks.length > 1) {
-      const pts = ticks.map((t, i) => ({
-        x: xPos(i),
-        y: yPos(t.ltp),
+    chartRef.current = chart;
+
+    const series = chart.addSeries(AreaSeries, {
+      topColor: color + "40",
+      bottomColor: color + "05",
+      lineColor: color,
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 3,
+    });
+
+    seriesRef.current = series;
+
+    setChartReady(true);
+
+    const ro = new ResizeObserver(([entry]) => {
+      if (entry && chartRef.current) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          chartRef.current.applyOptions({ width, height });
+          requestAnimationFrame(() => setScrollTick((v) => v + 1));
+        }
+      }
+    });
+    ro.observe(containerRef.current);
+
+    return () => {
+      ro.disconnect();
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series || ticks.length === 0) return;
+
+    if (ticks.length !== lastTickCountRef.current) {
+      const raw = ticks.map((t) => ({
+        time: tickTime(t.timestamp) as Time,
+        value: t.ltp,
       }));
 
-      const grad = ctx.createLinearGradient(0, T, 0, T + ch);
-      grad.addColorStop(0, color + "20");
-      grad.addColorStop(1, color + "02");
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, T + ch);
-      pts.forEach(p => ctx.lineTo(p.x, p.y));
-      ctx.lineTo(pts[pts.length - 1].x, T + ch);
-      ctx.closePath();
-      ctx.fill();
+      const data = raw.length > 0
+        ? raw.reduce<{ time: Time; value: number }[]>((acc, pt) => {
+            if (acc.length === 0) {
+              acc.push(pt);
+              return acc;
+            }
+            const lastTime = acc[acc.length - 1].time as number;
+            const curTime = pt.time as number;
+            if (curTime > lastTime) {
+              acc.push(pt);
+            } else if (curTime === lastTime) {
+              acc[acc.length - 1] = pt;
+            }
+            return acc;
+          }, [])
+        : raw;
 
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.lineJoin = "round";
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
-      ctx.stroke();
+      try {
+        if (lastTickCountRef.current === 0 || series.data().length === 0) {
+          lastTickCountRef.current = 0;
+          series.setData(data);
+        } else {
+          const last = data[data.length - 1];
+          if (last) series.update(last);
+        }
+      } catch {
+        lastTickCountRef.current = 0;
+        try { series.setData(data); } catch {}
+      }
 
-      const last = pts[pts.length - 1];
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 0.15;
-      ctx.beginPath();
-      ctx.arc(last.x, last.y, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.beginPath();
-      ctx.arc(last.x, last.y, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
+      lastTickCountRef.current = ticks.length;
 
-    // entry marker
-    entryPosRef.current = null;
-    if (entryTime && ticks.length > 0) {
-      const entryIdx = ticks.findIndex(t => t.timestamp >= entryTime);
-      if (entryIdx >= 0) {
-        const et = ticks[entryIdx].timestamp;
-        const short = `${+et.slice(0, 2)}:${et.slice(3, 5)}`;
-        const ex = xPos(entryIdx);
-        const ey = yPos(entryPrice);
-        entryPosRef.current = { x: ex, y: ey };
-        entryLabelRef.current = `Entry ${short}`;
-        ctx.save();
-        ctx.fillStyle = "#22c55e";
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(ex, ey - 7);
-        ctx.lineTo(ex + 7, ey);
-        ctx.lineTo(ex, ey + 7);
-        ctx.lineTo(ex - 7, ey);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
+      requestAnimationFrame(() => setScrollTick((v) => v + 1));
+
+      if (atEndRef.current) {
+        try { chartRef.current?.timeScale().scrollToRealTime(); } catch {}
       }
     }
+  }, [ticks, chartReady]);
 
-    // exit marker
-    exitPosRef.current = null;
-    if (exitTime && exitPrice != null && ticks.length > 0) {
-      let exitIdx = ticks.findIndex(t => t.timestamp >= exitTime);
-      if (exitIdx < 0) {
-        // Fallback: use last tick if no matching tick found
-        // (this happens when exit occurs after the last tick was received)
-        exitIdx = ticks.length - 1;
-      }
-      const xt = ticks[exitIdx].timestamp;
-      const short = `${+xt.slice(0, 2)}:${xt.slice(3, 5)}`;
-      const ex = xPos(exitIdx);
-      const ey = yPos(exitPrice);
-      exitPosRef.current = { x: ex, y: ey };
-      exitLabelRef.current = `Exit ${short}`;
-      ctx.save();
-      ctx.fillStyle = "#ef4444";
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(ex, ey - 7);
-      ctx.lineTo(ex + 7, ey);
-      ctx.lineTo(ex, ey + 7);
-      ctx.lineTo(ex - 7, ey);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // auto-scroll to end if user hasn't dragged away
-    if (atEndRef.current) {
-      const endX = containerW - 280 - (ticks.length - 1) * PX_PER_TICK;
-      const targetX = Math.min(0, endX);
-      if (Math.abs(offset.x - targetX) > 0.5) {
-        offsetRef.current = { x: targetX, y: offset.y };
-        setOffset(prev => ({ ...prev, x: targetX }));
-      }
-    }
-
-  }, [ticks, entryPrice, entryTime, exitTime, exitPrice, currentSl, tpLevels, color, chartH, offset]);
-
-  if (entryPrice === null) {
-    return (
-      <div className="flex items-center justify-center text-gray-400 text-xs tracking-wider uppercase h-full">
-        Idle
-      </div>
-    );
-  }
-
-  function handleMouseDown(e: React.MouseEvent<HTMLDivElement>) {
-    const drag = dragRef.current;
-    drag.dragging = true;
-    setIsDragging(true);
-    drag.startX = e.clientX;
-    drag.startY = e.clientY;
-    drag.offsetX = offset.x;
-    drag.offsetY = offset.y;
-    atEndRef.current = false;
-  }
-
-  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    const drag = dragRef.current;
-    if (drag.dragging) {
-      const dx = e.clientX - drag.startX;
-      const dy = e.clientY - drag.startY;
-      const newX = drag.offsetX + dx;
-      const newY = drag.offsetY + dy;
-      offsetRef.current = { x: newX, y: newY };
-      setOffset({ x: newX, y: newY });
+  useEffect(() => {
+    if (prevEntryTimeRef.current === null) {
+      prevEntryTimeRef.current = entryTime;
       return;
     }
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const hit = (pos: { x: number; y: number } | null) =>
-      pos && Math.sqrt((mx - pos.x) ** 2 + (my - pos.y) ** 2) < 15;
-
-    if (hit(entryPosRef.current)) {
-      setTooltip({ x: e.clientX, y: e.clientY + 6, text: entryLabelRef.current });
-    } else if (hit(exitPosRef.current)) {
-      setTooltip({ x: e.clientX, y: e.clientY + 6, text: exitLabelRef.current });
-    } else {
-      setTooltip(null);
-    }
-  }
-
-  function handleMouseUp() {
-    dragRef.current.dragging = false;
-    setIsDragging(false);
-
-    if (ticks.length > 0) {
-      const containerW = outerRef.current?.clientWidth || 800;
-      const lastTickX = 120 + (ticks.length - 1) * PX_PER_TICK + offsetRef.current.x;
-      if (lastTickX < containerW - 100) {
-        atEndRef.current = true;
+    if (entryTime !== prevEntryTimeRef.current) {
+      prevEntryTimeRef.current = entryTime;
+      lastTickCountRef.current = 0;
+      atEndRef.current = true;
+      slOverrideRef.current = null;
+      slFiredRef.current = false;
+      isDraggingRef.current = false;
+      slDragRef.current = { active: false, startY: 0, startPrice: 0 };
+      setSlDragState({ active: false, price: 0 });
+      if (seriesRef.current) {
+        try { seriesRef.current.setData([]); } catch {}
+      }
+      if (chartRef.current) {
+        try { chartRef.current.timeScale().resetTimeScale(); } catch {}
       }
     }
-  }
+  }, [entryTime]);
 
-  const H = chartH;
-  const yPos = (p: number) => 4 + (H - 8) - ((p - lo) / range) * (H - 8) + offset.y;
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series || entryPrice === null) return;
 
-  const lastTick = ticks[ticks.length - 1];
+    if (entryLineRef.current) {
+      try { series.removePriceLine(entryLineRef.current); } catch {}
+    }
+    entryLineRef.current = series.createPriceLine(
+      createPriceLineOptions(entryPrice, "#3b82f6", "Entry")
+    );
+
+    return () => {
+      if (entryLineRef.current) {
+        try { series.removePriceLine(entryLineRef.current); } catch {}
+        entryLineRef.current = null;
+      }
+    };
+  }, [entryPrice]);
+
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+
+    if (slOverrideRef.current !== null && currentSl === slOverrideRef.current) {
+      slOverrideRef.current = null;
+    }
+
+    if (slLineRef.current) {
+      try { series.removePriceLine(slLineRef.current); } catch {}
+      slLineRef.current = null;
+    }
+
+    const effectiveSl = slDragState.active ? slDragState.price : (slOverrideRef.current ?? currentSl);
+
+    if (effectiveSl !== null) {
+      slLineRef.current = series.createPriceLine({
+        price: effectiveSl,
+        color: "#ef4444",
+        lineWidth: 2,
+        lineStyle: 0,
+        axisLabelVisible: true,
+        title: "SL",
+      });
+    }
+
+    return () => {
+      if (slLineRef.current) {
+        try { series.removePriceLine(slLineRef.current); } catch {}
+        slLineRef.current = null;
+      }
+    };
+  }, [currentSl, slDragState.active, slDragState.price]);
+
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series || entryPrice === null) return;
+
+    if (ghostSlLineRef.current) {
+      try { series.removePriceLine(ghostSlLineRef.current); } catch {}
+      ghostSlLineRef.current = null;
+    }
+
+    ghostSlLineRef.current = series.createPriceLine(
+      createPriceLineOptions(entryPrice - slStep, "#94a3b8", `-${slStep}`)
+    );
+
+    return () => {
+      if (ghostSlLineRef.current) {
+        try { series.removePriceLine(ghostSlLineRef.current); } catch {}
+        ghostSlLineRef.current = null;
+      }
+    };
+  }, [entryPrice, slStep]);
+
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+
+    tpLineRefs.current.forEach((line) => {
+      try { series.removePriceLine(line); } catch {}
+    });
+    tpLineRefs.current = [];
+
+    tpLevels.forEach((tp, i) => {
+      const offset = entryPrice !== null ? Math.round(tp - entryPrice) : i + 1;
+      const line = series.createPriceLine(
+        createPriceLineOptions(tp, "#10b981", `+${offset}`)
+      );
+      tpLineRefs.current.push(line);
+    });
+
+    return () => {
+      tpLineRefs.current.forEach((line) => {
+        try { series.removePriceLine(line); } catch {}
+      });
+      tpLineRefs.current = [];
+    };
+  }, [tpLevels]);
+
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series || entryPrice === null) return;
+
+    belowLineRefs.current.forEach((line) => {
+      try { series.removePriceLine(line); } catch {}
+    });
+    belowLineRefs.current = [];
+
+    for (let i = 1; i <= belowSlCount; i++) {
+      const price = entryPrice - (i + 1) * slStep;
+      const line = series.createPriceLine(
+        createPriceLineOptions(price, "#94a3b8", `-${(i + 1) * slStep}`)
+      );
+      belowLineRefs.current.push(line);
+    }
+
+    return () => {
+      belowLineRefs.current.forEach((line) => {
+        try { series.removePriceLine(line); } catch {}
+      });
+      belowLineRefs.current = [];
+    };
+  }, [entryPrice, belowSlCount, slStep]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+
+    const handleScroll = () => {
+      const ts = chart.timeScale();
+      const range = ts.getVisibleLogicalRange();
+      if (!range) return;
+
+      const data = seriesRef.current?.data();
+      if (!data || data.length === 0) return;
+
+      const lastBar = data[data.length - 1] as { time: number };
+      const isAtEnd = range.to >= (lastBar.time ?? 0) - 2;
+      atEndRef.current = isAtEnd;
+
+      setScrollTick((v) => v + 1);
+    };
+
+    chart.timeScale().subscribeVisibleLogicalRangeChange(handleScroll);
+    return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleScroll);
+    };
+  }, []);
+
+  const handleSlDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      if (!currentSl || !onSlChange || !isTrading) return;
+      e.stopPropagation();
+      e.preventDefault();
+
+      isDraggingRef.current = true;
+      slFiredRef.current = false;
+      slDragRef.current = { active: true, startY: e.clientY, startPrice: currentSl };
+      setSlDragState({ active: true, price: currentSl });
+      document.body.style.cursor = "ns-resize";
+      document.body.style.userSelect = "none";
+    },
+    [currentSl, onSlChange, isTrading]
+  );
+
+  useEffect(() => {
+    if (!slDragState.active) return;
+
+    const containerEl = containerRef.current;
+    const series = seriesRef.current;
+    if (!containerEl || !series) return;
+
+    function onMove(e: MouseEvent) {
+      if (!slDragRef.current.active) return;
+
+      const rect = containerEl!.getBoundingClientRect();
+      const relY = e.clientY - rect.top;
+      const newPrice = series!.coordinateToPrice(relY) ?? slDragRef.current.startPrice;
+
+      const lastLtp = ticks[ticks.length - 1]?.ltp;
+      const upperBound = lastLtp ? lastLtp - 1 : (entryPrice ?? 100) - 0.5;
+      const clamped = Math.max(0.05, Math.min(newPrice, upperBound));
+
+      setSlDragState((prev) => ({ ...prev, price: clamped }));
+    }
+
+    function onUp() {
+      if (!slDragRef.current.active || slFiredRef.current) return;
+      slFiredRef.current = true;
+      slDragRef.current.active = false;
+      isDraggingRef.current = false;
+
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+
+      setSlDragState((prev) => {
+        if (onSlChange && currentSl !== null && Math.abs(prev.price - currentSl) > 0.01) {
+          slOverrideRef.current = prev.price;
+          onSlChange(prev.price);
+        }
+        return { active: false, price: prev.price };
+      });
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, [slDragState.active, ticks, currentSl, entryPrice, onSlChange]);
+
+  const entryXY = entryTime && entryPrice != null ? getMarkerXY(entryTime, entryPrice) : null;
+  const exitXY = exitTime && exitPrice != null ? getMarkerXY(exitTime, exitPrice, true) : null;
+  const entryShort = entryTime ? `${+entryTime.slice(0, 2)}:${entryTime.slice(3, 5)}` : "";
+  const exitShort = exitTime ? `${+exitTime.slice(0, 2)}:${exitTime.slice(3, 5)}` : "";
 
   return (
-    <div ref={outerRef} className="relative h-full overflow-hidden">
-      {/* Left Y-axis labels (Entry, TP's, below SL) */}
-      <div className="absolute left-0 top-0 bottom-0 w-[102px] z-10 pointer-events-none">
-        {leftLevels.map((lvl, i) => {
-          const y = yPos(lvl.price);
-          return (
-            <div
-              key={`l-${i}`}
-              className="absolute right-1 leading-none px-1.5 py-0.5 rounded"
-              style={{
-                top: y,
-                transform: "translateY(-50%)",
-                backgroundColor: "rgba(10, 10, 10, 0.7)",
-                backdropFilter: "blur(4px)",
-                WebkitBackdropFilter: "blur(4px)",
-              }}
-            >
-              <span className="font-mono text-[11px] font-bold whitespace-nowrap" style={{ color: lvl.color }}>
-                {lvl.label}
-              </span>
-            </div>
-          );
-        })}
-        {belowLevels.map((lvl, i) => {
-          const y = yPos(lvl.price);
-          return (
-            <div
-              key={`b-${i}`}
-              className="absolute right-1 leading-none px-1.5 py-0.5 rounded"
-              style={{
-                top: y,
-                transform: "translateY(-50%)",
-                backgroundColor: "rgba(10, 10, 10, 0.7)",
-                backdropFilter: "blur(4px)",
-                WebkitBackdropFilter: "blur(4px)",
-              }}
-            >
-              <span className="font-mono text-[11px] font-bold whitespace-nowrap" style={{ color: lvl.color }}>
-                {lvl.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+      {entryPrice === null ? (
+        <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs tracking-wider uppercase pointer-events-none">
+          Idle
+        </div>
+      ) : (
+        <>
+      {/* Entry diamond marker */}
+      {entryXY && (
+        <div
+          className="absolute z-20 pointer-events-auto cursor-pointer"
+          style={{ left: entryXY.x - 7, top: entryXY.y - 7, width: 14, height: 14 }}
+          onMouseEnter={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setTooltip({ x: rect.left + rect.width / 2, y: rect.top - 8, text: `Entry ${entryShort}`, color: "#22c55e" });
+          }}
+          onMouseLeave={() => setTooltip(null)}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <polygon points="7,0 14,7 7,14 0,7" fill="#22c55e" stroke="#fff" strokeWidth="1.5" />
+          </svg>
+        </div>
+      )}
 
-      {/* Right SL label */}
-      {slLevel && (
-        <div className="absolute right-0 top-0 bottom-0 w-[100px] z-10 pointer-events-none">
+      {/* Exit diamond marker */}
+      {exitXY && (
+        <div
+          className="absolute z-20 pointer-events-auto cursor-pointer"
+          style={{ left: exitXY.x - 7, top: exitXY.y - 7, width: 14, height: 14 }}
+          onMouseEnter={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setTooltip({ x: rect.left + rect.width / 2, y: rect.top - 8, text: `Exit ${exitShort}`, color: "#ef4444" });
+          }}
+          onMouseLeave={() => setTooltip(null)}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <polygon points="7,0 14,7 7,14 0,7" fill="#ef4444" stroke="#fff" strokeWidth="1.5" />
+          </svg>
+        </div>
+      )}
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={{ left: tooltip.x - 50, top: tooltip.y - 28 }}
+        >
           <div
-            className="absolute left-1 leading-none px-1.5 py-0.5 rounded"
-            style={{
-              top: yPos(slLevel.price),
-              transform: "translateY(-50%)",
-              backgroundColor: "rgba(10, 10, 10, 0.7)",
-              backdropFilter: "blur(4px)",
-              WebkitBackdropFilter: "blur(4px)",
-            }}
+            className="bg-gray-900 text-[10px] font-mono px-1.5 py-0.5 rounded border border-gray-700 whitespace-nowrap shadow-lg"
+            style={{ color: tooltip.color }}
           >
-            <span className="font-mono text-[11px] font-bold whitespace-nowrap" style={{ color: slLevel.color }}>
-              {slLevel.label}
-            </span>
+            {tooltip.text}
           </div>
         </div>
       )}
 
-      {/* Draggable chart area */}
-      <div
-        className="absolute left-0 right-0 top-0 bottom-0 overflow-hidden select-none"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <canvas ref={canvasRef} className="block" />
-        {tooltip && (() => {
-          const tipW = 120;
-          const clampedX = Math.min(tooltip.x, window.innerWidth - tipW - 8);
-          return (
-            <div className="fixed z-50 pointer-events-none" style={{ left: clampedX, top: tooltip.y }}>
-              <div className={`bg-gray-900 text-[10px] font-mono px-1.5 py-0.5 rounded border border-gray-700 whitespace-nowrap shadow-lg ${tooltip.text.startsWith("Entry") ? "text-green-400" : "text-red-400"}`}>
-                {tooltip.text}
-              </div>
-            </div>
-          );
-        })()}
-      </div>
+      {/* SL drag visual line */}
+      {currentSl !== null && isTrading && slDragState.active && (
+        <div
+          className="absolute left-0 right-0 z-20 pointer-events-none"
+          style={{
+            top: seriesRef.current?.priceToCoordinate(slDragState.price) ?? 0,
+            height: "2px",
+            backgroundColor: "#ef4444",
+            opacity: 0.9,
+          }}
+        />
+      )}
 
-      {/* LTP + P&L overlay (kept between left labels and right SL label) */}
-      <div className="absolute left-[102px] right-[100px] bottom-0 h-5 pointer-events-none flex items-center justify-between px-2 text-[10px] font-mono font-bold bg-gradient-to-t from-[#0a0a0a] to-transparent">
-        <span style={{ color }}>{lastTick?.ltp.toFixed(2) ?? (exitPrice != null ? exitPrice.toFixed(2) : "")}</span>
-        {(() => {
-          const displayPnl = realizedPnl ?? lastTick?.pnl;
-          return displayPnl != null ? (
-            <span style={{ color: displayPnl >= 0 ? "#10b981" : "#ef4444" }}>
-              {displayPnl >= 0 ? "+" : ""}{displayPnl.toFixed(2)}
-            </span>
-          ) : null;
-        })()}
-      </div>
+      {/* SL drag handle */}
+      {currentSl !== null && isTrading && (
+        <div
+          className="absolute left-0 right-0 z-30"
+          style={{
+            top: (seriesRef.current?.priceToCoordinate(displaySl ?? currentSl) ?? 0) - 19,
+            height: "40px",
+            cursor: slDragState.active ? "ns-resize" : "grab",
+          }}
+          onMouseDown={handleSlDragStart}
+        />
+      )}
+        </>
+      )}
     </div>
   );
 }

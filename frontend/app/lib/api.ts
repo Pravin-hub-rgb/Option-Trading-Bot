@@ -52,8 +52,9 @@ export async function validateToken(token: string): Promise<{ valid: boolean; me
   return res.json();
 }
 
-export async function fetchTradeStats(): Promise<TradeStats> {
-  const res = await fetch(`${API}/api/trades/stats`);
+export async function fetchTradeStats(year?: number): Promise<TradeStats> {
+  const params = year ? `?year=${year}` : "";
+  const res = await fetch(`${API}/api/trades/stats${params}`);
   return res.json();
 }
 
@@ -78,5 +79,27 @@ export async function deleteTrade(id: number): Promise<{ status: string }> {
 
 export async function resetSettings(): Promise<{ status: string }> {
   const res = await fetch(`${API}/api/settings/reset`, { method: "POST" });
+  return res.json();
+}
+
+export async function fetchTickHistory(instrument: string, slot: number): Promise<{ timestamp: string; ltp: number; sl: number | null; pnl: number | null }[]> {
+  const res = await fetch(`${API}/api/ticks/${instrument}/${slot}`);
+  const data = await res.json();
+  return data.ticks || [];
+}
+
+export async function modifySl(instrument: string, slot: number, sl: number): Promise<{ status: string; sl: number }> {
+  const res = await fetch(`${API}/api/position/${instrument}/${slot}/sl`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sl }),
+  });
+  return res.json();
+}
+
+export async function closePosition(instrument: string, slot: number): Promise<{ status: string; pnl: number; exit_price: number }> {
+  const res = await fetch(`${API}/api/position/${instrument}/${slot}/close`, {
+    method: "POST",
+  });
   return res.json();
 }

@@ -4,6 +4,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+class _WsFilter(logging.Filter):
+    def filter(self, record):
+        return "opening handshake" not in record.getMessage()
+
+_ws_logger = logging.getLogger("websockets.server")
+_ws_logger.addFilter(_WsFilter())
+
 class LiveFeedServer:
     def __init__(self, host="0.0.0.0", port=8765):
         self.host = host
@@ -12,6 +19,21 @@ class LiveFeedServer:
         self.server = None
         self._loop = None
         self._queue = None
+        self._tick_history = {}
+
+    def store_tick(self, instrument, slot, tick):
+        key = (instrument, slot)
+        if key not in self._tick_history:
+            self._tick_history[key] = []
+        self._tick_history[key].append(tick)
+        if len(self._tick_history[key]) > 2000:
+            self._tick_history[key] = self._tick_history[key][-2000:]
+
+    def get_tick_history(self, instrument, slot):
+        return self._tick_history.get((instrument, slot), [])
+
+    def clear_tick_history(self, instrument, slot):
+        self._tick_history.pop((instrument, slot), None)
 
     async def handler(self, websocket):
         self.clients.add(websocket)
@@ -28,7 +50,10 @@ class LiveFeedServer:
         self._loop = asyncio.get_running_loop()
         self._queue = asyncio.Queue(maxsize=100)
         asyncio.create_task(self._drain_queue())
-        self.server = await websockets.serve(self.handler, self.host, self.port)
+        self.server = await websockets.serve(
+            self.handler, self.host, self.port,
+            logger=_ws_logger,
+        )
         logger.info(f"WebSocket server started on ws://{self.host}:{self.port}")
         await self.server.wait_closed()
 

@@ -54,8 +54,8 @@ def create_app(bot_manager):
         return {"days": load_trade_pnl(year=year)}
 
     @app.get("/api/trades/stats")
-    async def get_trades_stats():
-        return load_trade_stats()
+    async def get_trades_stats(year: int | None = None):
+        return load_trade_stats(year=year)
 
     @app.get("/api/settings")
     async def get_settings():
@@ -86,6 +86,34 @@ def create_app(bot_manager):
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="Trade not found")
         return {"status": "deleted"}
+
+    @app.get("/api/ticks/{instrument}/{slot}")
+    async def get_ticks(instrument: str, slot: int):
+        if not bot_manager.live_feed_server:
+            return {"ticks": []}
+        ticks = bot_manager.live_feed_server.get_tick_history(instrument, slot)
+        return {"ticks": ticks}
+
+    class SlBody(BaseModel):
+        sl: float
+
+    @app.post("/api/position/{instrument}/{slot}/sl")
+    async def modify_sl(instrument: str, slot: int, body: SlBody):
+        if not bot_manager._data_streamer:
+            raise HTTPException(status_code=400, detail="Bot not running")
+        ok = bot_manager._data_streamer.modify_sl(instrument, slot, body.sl)
+        if not ok:
+            raise HTTPException(status_code=400, detail="No active position found")
+        return {"status": "ok", "sl": body.sl}
+
+    @app.post("/api/position/{instrument}/{slot}/close")
+    async def close_position(instrument: str, slot: int):
+        if not bot_manager._data_streamer:
+            raise HTTPException(status_code=400, detail="Bot not running")
+        result = bot_manager._data_streamer.close_position_manual(instrument, slot)
+        if not result:
+            raise HTTPException(status_code=400, detail="No active position found")
+        return {"status": "closed", "pnl": result["pnl"], "exit_price": result["exit_price"]}
 
     @app.get("/api/token/status")
     async def token_status():

@@ -42,7 +42,7 @@
     "category": "strategy"
   },
   "initial_sl_points": {
-    "value": "5",
+    "value": "4",
     "type": "number",
     "label": "Initial SL (points)",
     "category": "risk"
@@ -91,9 +91,33 @@
     "category": "logging"
   },
   "access_token": {
-    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YTY2Y2Q3OWExNzkxMjcxODk2MzgzZGMiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc4NTEyMjE2OSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzg1MTg5NjAwfQ.slaOxCG0CXr049hXNDALXHBiKGhX4xj3Q6TS3_N8Ctc",
+    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YTkwZmI2ZjBlYWJjNDBkZjcyZTkyYTIiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc4Nzg4NjQ0NywiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzg3OTU0NDAwfQ.XKEjckB17B8xu35ihHQSHODAJloWwYXWU4Gv5vVKMiY",
     "type": "password",
     "label": "Upstox Access Token",
     "category": "credentials"
+  },
+  "strategy_first_candle": {
+    "value": "09:16",
+    "type": "time",
+    "label": "First Candle (start strategy from)",
+    "category": "timing"
+  },
+  "eod_exit_time": {
+    "value": "14:59",
+    "type": "time",
+    "label": "EOD Force Exit (close all at)",
+    "category": "timing"
+  },
+  "lot_size": {
+    "value": "65",
+    "type": "number",
+    "label": "Lot Size (contracts)",
+    "category": "charges"
+  },
+  "lots": {
+    "value": "1",
+    "type": "number",
+    "label": "Number of Lots",
+    "category": "charges"
   }
 }

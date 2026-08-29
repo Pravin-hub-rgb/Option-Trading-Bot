@@ -14,6 +14,7 @@ const categoryLabels: Record<string, string> = {
   strategy: "Strategy",
   risk: "Risk Management",
   limits: "Trade Limits",
+  charges: "Brokerage / Charges",
   logging: "Logging",
 };
 

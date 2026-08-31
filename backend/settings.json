@@ -91,7 +91,7 @@
     "category": "logging"
   },
   "access_token": {
-    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YTkwZmI2ZjBlYWJjNDBkZjcyZTkyYTIiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc4Nzg4NjQ0NywiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzg3OTU0NDAwfQ.XKEjckB17B8xu35ihHQSHODAJloWwYXWU4Gv5vVKMiY",
+    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YTk0ZWNiNzhjZWY2MTc0OGIyMGQwZjkiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc4ODE0NDgyMywiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzg4MjEzNjAwfQ.6cJ9J7PPbrukTuvNXbwYxnFQbWTU6Na6_6mEBMEY39M",
     "type": "password",
     "label": "Upstox Access Token",
     "category": "credentials"
@@ -119,5 +119,36 @@
     "type": "number",
     "label": "Number of Lots",
     "category": "charges"
+  },
+  "buffer_pts": {
+    "value": "2.5",
+    "type": "number",
+    "label": "SL-L Buffer (points)",
+    "category": "risk"
+  },
+  "trading_mode": {
+    "value": "paper",
+    "type": "select",
+    "options": "paper,real",
+    "label": "Trading Mode",
+    "category": "real-trading"
+  },
+  "sandbox_mode": {
+    "value": "true",
+    "type": "boolean",
+    "label": "Sandbox Mode (paper orders, no real fills)",
+    "category": "real-trading"
+  },
+  "confirm_real_trading": {
+    "value": "false",
+    "type": "boolean",
+    "label": "Confirmed Real Trading (safety gate)",
+    "category": "real-trading"
+  },
+  "live_confirmed_today": {
+    "value": "",
+    "type": "text",
+    "label": "Live Confirmed Today (date string, auto-reset)",
+    "category": "real-trading"
   }
 }

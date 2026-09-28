@@ -148,4 +148,7 @@ def _row_to_dict(row):
         "sell_value": sell_value,
         "charges": charges,
         "net_pnl": net_pnl,
+        "mfe_points": row["mfe_points"] if "mfe_points" in row.keys() else None,
+        "mae_points": row["mae_points"] if "mae_points" in row.keys() else None,
+        "sl_rungs_locked": row["sl_rungs_locked"] if "sl_rungs_locked" in row.keys() else None,
     }

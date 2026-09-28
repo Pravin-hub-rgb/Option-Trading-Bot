@@ -44,11 +44,66 @@ class PositionManager:
             'entry_price': entry_price,
             'entry_time': entry_time,
             'stop_loss': entry_price - sl_points,
+            'sl_initial': entry_price - sl_points,
             'highest_price': entry_price,
+            'lowest_price': entry_price,
+            'sl_rungs_locked': 0,
+            'bank_active': True,
+            'bank_taken': False,
+            'bank_proved': False,
             'last_ltp': entry_price
         }
         return self.position.copy()
     
+    def track_price(self, current_ltp):
+        """
+        Track max favourable / adverse excursion for the open position.
+        
+        Purely observational - it never influences the trailing SL decision, so
+        adding it cannot change live trading behaviour. Called on every tick
+        BEFORE check_exit() so the exit tick's price is captured too.
+        """
+        if not self.position or current_ltp is None:
+            return
+        if current_ltp > self.position['highest_price']:
+            self.position['highest_price'] = current_ltp
+        if current_ltp < self.position['lowest_price']:
+            self.position['lowest_price'] = current_ltp
+    
+    def get_mfe(self):
+        """Max favourable excursion in points (highest LTP - entry)."""
+        if not self.position:
+            return None
+        return self.position['highest_price'] - self.position['entry_price']
+    
+    def get_mae(self):
+        """Max adverse excursion in points (entry - lowest LTP)."""
+        if not self.position:
+            return None
+        return self.position['entry_price'] - self.position['lowest_price']
+    
+    def get_bank_settings(self):
+        """
+        The first stop-loss rung.
+
+        Historically the first rung locked the stop at entry+1, which only covers
+        charges. That is why a trade that reached +5 and then gave the move back
+        still exited at scratch. Locking the first rung at `bank_at` instead makes
+        that same giveback trade exit at +5, while leaving every runner untouched
+        (the second rung is entry+5 either way).
+
+        Returns 0 when the setting is off, in which case the legacy +1 is used.
+        """
+        from settings_db import get_as_dict
+        s = get_as_dict()
+        try:
+            return float(s.get('bank_at_points', 5) or 0)
+        except (TypeError, ValueError):
+            # An unparseable value must fail SAFE, i.e. fall back to the legacy
+            # +1 rung. Defaulting to 5 here would let a typo silently switch on
+            # the more aggressive behaviour.
+            return 0.0
+
     def update_trailing_sl(self, current_ltp):
         """
         Update trailing stop loss based on current price
@@ -66,6 +121,25 @@ class PositionManager:
         s = get_as_dict()
         trailing_trigger = int(s.get('trailing_trigger', self.trailing_trigger))
         trailing_step = int(s.get('trailing_step', self.trailing_step))
+
+        # First rung: lock a small gain instead of just covering charges, so a
+        # trade that reaches the trigger and gives the move back exits in profit
+        # instead of at scratch. Higher rungs keep the normal trailing step, so
+        # runners are completely unaffected.
+        #
+        # Two guards matter here:
+        #   * it can never exceed trailing_trigger - a stop armed above the price
+        #     that just set it would fire an instant exit on the next tick, which
+        #     silently turns this into a hard take-profit (and we measured that
+        #     to be worth almost nothing);
+        #   * it can never exceed trailing_step - otherwise the next rung would
+        #     be LOWER than the first, and the monotonic guard below would freeze
+        #     the ladder at the first rung forever.
+        # bank_at_points = 0 (or anything invalid) restores the legacy +1 rung.
+        bank_at = self.get_bank_settings()
+        first_rung = min(bank_at, trailing_trigger, trailing_step) if bank_at > 0 else 1.0
+        if first_rung <= 0:
+            first_rung = 1.0
         
         self.position['last_ltp'] = current_ltp
         
@@ -77,16 +151,14 @@ class PositionManager:
             # Reached at least +5 profit
             # Calculate how many milestones passed
             milestones_passed = int((profit - trailing_trigger) / trailing_step)
-            # The first milestone (the +5 lock) moves SL to the true breakeven
-            # (entry + 1 pt to cover brokerage/STT/charges); higher rungs follow
-            # the normal trailing step.
             new_sl = self.position['entry_price'] + (
-                1.0 if milestones_passed == 0 else milestones_passed * trailing_step
+                first_rung if milestones_passed == 0 else milestones_passed * trailing_step
             )
             
             # Only update if new SL is higher
             if new_sl > self.position['stop_loss']:
                 self.position['stop_loss'] = new_sl
+                self.position['sl_rungs_locked'] = self.position.get('sl_rungs_locked', 0) + 1
                 return True, new_sl
         
         return False, old_sl
@@ -138,9 +210,14 @@ class PositionManager:
             'entry_time': self.position['entry_time'],
             'exit_time': exit_time,
             'duration_seconds': duration,
-            'sl_initial': self.position['entry_price'] - self.initial_sl_points,
+            'sl_initial': self.position.get('sl_initial', self.position['entry_price'] - self.initial_sl_points),
             'sl_final': self.position['stop_loss'],
-            'highest_price': self.position['highest_price']
+            'highest_price': self.position['highest_price'],
+            'mfe_points': round(self.position['highest_price'] - self.position['entry_price'], 2),
+            'mae_points': round(self.position['entry_price'] - self.position['lowest_price'], 2),
+            'sl_rungs_locked': self.position.get('sl_rungs_locked', 0),
+            'bank_taken': self.position.get('bank_taken', False),
+            'bank_proved': self.position.get('bank_proved', False),
         }
         
         self.position = None

@@ -59,6 +59,12 @@
     "label": "Trailing Step (points)",
     "category": "risk"
   },
+  "bank_at_points": {
+    "value": "5",
+    "type": "number",
+    "label": "First SL Rung / Bank At (points, 0 = old +1)",
+    "category": "risk"
+  },
   "stop_after_first_win": {
     "value": "true",
     "type": "boolean",

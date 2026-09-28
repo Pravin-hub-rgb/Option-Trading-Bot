@@ -17,6 +17,7 @@ DEFAULT_SETTINGS = {
     "initial_sl_points": {"value": "4", "type": "number", "label": "Initial SL (points)", "category": "risk"},
     "trailing_trigger": {"value": "5", "type": "number", "label": "Trailing Trigger (points)", "category": "risk"},
     "trailing_step": {"value": "5", "type": "number", "label": "Trailing Step (points)", "category": "risk"},
+    "bank_at_points": {"value": "5", "type": "number", "label": "First SL Rung / Bank At (points, 0 = old +1)", "category": "risk"},
     "stop_after_first_win": {"value": "true", "type": "boolean", "label": "Stop After First Win", "category": "limits"},
     "max_trades_per_side": {"value": "2", "type": "number", "label": "Max Trades Per Side", "category": "limits"},
     "lot_size": {"value": "65", "type": "number", "label": "Lot Size (contracts)", "category": "charges"},

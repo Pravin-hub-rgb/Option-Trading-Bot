@@ -283,7 +283,10 @@ class DataStreamer:
                 stop_loss=trade_summary['sl_final'],
                 exit_time=exit_time,
                 exit_reason=exit_reason,
-                pnl=trade_summary['pnl']
+                pnl=trade_summary['pnl'],
+                mfe_points=trade_summary.get('mfe_points'),
+                mae_points=trade_summary.get('mae_points'),
+                sl_rungs_locked=trade_summary.get('sl_rungs_locked'),
             )
         except Exception as e:
             print(f"[ERROR] exit_position: log_exit failed: {e}")
@@ -374,6 +377,9 @@ class DataStreamer:
         candle_history = comp['candle_aggregator'].get_candle_history()
         
         if comp['position_manager'].is_in_position():
+            # Capture excursion BEFORE the exit check so the exit tick's price
+            # is included in MFE/MAE. Observational only - does not affect exits.
+            comp['position_manager'].track_price(ltp)
             if comp['position_manager'].check_exit(ltp) and not comp.get('_exiting', False):
                 comp['_exiting'] = True
                 try:

@@ -28,5 +28,23 @@ def init_db():
         )
     """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_entry_time ON trades(entry_time)")
+    _migrate_trades(conn)
     conn.commit()
     conn.close()
+
+
+# Columns added after the first release. Kept additive so old rows stay valid
+# (they simply keep NULL until new trades are recorded).
+MIGRATION_COLUMNS = [
+    ("mfe_points", "REAL"),        # max favourable excursion, in points
+    ("mae_points", "REAL"),        # max adverse excursion, in points
+    ("sl_rungs_locked", "INTEGER"),  # how many times the trailing SL moved
+]
+
+
+def _migrate_trades(conn):
+    existing = {r["name"] for r in conn.execute("PRAGMA table_info(trades)")}
+    for name, coltype in MIGRATION_COLUMNS:
+        if name not in existing:
+            conn.execute(f"ALTER TABLE trades ADD COLUMN {name} {coltype}")
+            print(f"[DB] Migrated trades: added column '{name}'")

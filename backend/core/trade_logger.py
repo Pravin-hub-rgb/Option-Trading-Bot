@@ -29,7 +29,8 @@ class TradeLogger:
         conn.commit()
         conn.close()
 
-    def log_exit(self, symbol, exit_price, stop_loss, exit_time, exit_reason, pnl):
+    def log_exit(self, symbol, exit_price, stop_loss, exit_time, exit_reason, pnl,
+                 mfe_points=None, mae_points=None, sl_rungs_locked=None):
         conn = get_conn()
         try:
             exit_time_str = exit_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
@@ -42,9 +43,11 @@ class TradeLogger:
             if row:
                 conn.execute("""
                     UPDATE trades
-                    SET exit_time = ?, exit_price = ?, exit_reason = ?, pnl = ?
+                    SET exit_time = ?, exit_price = ?, exit_reason = ?, pnl = ?,
+                        mfe_points = ?, mae_points = ?, sl_rungs_locked = ?
                     WHERE id = ?
-                """, (exit_time_str, exit_price, exit_reason, pnl, row[0]))
+                """, (exit_time_str, exit_price, exit_reason, pnl,
+                      mfe_points, mae_points, sl_rungs_locked, row[0]))
             else:
                 print(f"[WARN] log_exit: no open trade found for {symbol} (exit not recorded)")
             conn.commit()

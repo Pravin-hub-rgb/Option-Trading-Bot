@@ -53,6 +53,144 @@ export interface DayPnl {
   net_rupees?: number | null;
 }
 
+export interface SmartTrade {
+  id: number | null;
+  date: string;
+  entry_time: string;
+  symbol: string;
+  entry_price: number | null;
+  exit_price: number | null;
+  exit_reason: string;
+  mfe_points: number | null;
+  mfe_source: "exact" | "rung" | "unknown" | null;
+  mfe_bucket: number;
+  mfe_bucket_label: string;
+  giveback_points: number | null;
+  actual_pnl: number | null;
+  actual_net: number | null;
+  smart_pnl: number | null;
+  smart_net: number | null;
+  delta_points: number | null;
+  delta_net: number | null;
+  rule_fired: string;
+  day_stopped: boolean;
+}
+
+export interface SmartDay {
+  date: string;
+  trades_actual: number;
+  trades_taken: number;
+  actual_net: number | null;
+  smart_net: number | null;
+  delta_net: number;
+  stopped_early: boolean;
+  first_trade_pnl: number | null;
+}
+
+export interface RunSummary {
+  trades: number;
+  trades_skipped: number;
+  gross_points: number;
+  net_rupees: number;
+  win_rate: number;
+}
+
+export interface MfeBucket {
+  bucket: number;
+  label: string;
+  count: number;
+  pct: number;
+  avg_pnl: number;
+  avg_net: number;
+  avg_giveback: number;
+  total_net: number;
+}
+
+export interface MfeReport {
+  total_trades: number;
+  mfe_known: number;
+  mfe_unknown: number;
+  exact_count: number;
+  rung_count: number;
+  histogram: MfeBucket[];
+  leak: {
+    count: number;
+    actual_net: number;
+    banked_at_5_net: number;
+    recoverable: number;
+  };
+  never_reached_5: {
+    count: number;
+    pct: number;
+    avg_pnl: number;
+    total_net: number;
+  };
+  reached_10: { count: number; pct: number };
+}
+
+export interface SmartPnlReport {
+  settings: { bank_at: number; prove_at: number; day_stop_at: number | null };
+  trades: SmartTrade[];
+  days: SmartDay[];
+  summary: RunSummary;
+  baseline: RunSummary;
+  delta_net: number;
+  per_day_delta: number;
+  monthly: {
+    month: string;
+    trades: number;
+    actual_net: number;
+    smart_net: number;
+    delta_net: number;
+  }[];
+  mfe_coverage: MfeReport;
+}
+
+export interface StrategyRow {
+  key: string;
+  label: string;
+  bank_at: number | null;
+  prove_at: number | null;
+  day_stop_at: number | null;
+  trades: number;
+  skipped: number;
+  net_rupees: number;
+  per_day: number;
+  win_rate: number;
+}
+
+export interface SweepRow {
+  day_stop_at: number | null;
+  trades: number;
+  net_rupees: number;
+  per_day: number;
+}
+
+export interface RiskScenario {
+  key: string;
+  label: string;
+  trades_taken: number;
+  points: number;
+  vs_baseline: number;
+  days_better: number;
+  days_same: number;
+  days_worse: number;
+  worst_days: { date: string; delta: number }[];
+}
+
+export interface RiskReport {
+  baseline_points: number;
+  total_days: number;
+  total_trades: number;
+  scenarios: RiskScenario[];
+  coverage: {
+    bankable: number;
+    never_reached: number;
+    runner: number;
+    unknown: number;
+  };
+}
+
 export interface TradeStats {
   total_trades: number;
   profitable: number;

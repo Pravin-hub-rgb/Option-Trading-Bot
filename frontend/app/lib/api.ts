@@ -1,4 +1,15 @@
-import type { BotStatus, TradeEntry, DayPnl, TradeStats, SettingMeta } from "./types";
+import type {
+  BotStatus,
+  TradeEntry,
+  DayPnl,
+  TradeStats,
+  SettingMeta,
+  SmartPnlReport,
+  MfeReport,
+  StrategyRow,
+  SweepRow,
+  RiskReport,
+} from "./types";
 
 const API = "http://127.0.0.1:8002";
 
@@ -30,6 +41,51 @@ export async function fetchTrades(year?: number): Promise<{ trades: TradeEntry[]
 export async function fetchTradePnl(year?: number): Promise<{ days: DayPnl[] }> {
   const params = year ? `?year=${year}` : "";
   const res = await fetch(`${API}/api/trades/pnl${params}`);
+  return res.json();
+}
+
+// --- Shadow / MFE reports (read-only; these never affect the running bot) ---
+
+export async function fetchSmartPnl(
+  year?: number,
+  bankAt = 5,
+  proveAt = 10,
+  dayStopAt = 0
+): Promise<SmartPnlReport> {
+  const params = new URLSearchParams({
+    bank_at: String(bankAt),
+    prove_at: String(proveAt),
+  });
+  // 0 (or anything falsy) means "no day stop" - the live default.
+  if (dayStopAt) params.set("day_stop_at", String(dayStopAt));
+  if (year) params.set("year", String(year));
+  const res = await fetch(`${API}/api/report/smart-pnl?${params}`);
+  return res.json();
+}
+
+export async function fetchMfeReport(year?: number): Promise<MfeReport> {
+  const params = year ? `?year=${year}` : "";
+  const res = await fetch(`${API}/api/report/mfe${params}`);
+  return res.json();
+}
+
+export async function fetchStrategies(year?: number): Promise<StrategyRow[]> {
+  const params = year ? `?year=${year}` : "";
+  const res = await fetch(`${API}/api/report/strategies${params}`);
+  const json = await res.json();
+  return json.strategies;
+}
+
+export async function fetchThresholdSweep(year?: number): Promise<SweepRow[]> {
+  const params = year ? `?year=${year}` : "";
+  const res = await fetch(`${API}/api/report/threshold-sweep${params}`);
+  const json = await res.json();
+  return json.sweep;
+}
+
+export async function fetchRiskReport(year?: number): Promise<RiskReport> {
+  const params = year ? `?year=${year}` : "";
+  const res = await fetch(`${API}/api/report/risk${params}`);
   return res.json();
 }
 

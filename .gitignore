@@ -15,6 +15,15 @@ archive/
 
 # Logs
 logs/
+*.log
+
+# SQLite sidecar files and local DB snapshots (the live trades.db IS tracked)
+*.db-wal
+*.db-shm
+*.db.bak
+*.db.bak-wal
+*.db.bak-shm
+*.db.predelete.bak
 
 # IDE
 .vscode/

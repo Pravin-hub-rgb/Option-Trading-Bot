@@ -9,6 +9,7 @@ export default function BottomNav() {
   const items = [
     { href: "/", label: "Terminal", icon: "lucide:layout-grid" },
     { href: "/history", label: "History", icon: "lucide:history" },
+    { href: "/mfe", label: "MFE Report", icon: "lucide:activity" },
     { href: "/settings", label: "Settings", icon: "lucide:settings-2" },
   ];
 

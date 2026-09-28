@@ -10,6 +10,13 @@ import uvicorn
 import requests
 from settings_db import get_settings_meta, save_setting, reset_settings, load_settings, get_setting
 from trade_log_reader import load_all_trades, load_trade_pnl, load_trade_stats
+from smart_pnl import (
+    smart_pnl_report,
+    mfe_report,
+    strategy_comparison,
+    threshold_sweep,
+    risk_analysis,
+)
 from bot_manager import BotManager
 
 def create_app(bot_manager):
@@ -56,6 +63,37 @@ def create_app(bot_manager):
     @app.get("/api/trades/stats")
     async def get_trades_stats(year: int | None = None):
         return load_trade_stats(year=year)
+
+    @app.get("/api/report/smart-pnl")
+    async def get_smart_pnl(year: int | None = None, bank_at: int = 5,
+                            prove_at: int = 10, day_stop_at: int = 0):
+        """
+        Read-only shadow report. Mirrors the LIVE rule the bot actually runs:
+        the first stop-loss rung is bank_at, and there is no day stop unless
+        day_stop_at is given explicitly.
+        """
+        return smart_pnl_report(year=year, bank_at=bank_at,
+                                prove_at=prove_at,
+                                day_stop_at=day_stop_at or None)
+
+    @app.get("/api/report/mfe")
+    async def get_mfe(year: int | None = None):
+        """MFE distribution and the giveback leak."""
+        return mfe_report(year=year)
+
+    @app.get("/api/report/strategies")
+    async def get_strategies(year: int | None = None):
+        return {"strategies": strategy_comparison(year=year)}
+
+    @app.get("/api/report/threshold-sweep")
+    async def get_threshold_sweep(year: int | None = None, bank_at: int = 5,
+                                  prove_at: int = 10):
+        return {"sweep": threshold_sweep(year=year, bank_at=bank_at, prove_at=prove_at)}
+
+    @app.get("/api/report/risk")
+    async def get_risk(year: int | None = None):
+        """Downside analysis: how often each rule helps, does nothing, or hurts."""
+        return risk_analysis(year=year)
 
     @app.get("/api/settings")
     async def get_settings():

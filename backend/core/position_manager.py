@@ -51,6 +51,12 @@ class PositionManager:
             'bank_active': True,
             'bank_taken': False,
             'bank_proved': False,
+            'ticks_seen': 0,
+            'peak_tick': 0,
+            'bank_touched': False,
+            'first_bank_tick': None,
+            'was_above_bank': False,
+            'dips_below_bank': 0,
             'last_ltp': entry_price
         }
         return self.position.copy()
@@ -62,13 +68,38 @@ class PositionManager:
         Purely observational - it never influences the trailing SL decision, so
         adding it cannot change live trading behaviour. Called on every tick
         BEFORE check_exit() so the exit tick's price is captured too.
+        
+        The path summary answers questions that MFE alone cannot: did the price
+        dip back below the first rung after touching it? That is what decides
+        whether a runner would have survived the new first-rung rule.
         """
         if not self.position or current_ltp is None:
             return
-        if current_ltp > self.position['highest_price']:
-            self.position['highest_price'] = current_ltp
-        if current_ltp < self.position['lowest_price']:
-            self.position['lowest_price'] = current_ltp
+        p = self.position
+        profit = current_ltp - p['entry_price']
+
+        if current_ltp > p['highest_price']:
+            p['highest_price'] = current_ltp
+            p['peak_tick'] = p['ticks_seen']
+        if current_ltp < p['lowest_price']:
+            p['lowest_price'] = current_ltp
+
+        p['ticks_seen'] += 1
+
+        bank = self.get_bank_settings()
+        if bank > 0:
+            if profit >= bank:
+                if not p['bank_touched']:
+                    p['bank_touched'] = True
+                    p['first_bank_tick'] = p['ticks_seen']
+                    p['was_above_bank'] = True
+                elif p['was_above_bank']:
+                    p['was_above_bank'] = True
+            else:
+                if p['bank_touched'] and p['was_above_bank']:
+                    # came back down after touching the first rung
+                    p['dips_below_bank'] += 1
+                p['was_above_bank'] = False
     
     def get_mfe(self):
         """Max favourable excursion in points (highest LTP - entry)."""
@@ -218,6 +249,11 @@ class PositionManager:
             'sl_rungs_locked': self.position.get('sl_rungs_locked', 0),
             'bank_taken': self.position.get('bank_taken', False),
             'bank_proved': self.position.get('bank_proved', False),
+            'ticks_seen': self.position.get('ticks_seen', 0),
+            'peak_tick': self.position.get('peak_tick', 0),
+            'bank_touched': self.position.get('bank_touched', False),
+            'first_bank_tick': self.position.get('first_bank_tick'),
+            'dips_below_bank': self.position.get('dips_below_bank', 0),
         }
         
         self.position = None

@@ -310,6 +310,43 @@ def main():
     check("running flag cleared", mgr.running, False)
     check("get_status() still works after stop", isinstance(mgr.get_status(), dict), True)
 
+    # ---------- 9. path tracking (answers the MFE-only questions) ----------
+    print("\n9) path capture - did it dip back below the first rung?")
+    from settings_db import save_setting
+    keep_bank = get_as_dict().get("bank_at_points")
+    save_setting("bank_at_points", "5")
+
+    # 9a. clean runner: touches +5 once and never comes back -> survives
+    r1 = PositionManager(); r1.open_position(100.0, t0, "CLEAN")
+    for x in (100.5, 105.2, 108.0, 115.0, 118.0, 114.0):
+        r1.track_price(x)
+    s1 = r1.close_position(114.0, t0)
+    check("clean runner touched the rung", s1["bank_touched"], True)
+    check("clean runner dipped back below it", s1["dips_below_bank"], 0)
+    check("clean runner peak tick is recorded", isinstance(s1["peak_tick"], int), True)
+    check("clean runner ticks counted", s1["ticks_seen"] >= 6, True)
+
+    # 9b. the DANGEROUS path: +5 -> +2 -> +12. The new rule kills this at +5.
+    r2 = PositionManager(); r2.open_position(100.0, t0, "DIPPER")
+    for x in (100.5, 105.2, 102.0, 101.0, 106.0, 112.0, 109.0):
+        r2.track_price(x)
+    s2 = r2.close_position(109.0, t0)
+    check("dipping runner touched the rung", s2["bank_touched"], True)
+    check("dipping runner counted the dip", s2["dips_below_bank"] >= 1, True)
+    print(f"      -> peak {s2['mfe_points']:.2f} pts, dipped {s2['dips_below_bank']}x "
+          f"below +5, first rung at tick {s2['first_bank_tick']}")
+    check("dips happened after the first touch", (s2["first_bank_tick"] or 0) > 0, True)
+
+    # 9c. never reached the rung -> no dip to count
+    r3 = PositionManager(); r3.open_position(100.0, t0, "LOSER")
+    for x in (99.0, 97.0, 96.0):
+        r3.track_price(x)
+    s3 = r3.close_position(96.0, t0)
+    check("loser never touched the rung", s3["bank_touched"], False)
+    check("loser has no dips", s3["dips_below_bank"], 0)
+
+    save_setting("bank_at_points", keep_bank if keep_bank is not None else "5")
+
     db_mod.DB_PATH = real_db
     shutil.rmtree(tmpdir, ignore_errors=True)
 

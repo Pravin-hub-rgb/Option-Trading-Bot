@@ -287,6 +287,11 @@ class DataStreamer:
                 mfe_points=trade_summary.get('mfe_points'),
                 mae_points=trade_summary.get('mae_points'),
                 sl_rungs_locked=trade_summary.get('sl_rungs_locked'),
+                ticks_seen=trade_summary.get('ticks_seen'),
+                peak_tick=trade_summary.get('peak_tick'),
+                bank_touched=trade_summary.get('bank_touched'),
+                first_bank_tick=trade_summary.get('first_bank_tick'),
+                dips_below_bank=trade_summary.get('dips_below_bank'),
             )
         except Exception as e:
             print(f"[ERROR] exit_position: log_exit failed: {e}")

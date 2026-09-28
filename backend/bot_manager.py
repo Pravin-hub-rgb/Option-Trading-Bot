@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import threading
 import time
 from collections import deque
@@ -12,7 +12,12 @@ IST = pytz.timezone('Asia/Kolkata')
 class BotManager:
     def __init__(self, live_feed_server=None):
         self.live_feed_server = live_feed_server
-        self.lock = threading.Lock()
+        # MUST be reentrant. stop() holds this lock and then calls
+        # _force_exit_live_positions(), which re-enters through
+        # DataStreamer.exit_position() -> `with self.bot_manager.lock`.
+        # With a plain Lock that self-deadlocks, which blocks the whole
+        # FastAPI event loop and takes every endpoint down with it.
+        self.lock = threading.RLock()
         self.running = False
         self.bot_thread = None
         self.log_buffer = deque(maxlen=200)

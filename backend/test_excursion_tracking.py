@@ -63,7 +63,7 @@ def main():
         pm.update_trailing_sl(ltp)
     check("MFE (peak 107)", pm.get_mfe(), 7.0)
     check("MAE (low 99.8)", close(pm.get_mae(), 0.2), True)
-    check("SL locked to first rung (entry+5)", pm.get_current_sl(), 105.0)
+    check("SL locked to the rung the price reached", pm.get_current_sl(), 105.0)
     summary = pm.close_position(101.0, t0 + timedelta(minutes=6))
     check("summary mfe_points", summary["mfe_points"], 7.0)
     check("summary mae_points", summary["mae_points"], 0.2)
@@ -78,16 +78,16 @@ def main():
         pm2.track_price(ltp)
         pm2.update_trailing_sl(ltp)
     check("MFE (peak 122)", pm2.get_mfe(), 22.0)
-    # profit 22 -> milestone int((22-5)/5)=3 -> SL = entry + 3*step = 115
-    check("SL = entry+15 rung", pm2.get_current_sl(), 115.0)
+    # profit 22 -> highest rung reached is floor(22/5)*5 = 20
+    check("SL = entry+20 rung", pm2.get_current_sl(), 120.0)
     s2 = pm2.close_position(120.0, t0 + timedelta(minutes=5))
     check("runner mfe_points", s2["mfe_points"], 22.0)
     check("runner rungs locked", s2["sl_rungs_locked"] >= 3, True)
 
     # ---------- 2b. the ladder rung formula, spelled out ----------
-    print("\n2b) rung arithmetic (first rung = bank_at = +5)")
-    for ltp, want_sl in ((105.0, 105.0), (110.0, 105.0), (115.0, 110.0),
-                         (120.0, 115.0), (125.0, 120.0)):
+    print("\n2b) rung arithmetic (stop sits on the highest rung price reached)")
+    for ltp, want_sl in ((105.5, 105.0), (110.5, 110.0), (115.0, 115.0),
+                         (120.0, 120.0), (125.0, 125.0)):
         p = PositionManager()
         p.open_position(100.0, t0, "T")
         p.update_trailing_sl(ltp)
@@ -165,9 +165,9 @@ def main():
     for ltp in (105.0, 104.0, 110.0, 115.0, 120.0, 118.0):
         r.track_price(ltp)
         r.update_trailing_sl(ltp)
-    check("runner trails normally to +15 rung", r.get_current_sl(), 115.0)
-    sr = r.close_position(115.0, t0 + timedelta(minutes=4))
-    check("runner keeps full +15 (untouched)", sr["pnl"], 15.0)
+    check("runner trails to the +20 rung", r.get_current_sl(), 120.0)
+    sr = r.close_position(120.0, t0 + timedelta(minutes=4))
+    check("runner keeps its full run", sr["pnl"], 20.0)
     check("runner MFE preserved", sr["mfe_points"], 20.0)
 
     # 6c. loser is unaffected
@@ -189,12 +189,12 @@ def main():
 
     # 6e. every rung value under the new ladder
     save_setting("bank_at_points", "5")
-    for ltp, want in ((105.0, 105.0), (110.0, 105.0), (115.0, 110.0),
-                      (120.0, 115.0), (125.0, 120.0)):
+    for ltp, want in ((105.5, 105.0), (110.5, 110.0), (115.0, 115.0),
+                      (120.0, 120.0), (125.0, 125.0)):
         p = PositionManager()
         p.open_position(100.0, t0, "T")
         p.update_trailing_sl(ltp)
-        check(f"profit {ltp - 100:.0f} -> SL {want}", p.get_current_sl(), want)
+        check(f"profit {ltp - 100:.1f} -> SL {want}", p.get_current_sl(), want)
 
     # ---------- 7. hostile settings must never break the ladder ----------
     print("\n7) hostile / misconfigured settings")
@@ -228,9 +228,12 @@ def main():
     check("...and keeps trailing past the first rung", rungs[-1] > rungs[0], True)
 
     # 7c. negative / junk values fall back to the legacy +1 rung
+    save_setting("trailing_trigger", "5"); save_setting("trailing_step", "5")
+    save_setting("bank_at_points", "1")
     for junk in (-5, "abc", ""):
         check(f"bank_at={junk!r} falls back to +1",
               sl_after([107.0], bank_at_points=junk), 101.0)
+    save_setting("bank_at_points", keep.get("bank_at_points") or "5")
 
     # 7d. whenever the stop moves up it must never be placed above the price
     #     that just armed it (otherwise it would fire an instant exit)

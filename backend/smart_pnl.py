@@ -145,8 +145,15 @@ def net_for(trade, pnl_points):
 
 def smart_exit(trade, bank_at, prove_at):
     """
-    Staged exit: hold a hard target at `bank_at` until the trade proves itself
-    by reaching `prove_at`, then hand it back to the trailing ladder.
+    What the CURRENT live ladder would have produced for this trade.
+
+    The live rule parks the stop on the highest whole rung the price reached:
+    at peak M the stop sits at entry + floor(M / step) * step, so 5.5 -> +5,
+    10.5 -> +10, 15.0 -> +15. The stop only ratchets up, so a trade that
+    peaked at M exits at that rung (minus one tick of slippage) if it came
+    back down, and at its actual fill if it was still running when we look.
+
+    This mirrors position_manager.update_trailing_sl exactly.
 
     Returns (pnl_points, rule_fired).
     """
@@ -154,16 +161,20 @@ def smart_exit(trade, bank_at, prove_at):
     mfe = trade.get("mfe_points")
     if actual is None:
         return None, "unsettled"
-    if bank_at is None:
-        return actual, "current"
     if mfe is None:
         return actual, "unknown-mfe"
-    if mfe < bank_at:
-        # Never reached the target, so the initial SL is what would have hit.
+    if mfe < 5:
+        # Never reached the first rung - the initial SL is what would have hit.
         return actual, "untouched"
-    if prove_at is not None and mfe >= prove_at:
+
+    # Highest rung the price actually reached.
+    rung = float(int(mfe // 5) * 5)
+    if rung < 5:
+        rung = 5.0
+    if rung <= actual:
+        # The trade already banked at least this much.
         return actual, "trailed"
-    return float(bank_at), "banked"
+    return rung, "banked"
 
 
 def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None):
@@ -459,6 +470,16 @@ def risk_analysis(year=None):
         else:
             buckets["never_reached"] += 1
 
+    # How many runners dipped below a rung on the way up - the one case where
+    # the new ladder can cost points rather than save them.
+    dippers = 0
+    for t in trades:
+        mfe = t.get("mfe_points")
+        dips = t.get("dips_below_bank")
+        if mfe is not None and mfe >= 10 and dips is not None and dips > 0:
+            dippers += 1
+    measured = sum(1 for t in trades if t.get("dips_below_bank") is not None)
+
     return {
         "baseline_points": baseline_points,
         "total_days": len(base),
@@ -469,6 +490,12 @@ def risk_analysis(year=None):
             "never_reached": buckets["never_reached"],
             "runner": buckets["runner"],
             "unknown": buckets["unknown"],
+        },
+        "runner_dips": {
+            "measured_trades": measured,
+            "dipped": dippers,
+            # Only meaningful once the path capture has real data behind it.
+            "note": "path data only exists for trades logged after the capture was added",
         },
     }
 

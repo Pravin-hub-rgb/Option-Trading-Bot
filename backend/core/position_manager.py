@@ -153,19 +153,17 @@ class PositionManager:
         trailing_trigger = int(s.get('trailing_trigger', self.trailing_trigger))
         trailing_step = int(s.get('trailing_step', self.trailing_step))
 
-        # First rung: lock a small gain instead of just covering charges, so a
-        # trade that reaches the trigger and gives the move back exits in profit
-        # instead of at scratch. Higher rungs keep the normal trailing step, so
-        # runners are completely unaffected.
+        # The stop always sits on a whole rung that the price has actually
+        # reached: at profit P it is entry + floor(P / step) * step. So 5.5
+        # locks +5, 10.5 locks +10, 15.0 locks +15. The stop only ever ratchets
+        # upward, so a dip that does not reach the next rung down leaves it
+        # untouched - a runner that breathes without breaking a rung survives.
         #
-        # Two guards matter here:
-        #   * it can never exceed trailing_trigger - a stop armed above the price
-        #     that just set it would fire an instant exit on the next tick, which
-        #     silently turns this into a hard take-profit (and we measured that
-        #     to be worth almost nothing);
-        #   * it can never exceed trailing_step - otherwise the next rung would
-        #     be LOWER than the first, and the monotonic guard below would freeze
-        #     the ladder at the first rung forever.
+        # Guards:
+        #   * first_rung can never exceed trailing_step, otherwise the next rung
+        #     up would be lower and the monotonic guard would freeze the ladder;
+        #   * it can never exceed trailing_trigger, otherwise the stop would be
+        #     armed above the price that just set it and fire an instant exit.
         # bank_at_points = 0 (or anything invalid) restores the legacy +1 rung.
         bank_at = self.get_bank_settings()
         first_rung = min(bank_at, trailing_trigger, trailing_step) if bank_at > 0 else 1.0
@@ -177,14 +175,14 @@ class PositionManager:
         profit = current_ltp - self.position['entry_price']
         old_sl = self.position['stop_loss']
         
-        # Calculate new SL based on profit milestones
         if profit >= trailing_trigger:
-            # Reached at least +5 profit
-            # Calculate how many milestones passed
-            milestones_passed = int((profit - trailing_trigger) / trailing_step)
-            new_sl = self.position['entry_price'] + (
-                first_rung if milestones_passed == 0 else milestones_passed * trailing_step
-            )
+            rungs = int(profit // trailing_step)
+            if rungs >= 1:
+                new_sl = self.position['entry_price'] + rungs * trailing_step
+                if rungs == 1:
+                    new_sl = self.position['entry_price'] + first_rung
+            else:
+                new_sl = old_sl
             
             # Only update if new SL is higher
             if new_sl > self.position['stop_loss']:

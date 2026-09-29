@@ -97,7 +97,7 @@
     "category": "logging"
   },
   "access_token": {
-    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YWI5ZDhlNDVjYTQ2MTFjM2Q3Zjc5NjYiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc5MDU2NDU4MCwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzkwNjMyODAwfQ.-l0EDxz9r5zjnMEqY1p-SJqYcqfOQZwf2YAAriaD9tE",
+    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YWJiMWMxOTkzOTc2ZDBhZTE1YzBkY2IiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc5MDY0NzMyMSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzkwNzE5MjAwfQ.KGr2PEg5D6rlMnIgRUDfaJm0mFliMk-cpyKEPmfpaAA",
     "type": "password",
     "label": "Upstox Access Token",
     "category": "credentials"

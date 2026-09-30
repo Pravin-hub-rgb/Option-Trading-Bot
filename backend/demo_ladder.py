@@ -5,7 +5,7 @@ it only ever ratchets upward (never down).
 Then replays several DIFFERENT price paths that all peak in the same +5..+10
 band, to show the outcome does not depend on the shape of the path.
 
-Run:  ..\.venv\Scripts\python.exe demo_ladder.py
+Run:  ..\\.venv\\Scripts\\python.exe demo_ladder.py
 """
 import os
 import sys
@@ -60,7 +60,7 @@ def ramp(a, b, step=0.25):
 def same_band():
     print()
     print("=" * 92)
-    print("  ALL PATHS PEAKING IN +5..+10  ->  outcome set by TICK GRAIN, not by shape")
+    print("  ALL PATHS PEAKING IN +5..+10  ->  outcome set by the STOP RUNG, not by shape")
     print("=" * 92)
     print("  (options move in small ticks, so the fill lands close to the stop)")
     print()
@@ -80,10 +80,14 @@ def same_band():
     print(f"  {'path':40s} {'exit pts':>9s} {'peak':>7s} {'dips':>5s}")
     for name, ticks in cases:
         pnl, mfe, dips = path(ticks)
-        print(f"  {name:40s} {pnl:+9.2f} {mfe:+7.2f} {dips:5d}")
+        # Under the baseline ladder the stop parks at entry+1, so a path that
+        # only fades back to +4 is still riding. It has NOT exited.
+        e = f"{pnl:+9.2f}" if pnl is not None else "     open"
+        print(f"  {name:40s} {e} {mfe:+7.2f} {dips:5d}")
     print()
-    print("  Every one of these exits at +5 MINUS the tick gap. The shape of the")
-    print("  path does not change the result - only the tick size does.")
+    print("  Under the ORIGINAL ladder the stop parks at entry+1, so a path that")
+    print("  fades back to +4 is still open. Only a path that actually trades back")
+    print("  through +1 exits - and it exits at scratch, not in profit.")
 
 
 def runner_paths():
@@ -102,11 +106,14 @@ def runner_paths():
     print(f"  {'path':40s} {'exit pts':>9s} {'peak':>7s} {'dips':>5s}  note")
     for name, ticks in cases:
         pnl, mfe, dips = path(ticks)
-        note = "survives" if dips == 0 else f"new rule would have exited at +5"
-        print(f"  {name:40s} {pnl:+9.2f} {mfe:+7.2f} {dips:5d}  {note}")
+        e = f"{pnl:+9.2f}" if pnl is not None else "     open"
+        note = "survives" if dips == 0 else "a stop parked at +5 would have killed it"
+        print(f"  {name:40s} {e} {mfe:+7.2f} {dips:5d}  {note}")
     print()
-    print("  This is the one case where the new rule can cost points, and it is")
-    print("  exactly what dips_below_bank now records on every trade.")
+    print("  The LIVE stop is the original ladder, so every row above exited as shown.")
+    print("  A dipping path is the one case where parking the stop at +5 would have")
+    print("  cost points - and it is exactly what dips_below_bank records on every")
+    print("  real trade, so the study is measured rather than guessed.")
 
 
 if __name__ == "__main__":

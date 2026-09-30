@@ -145,15 +145,20 @@ def net_for(trade, pnl_points):
 
 def smart_exit(trade, bank_at, prove_at):
     """
-    What the CURRENT live ladder would have produced for this trade.
+    SIMULATION ONLY - this is not what the bot does.
 
-    The live rule parks the stop on the highest whole rung the price reached:
-    at peak M the stop sits at entry + floor(M / step) * step, so 5.5 -> +5,
-    10.5 -> +10, 15.0 -> +15. The stop only ratchets up, so a trade that
-    peaked at M exits at that rung (minus one tick of slippage) if it came
-    back down, and at its actual fill if it was still running when we look.
+    The live bot runs the untouched original ladder in
+    position_manager.update_trailing_sl(): first rung entry+1, then entry+5,
+    entry+10 and so on. Nothing here changes that.
 
-    This mirrors position_manager.update_trailing_sl exactly.
+    This answers a different question, purely for study: if we had parked the
+    stop on the highest whole rung the price reached (5.5 -> +5, 10.5 -> +10),
+    what would this trade have returned? The answer depends on the path, which
+    is why dips_below_bank is being recorded - a trade that breathed below a
+    rung on the way up would have been stopped there.
+
+    We only promote this to the live bot if it beats the baseline over a few
+    hundred real trades.
 
     Returns (pnl_points, rule_fired).
     """
@@ -164,17 +169,15 @@ def smart_exit(trade, bank_at, prove_at):
     if mfe is None:
         return actual, "unknown-mfe"
     if mfe < 5:
-        # Never reached the first rung - the initial SL is what would have hit.
+        # Never reached the first rung - the original stop would have hit.
         return actual, "untouched"
 
-    # Highest rung the price actually reached.
     rung = float(int(mfe // 5) * 5)
     if rung < 5:
         rung = 5.0
     if rung <= actual:
-        # The trade already banked at least this much.
         return actual, "trailed"
-    return rung, "banked"
+    return rung, "hypothetical"
 
 
 def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None):

@@ -96,14 +96,15 @@ export default function MfeReportPage() {
 
       <div className="card p-4">
         <div className="flex flex-wrap items-end gap-4">
-          <NumField label="Bank at (pts)" value={bankAt} onChange={setBankAt} />
-          <NumField label="Trail past (pts)" value={proveAt} onChange={setProveAt} />
-          <NumField label="Stop day at (pts, 0 = off)" value={dayStopAt} onChange={setDayStopAt} />
+          <NumField label="SIM: bank at (pts)" value={bankAt} onChange={setBankAt} />
+          <NumField label="SIM: trail past (pts)" value={proveAt} onChange={setProveAt} />
+          <NumField label="SIM: stop day at (pts, 0 = off)" value={dayStopAt} onChange={setDayStopAt} />
           <div className="text-xs text-[#64748b] flex-1 min-w-[240px] leading-relaxed">
-            Staged rule under test: when a trade first reaches <b className="text-white">+{trailingTriggerShown}</b>,
-            park the stop at <b className="text-white">+{bankAt}</b> instead of +1. Higher rungs are untouched,
-            so runners are never affected. It is a stop-loss change, not a take-profit — a trade can still be
-            stopped out at the initial loss.{" "}
+            <b className="text-amber-400">Simulation only.</b> The live bot runs its original stop ladder
+            (first rung entry+1, then +5, +10) and nothing on this page changes that. This study asks: if
+            we had parked the stop at <b className="text-white">+{bankAt}</b> once a trade reached{" "}
+            <b className="text-white">+{trailingTriggerShown}</b>, would it have returned more? It is a
+            stop-loss change, not a take-profit — a trade can still be stopped out at the initial loss.{" "}
             {dayStopAt ? (
               <>
                 Day-stop is <b className="text-white">ON at +{dayStopAt}</b> — once the day&apos;s cumulative

@@ -40,7 +40,8 @@ MIGRATION_COLUMNS = [
     ("mae_points", "REAL"),        # max adverse excursion, in points
     ("sl_rungs_locked", "INTEGER"),  # how many times the trailing SL moved
     # Path detail. MFE alone cannot say whether a runner dipped back below the
-    # first rung on its way up, which is what decides if the new rule hurts it.
+    # dip back below the first rung on its way up, which decides whether the
+    # hypothetical rule would have cost this trade points.
     ("ticks_seen", "INTEGER"),
     ("peak_tick", "INTEGER"),
     ("bank_touched", "INTEGER"),

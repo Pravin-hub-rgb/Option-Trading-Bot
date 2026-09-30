@@ -63,7 +63,7 @@ def main():
         pm.update_trailing_sl(ltp)
     check("MFE (peak 107)", pm.get_mfe(), 7.0)
     check("MAE (low 99.8)", close(pm.get_mae(), 0.2), True)
-    check("SL locked to the rung the price reached", pm.get_current_sl(), 105.0)
+    check("SL moves only to entry+1 at peak +7 (baseline)", pm.get_current_sl(), 101.0)
     summary = pm.close_position(101.0, t0 + timedelta(minutes=6))
     check("summary mfe_points", summary["mfe_points"], 7.0)
     check("summary mae_points", summary["mae_points"], 0.2)
@@ -78,16 +78,16 @@ def main():
         pm2.track_price(ltp)
         pm2.update_trailing_sl(ltp)
     check("MFE (peak 122)", pm2.get_mfe(), 22.0)
-    # profit 22 -> highest rung reached is floor(22/5)*5 = 20
-    check("SL = entry+20 rung", pm2.get_current_sl(), 120.0)
-    s2 = pm2.close_position(120.0, t0 + timedelta(minutes=5))
+    # profit 22 -> milestones_passed = int((22-5)/5) = 3 -> entry + 15
+    check("SL = entry+15 rung at profit 22", pm2.get_current_sl(), 115.0)
+    s2 = pm2.close_position(115.0, t0 + timedelta(minutes=5))
     check("runner mfe_points", s2["mfe_points"], 22.0)
     check("runner rungs locked", s2["sl_rungs_locked"] >= 3, True)
 
-    # ---------- 2b. the ladder rung formula, spelled out ----------
-    print("\n2b) rung arithmetic (stop sits on the highest rung price reached)")
-    for ltp, want_sl in ((105.5, 105.0), (110.5, 110.0), (115.0, 115.0),
-                         (120.0, 120.0), (125.0, 125.0)):
+    # ---------- 2b. the baseline ladder, spelled out ----------
+    print("\n2b) baseline rung arithmetic (first rung is +1, then every +5)")
+    for ltp, want_sl in ((105.5, 101.0), (110.5, 105.0), (115.0, 110.0),
+                         (120.0, 115.0), (125.0, 120.0)):
         p = PositionManager()
         p.open_position(100.0, t0, "T")
         p.update_trailing_sl(ltp)
@@ -142,112 +142,133 @@ def main():
     check("persisted mae", row["mae_points"], 0.5)
     check("persisted rungs", row["sl_rungs_locked"], 1)
 
-    # ---------- 6. first-rung bank: the giveback fix ----------
-    print("\n6) first SL rung = +5 (was +1)")
+    # ---------- 6. BASELINE LADDER REGRESSION (live exit logic) ----------
+    # The live stop ladder is the ORIGINAL rule and must stay that way.
+    # This is the money path: it decides when real money leaves the account.
+    print("\n6) baseline trailing ladder (live exit logic)")
     from settings_db import save_setting
-    old_bank = get_as_dict().get("bank_at_points")
-    save_setting("bank_at_points", "5")
+    save_setting("trailing_trigger", "5")
+    save_setting("trailing_step", "5")
+    save_setting("observe_dip_level", "5")
 
-    # 6a. giveback trade: peaks at +7, must now exit at +5 instead of +1
-    b = PositionManager()
-    b.open_position(100.0, t0, "BANK CE")
-    for ltp in (101.0, 103.0, 107.0, 104.0, 103.0, 102.0):
-        b.track_price(ltp)
-        b.update_trailing_sl(ltp)
-    check("giveback trade locks stop at +5", b.get_current_sl(), 105.0)
-    check("...and never lets it drop below", b.get_current_sl() >= 105.0, True)
-    sb = b.close_position(105.0, t0 + timedelta(minutes=3))
-    check("giveback trade banks +5 (was +1)", sb["pnl"], 5.0)
+    def sl_only(ltp, entry=100.0):
+        """Feed one price, return the live stop. No settings touched."""
+        p = PositionManager()
+        p.open_position(entry, t0, "LADDER")
+        p.update_trailing_sl(ltp)
+        return p.get_current_sl()
 
-    # 6b. runner: reaches +10 and keeps its full run
-    r = PositionManager()
-    r.open_position(100.0, t0, "BANK PE")
-    for ltp in (105.0, 104.0, 110.0, 115.0, 120.0, 118.0):
-        r.track_price(ltp)
-        r.update_trailing_sl(ltp)
-    check("runner trails to the +20 rung", r.get_current_sl(), 120.0)
-    sr = r.close_position(120.0, t0 + timedelta(minutes=4))
-    check("runner keeps its full run", sr["pnl"], 20.0)
-    check("runner MFE preserved", sr["mfe_points"], 20.0)
+    # 6a. THE key regression: +5.5 must NOT park the stop at +5.
+    # A design experiment briefly did this and it broke the strategy. If this
+    # assertion ever fails again, the live exit logic has been changed without
+    # approval.
+    check("+5.5 -> entry+1  (NOT entry+5)", sl_only(105.5), 101.0)
+    check("+5.0 -> entry+1", sl_only(105.0), 101.0)
 
-    # 6c. loser is unaffected
+    # 6b. the rest of the ladder
+    check("+10.5 -> entry+5", sl_only(110.5), 105.0)
+    check("+10.0 -> entry+5", sl_only(110.0), 105.0)
+    check("+15.5 -> entry+10", sl_only(115.5), 110.0)
+    check("+20.5 -> entry+15", sl_only(120.5), 115.0)
+
+    # 6c. below the trigger nothing ever moves
+    check("+4.9 -> initial stop untouched", sl_only(104.9), 96.0)
+    check("+0.0 -> initial stop untouched", sl_only(100.0), 96.0)
+
+    # 6d. full giveback path: runner that reached +20 then slid back.
+    g = PositionManager()
+    g.open_position(100.0, t0, "GIVEBACK")
+    for ltp in (101.0, 105.5, 110.5, 115.5, 120.5, 118.0, 116.0, 115.0):
+        g.update_trailing_sl(ltp)
+    check("giveback path trails to +15", g.get_current_sl(), 115.0)
+    check("giveback exits at +15", g.close_position(115.0, t0)["pnl"], 15.0)
+
+    # 6e. a loser is completely unaffected
     l = PositionManager()
-    l.open_position(100.0, t0, "BANK CE2")
+    l.open_position(100.0, t0, "LOSER")
     for ltp in (99.0, 97.0, 96.0):
         l.track_price(ltp)
         l.update_trailing_sl(ltp)
     check("loser stop stays at initial -4", l.get_current_sl(), 96.0)
     check("loser exits at -4", l.close_position(96.0, t0)["pnl"], -4.0)
 
-    # 6d. setting 0 restores the legacy +1 first rung
-    save_setting("bank_at_points", "0")
-    z = PositionManager()
-    z.open_position(100.0, t0, "LEGACY")
-    z.update_trailing_sl(107.0)
-    check("bank_at=0 restores +1 first rung", z.get_current_sl(), 101.0)
-    save_setting("bank_at_points", old_bank if old_bank is not None else "5")
+    # ---------- 7. observation must NEVER influence the live ladder ----------
+    # dips_below_bank / MFE tracking is passive. Whatever the observation level
+    # is set to, the stop ladder has to produce identical results.
+    print("\n7) observation is strictly passive (regression)")
+    path = (105.5, 110.5, 115.5, 104.0, 102.0, 120.5, 121.0, 99.0)
 
-    # 6e. every rung value under the new ladder
-    save_setting("bank_at_points", "5")
-    for ltp, want in ((105.5, 105.0), (110.5, 110.0), (115.0, 115.0),
-                      (120.0, 120.0), (125.0, 125.0)):
+    def ladder_rungs(do_track, level):
+        save_setting("observe_dip_level", str(level))
         p = PositionManager()
-        p.open_position(100.0, t0, "T")
-        p.update_trailing_sl(ltp)
-        check(f"profit {ltp - 100:.1f} -> SL {want}", p.get_current_sl(), want)
-
-    # ---------- 7. hostile settings must never break the ladder ----------
-    print("\n7) hostile / misconfigured settings")
-    from settings_db import save_setting
-    st = get_as_dict()
-    keep = {k: st.get(k) for k in ("bank_at_points", "trailing_trigger", "trailing_step")}
-
-    def sl_after(ticks, **over):
-        for k, v in over.items():
-            save_setting(k, str(v))
-        p = PositionManager()
-        p.open_position(100.0, t0, "EDGE")
-        for x in ticks:
-            p.track_price(x)
+        p.open_position(100.0, t0, "PASSIVE")
+        out = []
+        for x in path:
+            if do_track:
+                p.track_price(x)
             p.update_trailing_sl(x)
-        return p.get_current_sl()
+            out.append(p.get_current_sl())
+        return out
 
-    # 7a. bank_at above the trigger must NOT become an instant take-profit
-    check("bank_at=8 > trigger=5 does not arm a stop above price",
-          sl_after([105.2], bank_at_points=8), 105.0)
+    control = ladder_rungs(False, 0)
+    for level in (0, 1, 3, 5, 8, 50, -5, "abc", ""):
+        check(f"observe_dip_level={level!r}: ladder with tracking = ladder without",
+              ladder_rungs(True, level), control)
 
-    # 7b. bank_at above the step must not freeze the ladder
-    save_setting("trailing_trigger", "5"); save_setting("trailing_step", "3")
-    p = PositionManager(); p.open_position(100.0, t0, "S3")
-    rungs = []
-    for x in (105.0, 108.0, 111.0, 114.0):
-        p.update_trailing_sl(x)
-        rungs.append(p.get_current_sl())
-    check("ladder stays monotonic with step=3, bank=5",
-          all(rungs[i] <= rungs[i + 1] for i in range(len(rungs) - 1)), True)
-    check("...and keeps trailing past the first rung", rungs[-1] > rungs[0], True)
+    # The path ends at 99.0 after peaking at 121.0, so the stop parks at +15
+    # (milestones_passed = int((21-5)/5) = 3) and stays there.
+    check("ladder parks at +15 after peaking at +21", control[-1], 115.0)
 
-    # 7c. negative / junk values fall back to the legacy +1 rung
+    save_setting("observe_dip_level", "5")
+
+    # track_price() on its own must not move the stop, but MUST record.
+    t = PositionManager()
+    t.open_position(100.0, t0, "TRACKONLY")
+    for x in (105.5, 110.5, 115.5, 120.5, 104.0):
+        t.track_price(x)
+    check("track_price alone never moves the stop", t.get_current_sl(), 96.0)
+    r2 = t.close_position(100.0, t0)
+    check("MFE recorded while observing", r2["mfe_points"], 20.5)
+    check("dips counted while observing", (r2["dips_below_bank"] or 0) > 0, True)
+
+    save_setting("observe_dip_level", "0")
+    t2 = PositionManager()
+    t2.open_position(100.0, t0, "TRACKOFF")
+    for x in (105.5, 110.5, 104.0):
+        t2.track_price(x)
+    r3 = t2.close_position(100.0, t0)
+    check("MFE recorded even when observation is off", r3["mfe_points"], 10.5)
+    check("dips not counted when observation is off", r3["dips_below_bank"], 0)
+    save_setting("observe_dip_level", "5")
+
+    # ---------- 7e. safety invariants of the live ladder ----------
+    print("\n7e) live ladder safety invariants")
+    st = get_as_dict()
+    keep = {k: st.get(k) for k in ("trailing_trigger", "trailing_step")}
     save_setting("trailing_trigger", "5"); save_setting("trailing_step", "5")
-    save_setting("bank_at_points", "1")
-    for junk in (-5, "abc", ""):
-        check(f"bank_at={junk!r} falls back to +1",
-              sl_after([107.0], bank_at_points=junk), 101.0)
-    save_setting("bank_at_points", keep.get("bank_at_points") or "5")
 
-    # 7d. whenever the stop moves up it must never be placed above the price
-    #     that just armed it (otherwise it would fire an instant exit)
-    save_setting("trailing_step", "5"); save_setting("trailing_trigger", "5")
-    for bank in (1, 3, 5, 7, 12):
-        save_setting("bank_at_points", str(bank))
-        p = PositionManager(); p.open_position(100.0, t0, "SAFE")
-        bad = None
-        for x in (105.0, 105.1, 106.0, 107.0, 110.0, 120.0, 101.0, 100.5, 100.0, 99.0):
-            p.track_price(x)
-            moved, new_sl = p.update_trailing_sl(x)
-            if moved and new_sl > x + 1e-9:
-                bad = (x, new_sl)
-        check(f"bank_at={bank}: stop never armed above price", bad, None)
+    # The stop must never be armed above the price that just set it, otherwise
+    # it fires an instant exit (a hidden take-profit).
+    p = PositionManager(); p.open_position(100.0, t0, "SAFE")
+    bad = None
+    for x in (105.0, 105.1, 106.0, 107.0, 110.0, 120.0, 101.0, 100.5, 100.0, 99.0):
+        p.track_price(x)
+        moved, new_sl = p.update_trailing_sl(x)
+        if moved and new_sl > x + 1e-9:
+            bad = (x, new_sl)
+    check("stop is never armed above the price", bad, None)
+
+    # And it must never move backwards.
+    p2 = PositionManager(); p2.open_position(100.0, t0, "MONO")
+    back = []
+    prev = p2.get_current_sl()
+    for x in (105.5, 104.0, 110.5, 106.0, 99.0, 120.5, 115.0, 100.0):
+        p2.update_trailing_sl(x)
+        s = p2.get_current_sl()
+        if s < prev:
+            back.append((x, s, prev))
+        prev = s
+    check("stop never moves backwards", back, [])
 
     for k, v in keep.items():
         save_setting(k, v if v is not None else "5")
@@ -316,8 +337,8 @@ def main():
     # ---------- 9. path tracking (answers the MFE-only questions) ----------
     print("\n9) path capture - did it dip back below the first rung?")
     from settings_db import save_setting
-    keep_bank = get_as_dict().get("bank_at_points")
-    save_setting("bank_at_points", "5")
+    keep_bank = get_as_dict().get("observe_dip_level")
+    save_setting("observe_dip_level", "5")
 
     # 9a. clean runner: touches +5 once and never comes back -> survives
     r1 = PositionManager(); r1.open_position(100.0, t0, "CLEAN")
@@ -329,7 +350,9 @@ def main():
     check("clean runner peak tick is recorded", isinstance(s1["peak_tick"], int), True)
     check("clean runner ticks counted", s1["ticks_seen"] >= 6, True)
 
-    # 9b. the DANGEROUS path: +5 -> +2 -> +12. The new rule kills this at +5.
+    # 9b. the DIPPER path: +5 -> +2 -> +12. A stop parked at +5 would have been
+    #     stopped out here. That is exactly the risk the study has to measure
+    #     before anyone promotes it to the live bot.
     r2 = PositionManager(); r2.open_position(100.0, t0, "DIPPER")
     for x in (100.5, 105.2, 102.0, 101.0, 106.0, 112.0, 109.0):
         r2.track_price(x)
@@ -348,7 +371,7 @@ def main():
     check("loser never touched the rung", s3["bank_touched"], False)
     check("loser has no dips", s3["dips_below_bank"], 0)
 
-    save_setting("bank_at_points", keep_bank if keep_bank is not None else "5")
+    save_setting("observe_dip_level", keep_bank if keep_bank is not None else "5")
 
     db_mod.DB_PATH = real_db
     shutil.rmtree(tmpdir, ignore_errors=True)

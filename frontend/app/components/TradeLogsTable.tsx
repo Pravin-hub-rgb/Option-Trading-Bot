@@ -16,12 +16,12 @@ type RowInfo = {
 };
 
 const RULE_TEXT: Record<string, { label: string; tone: string; help: string }> = {
-  banked: { label: "stop at +5", tone: "#10b981", help: "This trade reached +5 but never got past +10, so it slid back down. With the new first rung the stop would have been parked at +5, so the exit would have happened in profit instead of at scratch." },
-  trailed: { label: "no change", tone: "#64748b", help: "The trade ran past +10, where the ladder rungs are unchanged - the new rule does not touch it." },
-  untouched: { label: "no change", tone: "#64748b", help: "Price never got near +5, so the first rung was never reached. The initial stop would have hit either way - no exit rule can help here." },
+  hypothetical: { label: "would bank", tone: "#f59e0b", help: "SIMULATION, not live. This trade reached a higher rung than the original stop allowed, so a study-only rule that parked the stop there would have exited higher. The live bot still ran the original ladder on this trade." },
+  trailed: { label: "no change", tone: "#64748b", help: "The trade already banked at or above that rung, so the study rule would have given the same result." },
+  untouched: { label: "no change", tone: "#64748b", help: "Price never got near +5, so the stop never moved. No exit rule can help here - this is an entry problem." },
   skipped: { label: "not taken", tone: "#6366f1", help: "Day-stop simulation: an earlier trade had already hit the day's target, so this one would never have been opened." },
   "unknown-mfe": { label: "unknown", tone: "#475569", help: "Manual exit - we never tracked how far this trade went, so no comparison is possible." },
-  current: { label: "no change", tone: "#64748b", help: "Baseline row." },
+  current: { label: "baseline", tone: "#64748b", help: "This is the actual live result, unchanged." },
   unsettled: { label: "open", tone: "#475569", help: "Trade has not closed yet." },
 };
 
@@ -92,6 +92,10 @@ export default function TradeLogsTable({
       </button>
       {showHelp && (
         <div className="px-3 pb-3 text-[11px] text-[#94a3b8] leading-relaxed space-y-2">
+          <p className="p-2 rounded bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.25)] text-[#f59e0b]">
+            <b>Peak</b>, <b>Gave back</b> and <b>would bank</b> are a <b>study only</b>. The live bot
+            runs its original untouched stop ladder — nothing on this page changes how it trades.
+          </p>
           <p>
             <b className="text-white">Peak (MFE)</b> = the highest price this trade ever reached while it was
             open, measured in points above entry. It answers: <i>&quot;how good did this trade get before it
@@ -102,11 +106,10 @@ export default function TradeLogsTable({
             +9 but closed at +0.9, it gave back 8.1 points — that is recoverable profit we left on the table.
           </p>
           <p>
-            <b className="text-white">The rule</b> columns are a simulation, not live behaviour. The rule
-            under test is: <i>when a trade first reaches +5, move the stop-loss up to +5 instead of +1.</i>{" "}
-            Higher rungs are unchanged, so a trade that runs past +10 is left completely alone. It is a
-            stop-loss change, not a take-profit — a trade can still be stopped out at -4. The bot&apos;s real
-            setting is <span className="font-mono text-white">First SL Rung / Bank At</span> in Settings → Risk.
+            <b className="text-white">would bank</b> is a what-if, never live. It asks: <i>if we had parked
+            the stop on the highest whole rung the price reached (5.5 → +5, 10.5 → +10), would this trade
+            have returned more?</i> Whether it actually would have is exactly what{" "}
+            <span className="font-mono text-white">dips_below_bank</span> is being recorded to find out.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 pt-1">
             {Object.entries(RULE_TEXT).filter(([k]) => k !== "current" && k !== "unsettled").map(([k, v]) => (
@@ -186,7 +189,7 @@ export default function TradeLogsTable({
             const m = t.id != null ? info[t.id] : undefined;
             const inferred = m?.source === "rung";
             const rule = RULE_TEXT[m?.rule ?? "current"] ?? { label: m?.rule ?? "—", tone: "#64748b", help: "" };
-            const banked = m?.rule === "banked";
+            const banked = m?.rule === "hypothetical";
             const skipped = m?.rule === "skipped";
             return (
             <tr

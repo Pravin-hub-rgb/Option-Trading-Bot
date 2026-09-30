@@ -59,12 +59,6 @@
     "label": "Trailing Step (points)",
     "category": "risk"
   },
-  "bank_at_points": {
-    "value": 5,
-    "type": "number",
-    "label": "First SL Rung / Bank At (points, 0 = old +1)",
-    "category": "risk"
-  },
   "stop_after_first_win": {
     "value": "true",
     "type": "boolean",
@@ -97,7 +91,7 @@
     "category": "logging"
   },
   "access_token": {
-    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YWJiMWMxOTkzOTc2ZDBhZTE1YzBkY2IiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc5MDY0NzMyMSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzkwNzE5MjAwfQ.KGr2PEg5D6rlMnIgRUDfaJm0mFliMk-cpyKEPmfpaAA",
+    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YWJjNzYwMzZkYzM5ODI1YjViOGZkMDYiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc5MDczNTg3NSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzkwODA1NjAwfQ.8DlSE80z17OjyLCciUi5wWe0EtO097nin7DigBlzi0k",
     "type": "password",
     "label": "Upstox Access Token",
     "category": "credentials"
@@ -156,5 +150,11 @@
     "type": "text",
     "label": "Live Confirmed Today (date string, auto-reset)",
     "category": "real-trading"
+  },
+  "observe_dip_level": {
+    "value": 5,
+    "type": "number",
+    "label": "Observation: Dip Watch Level (points, 0 = off)",
+    "category": "risk"
   }
 }

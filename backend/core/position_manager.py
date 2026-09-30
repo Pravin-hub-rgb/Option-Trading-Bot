@@ -86,7 +86,8 @@ class PositionManager:
 
         p['ticks_seen'] += 1
 
-        bank = self.get_bank_settings()
+        # Observation only - this never influences an exit.
+        bank = self.get_dip_watch_level()
         if bank > 0:
             if profit >= bank:
                 if not p['bank_touched']:
@@ -113,31 +114,35 @@ class PositionManager:
             return None
         return self.position['entry_price'] - self.position['lowest_price']
     
-    def get_bank_settings(self):
+    def get_dip_watch_level(self):
         """
-        The first stop-loss rung.
+        OBSERVATION ONLY. The price level at which we start counting dips.
 
-        Historically the first rung locked the stop at entry+1, which only covers
-        charges. That is why a trade that reached +5 and then gave the move back
-        still exited at scratch. Locking the first rung at `bank_at` instead makes
-        that same giveback trade exit at +5, while leaving every runner untouched
-        (the second rung is entry+5 either way).
-
-        Returns 0 when the setting is off, in which case the legacy +1 is used.
+        This has no effect whatsoever on when a trade exits - it only decides
+        what gets written to the `dips_below_bank` column so the "what if we
+        banked earlier" study can be evaluated later on real data. The live
+        exit ladder in update_trailing_sl() does not read this.
         """
         from settings_db import get_as_dict
         s = get_as_dict()
         try:
-            return float(s.get('bank_at_points', 5) or 0)
+            level = float(s.get('observe_dip_level', 5) or 0)
         except (TypeError, ValueError):
-            # An unparseable value must fail SAFE, i.e. fall back to the legacy
-            # +1 rung. Defaulting to 5 here would let a typo silently switch on
-            # the more aggressive behaviour.
             return 0.0
+        return level if level > 0 else 0.0
 
     def update_trailing_sl(self, current_ltp):
         """
-        Update trailing stop loss based on current price
+        Update trailing stop loss based on current price.
+
+        THIS IS THE LIVE EXIT LOGIC and it is the original, unchanged ladder:
+        once the trade is up by `trailing_trigger`, the stop ratchets up in
+        `trailing_step` increments and never moves back down. The first rung
+        only covers charges (entry+1).
+
+        The "what if we banked earlier" study does NOT live here. It lives in
+        smart_pnl.py as a read-only simulation. See track_price() for the
+        observation-only DIP_WATCH_LEVEL threshold.
         
         Args:
             current_ltp: Current last traded price
@@ -152,37 +157,22 @@ class PositionManager:
         s = get_as_dict()
         trailing_trigger = int(s.get('trailing_trigger', self.trailing_trigger))
         trailing_step = int(s.get('trailing_step', self.trailing_step))
-
-        # The stop always sits on a whole rung that the price has actually
-        # reached: at profit P it is entry + floor(P / step) * step. So 5.5
-        # locks +5, 10.5 locks +10, 15.0 locks +15. The stop only ever ratchets
-        # upward, so a dip that does not reach the next rung down leaves it
-        # untouched - a runner that breathes without breaking a rung survives.
-        #
-        # Guards:
-        #   * first_rung can never exceed trailing_step, otherwise the next rung
-        #     up would be lower and the monotonic guard would freeze the ladder;
-        #   * it can never exceed trailing_trigger, otherwise the stop would be
-        #     armed above the price that just set it and fire an instant exit.
-        # bank_at_points = 0 (or anything invalid) restores the legacy +1 rung.
-        bank_at = self.get_bank_settings()
-        first_rung = min(bank_at, trailing_trigger, trailing_step) if bank_at > 0 else 1.0
-        if first_rung <= 0:
-            first_rung = 1.0
         
         self.position['last_ltp'] = current_ltp
         
         profit = current_ltp - self.position['entry_price']
         old_sl = self.position['stop_loss']
         
+        # Calculate new SL based on profit milestones
         if profit >= trailing_trigger:
-            rungs = int(profit // trailing_step)
-            if rungs >= 1:
-                new_sl = self.position['entry_price'] + rungs * trailing_step
-                if rungs == 1:
-                    new_sl = self.position['entry_price'] + first_rung
-            else:
-                new_sl = old_sl
+            # Reached at least the trigger. Count how many milestones passed.
+            milestones_passed = int((profit - trailing_trigger) / trailing_step)
+            # The first milestone moves the stop to true break-even
+            # (entry + 1 pt, to cover brokerage/STT/charges); higher rungs
+            # follow the normal trailing step.
+            new_sl = self.position['entry_price'] + (
+                1.0 if milestones_passed == 0 else milestones_passed * trailing_step
+            )
             
             # Only update if new SL is higher
             if new_sl > self.position['stop_loss']:

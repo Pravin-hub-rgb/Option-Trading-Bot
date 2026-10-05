@@ -143,7 +143,14 @@ def net_for(trade, pnl_points):
     return round(pnl_points * pp - charges, 2)
 
 
-def smart_exit(trade, bank_at, prove_at):
+# A hypothetical stop is armed at a level, and a stop order FILLS at or below
+# that level - never exactly at it. Observed slippage on real trailing exits
+# ranged from 0.05 to 1.45 points, so 1.0 is a deliberately conservative
+# average. Every "would bank" figure below subtracts this.
+EXIT_BUFFER_PTS = 1.0
+
+
+def smart_exit(trade, bank_at=5, prove_at=None, buffer_pts=EXIT_BUFFER_PTS):
     """
     SIMULATION ONLY - this is not what the bot does.
 
@@ -151,14 +158,34 @@ def smart_exit(trade, bank_at, prove_at):
     position_manager.update_trailing_sl(): first rung entry+1, then entry+5,
     entry+10 and so on. Nothing here changes that.
 
-    This answers a different question, purely for study: if we had parked the
-    stop on the highest whole rung the price reached (5.5 -> +5, 10.5 -> +10),
-    what would this trade have returned? The answer depends on the path, which
-    is why dips_below_bank is being recorded - a trade that breathed below a
-    rung on the way up would have been stopped there.
+    The question this answers: if we had parked the stop at the first rung
+    (entry+5) instead of entry+1, what would this trade have returned?
 
-    We only promote this to the live bot if it beats the baseline over a few
-    hundred real trades.
+    WHY THIS IS NOT JUST "PEAK MINUS GIVEBACK"
+    ------------------------------------------
+    Option prices do not travel in a straight line. A trade that peaks at +8
+    typically goes 5 -> 4.5 -> 6 -> 5.2 -> 8. The moment a stop is armed at +5,
+    that 4.5 tick fires it. Assuming we could sit through the wiggle and still
+    bank the +8 is hindsight - it is the single biggest way this study can lie
+    to us, and it is exactly the mistake that made an earlier version of this
+    page look like it was worth lakhs.
+
+    So we use the measured path:
+
+      * dips_below_bank > 0
+        The price really did come back through +5 after touching it. A stop at
+        +5 fires at the first such tick, so the trade exits at roughly
+        +5 - buffer, NOT at the peak. The MFE is irrelevant to this trade.
+
+      * dips_below_bank == 0 and MFE >= 10
+        The price never broke +5, so the +5 stop was never hit. From +10 upward
+        the baseline ladder and the study rule are the same ladder, so this
+        trade is untouched. It keeps its real result.
+
+      * dips_below_bank is NULL
+        The trade predates path capture, so we cannot know whether it dipped.
+        We still show the MFE figure, but it is labelled "hindsight" so an
+        unmeasured guess can never be mistaken for a measured outcome.
 
     Returns (pnl_points, rule_fired).
     """
@@ -169,24 +196,59 @@ def smart_exit(trade, bank_at, prove_at):
     if mfe is None:
         return actual, "unknown-mfe"
     if mfe < 5:
-        # Never reached the first rung - the original stop would have hit.
+        # Never reached the first rung, so no rung was ever armed.
         return actual, "untouched"
 
-    rung = float(int(mfe // 5) * 5)
-    if rung < 5:
-        rung = 5.0
-    if rung <= actual:
+    rung = 5.0
+    banked = rung - (buffer_pts or 0.0)
+    if banked < 0:
+        banked = 0.0
+
+    dips = trade.get("dips_below_bank")
+
+    if dips is not None:
+        if dips > 0:
+            # Measured: the stop would have fired. Peak is a red herring here.
+            return (banked if banked > actual else actual), "stopped_at_rung"
+        if mfe >= (prove_at or 10):
+            # Measured: it never broke +5, and above the prove level both rules
+            # run the same ladder. Nothing changes.
+            return actual, "survived"
+        # Touched +5, never broke it, but never proved it either - it faded out
+        # somewhere between the two. The stop would still have been armed.
+        return (banked if banked > actual else actual), "stopped_at_rung"
+
+    # No path data: the old peak-based guess, now explicitly unverified.
+    peak_rung = float(int(mfe // 5) * 5)
+    if peak_rung < 5:
+        peak_rung = 5.0
+    if peak_rung <= actual:
         return actual, "trailed"
-    return rung, "hypothetical"
+    return peak_rung - (buffer_pts or 0.0), "hindsight"
 
 
-def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None):
+MEASURED_RULES = {"stopped_at_rung", "survived", "untouched", "trailed", "unknown-mfe"}
+UNVERIFIED_RULES = {"hindsight"}
+
+
+def is_measured(rule_fired):
+    """True when the outcome came from real recorded price path, not a guess."""
+    return rule_fired in MEASURED_RULES
+
+
+def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None,
+             buffer_pts=EXIT_BUFFER_PTS):
     """
     Replay settled trades in entry-time order, per day.
 
     day_stop_at is compared against the CUMULATIVE realised points for the day
     (gross, in points - not net rupees). Once reached, every later trade that
     day is skipped, which is what "done for the day" means in practice.
+
+    Rows are tagged with `verified`: True when the outcome was derived from
+    recorded tick path, False when it is the old peak-based guess. Callers must
+    keep the two apart - mixing them is how this study ends up looking better
+    than it is.
     """
     rows = []
     by_day = defaultdict(list)
@@ -197,7 +259,7 @@ def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None):
         day_pts = 0.0
         stopped = False
         for t in sorted(by_day[day], key=lambda x: (x["entry_time"], x["id"] or 0)):
-            pnl, rule = smart_exit(t, bank_at, prove_at)
+            pnl, rule = smart_exit(t, bank_at, prove_at, buffer_pts)
             skipped = stopped or t.get("pnl") is None
             if skipped:
                 pnl, rule = t.get("pnl"), "skipped"
@@ -221,6 +283,7 @@ def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None):
                 "mfe_bucket": t.get("mfe_bucket"),
                 "mfe_bucket_label": t.get("mfe_bucket_label"),
                 "giveback_points": t.get("giveback_points"),
+                "dips_below_bank": t.get("dips_below_bank"),
                 "actual_pnl": t.get("pnl"),
                 "actual_net": actual_net,
                 "smart_pnl": None if skipped else pnl,
@@ -230,6 +293,7 @@ def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None):
                 "delta_net": None if (skipped or smart_net is None or actual_net is None)
                               else round(smart_net - actual_net, 2),
                 "rule_fired": rule,
+                "verified": is_measured(rule),
                 "day_stopped": stopped and not skipped,
             })
     return rows
@@ -237,6 +301,7 @@ def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None):
 
 def _summarise(rows):
     taken = [r for r in rows if r["smart_pnl"] is not None]
+    verified = [r for r in taken if r.get("verified")]
     return {
         "trades": len(taken),
         "trades_skipped": sum(1 for r in rows if r["rule_fired"] == "skipped"),
@@ -245,12 +310,18 @@ def _summarise(rows):
         "actual_gross_points": round(sum(r["actual_pnl"] for r in taken if r["actual_pnl"] is not None), 2),
         "actual_net_rupees": round(sum(r["actual_net"] for r in taken if r["actual_net"] is not None), 2),
         "win_rate": round(100 * sum(1 for r in taken if r["smart_pnl"] > 0) / len(taken), 1) if taken else 0.0,
+        # The honest split. `net_rupees` above blends both and will look better
+        # than reality; these two do not.
+        "verified_trades": len(verified),
+        "unverified_trades": len(taken) - len(verified),
+        "verified_net_rupees": round(sum(r["smart_net"] for r in verified), 2),
+        "verified_actual_net_rupees": round(sum(r["actual_net"] for r in verified if r["actual_net"] is not None), 2),
     }
 
 
 def _baseline_summary(rows):
     return _summarise([dict(r, smart_pnl=r["actual_pnl"], smart_net=r["actual_net"],
-                            rule_fired="current") for r in rows])
+                            rule_fired="current", verified=True) for r in rows])
 
 
 def smart_pnl_report(year=None, bank_at=5, prove_at=10, day_stop_at=0):
@@ -300,13 +371,20 @@ def smart_pnl_report(year=None, bank_at=5, prove_at=10, day_stop_at=0):
                for m, v in sorted(by_month.items())]
 
     return {
-        "settings": {"bank_at": bank_at, "prove_at": prove_at, "day_stop_at": day_stop_at},
+        "settings": {"bank_at": bank_at, "prove_at": prove_at, "day_stop_at": day_stop_at,
+                     "exit_buffer_pts": EXIT_BUFFER_PTS},
         "trades": sorted(rows, key=lambda r: r["entry_time"], reverse=True),
         "days": days,
         "summary": smart,
         "baseline": baseline,
         "delta_net": round(smart["net_rupees"] - baseline["net_rupees"], 2),
         "per_day_delta": round((smart["net_rupees"] - baseline["net_rupees"]) / max(1, len(days)), 2),
+        # The number to actually trust. delta_net blends in trades where we had
+        # to guess; this one only counts trades whose real tick path we recorded.
+        "verified_delta_net": round(
+            smart["verified_net_rupees"] - smart["verified_actual_net_rupees"], 2),
+        "verified_coverage_pct": round(
+            100 * smart["verified_trades"] / max(1, smart["trades"]), 1),
         "monthly": monthly,
         "mfe_coverage": mfe_report(year=year),
     }
@@ -335,9 +413,21 @@ def mfe_report(year=None):
         })
 
     # The recoverable leak: reached +5, exited at or below the BE rung (+1).
+    #
+    # The counterfactual has to go through smart_exit, NOT a flat "+5". A trade
+    # that touched +5 and then traded back through it would have been stopped on
+    # the way down, so assuming it banked a clean +5 overstates the leak. We
+    # split it so the guess and the measurement are never summed together.
     leak = [t for t in known if 5 <= (t["mfe_points"] or 0) < 10]
     leak_actual = sum(net_for(t, t["pnl"]) for t in leak)
-    leak_banked = sum(net_for(t, 5) for t in leak)
+    leak_hindsight = sum(net_for(t, 5) for t in leak)
+
+    leak_verified = [t for t in leak if t.get("dips_below_bank") is not None]
+    leak_measured_gain = 0.0
+    for t in leak_verified:
+        pts, _rule = smart_exit(t, 5, None)
+        if pts is not None:
+            leak_measured_gain += net_for(t, pts) - net_for(t, t["pnl"])
 
     never = [t for t in known if t["mfe_points"] is not None and t["mfe_points"] < 5]
     runner = [t for t in known if (t["mfe_points"] or 0) >= 10]
@@ -352,8 +442,15 @@ def mfe_report(year=None):
         "leak": {
             "count": len(leak),
             "actual_net": round(leak_actual, 2),
-            "banked_at_5_net": round(leak_banked, 2),
-            "recoverable": round(leak_banked - leak_actual, 2),
+            # HINDSIGHT: assumes every one of them banked a clean +5. This is
+            # the number that made the idea look worth lakhs. It is a guess.
+            "hindsight_net": round(leak_hindsight, 2),
+            "hindsight_recoverable": round(leak_hindsight - leak_actual, 2),
+            # MEASURED: only trades whose real tick path we captured, each run
+            # through the real stop logic including the exit buffer.
+            "verified_trades": len(leak_verified),
+            "unverified_trades": len(leak) - len(leak_verified),
+            "verified_gain": round(leak_measured_gain, 2),
         },
         "never_reached_5": {
             "count": len(never),
@@ -473,15 +570,15 @@ def risk_analysis(year=None):
         else:
             buckets["never_reached"] += 1
 
-    # How many runners dipped below a rung on the way up - the one case where
-    # the new ladder can cost points rather than save them.
-    dippers = 0
-    for t in trades:
-        mfe = t.get("mfe_points")
-        dips = t.get("dips_below_bank")
-        if mfe is not None and mfe >= 10 and dips is not None and dips > 0:
-            dippers += 1
-    measured = sum(1 for t in trades if t.get("dips_below_bank") is not None)
+    # The one case that decides whether this rule is safe: did the price ever come
+    # back through +5 after touching it? If yes, a +5 stop would have fired and
+    # the trade would have died early. Counted across every trade with real
+    # recorded path, not just runners - a dipper is a dipper at any peak.
+    measured = [t for t in trades if t.get("dips_below_bank") is not None]
+    dippers = [t for t in measured if (t.get("dips_below_bank") or 0) > 0]
+    runner_dippers = [t for t in dippers if (t.get("mfe_points") or 0) >= 10]
+    # Of the trades that would actually be touched by the rule (reached +5).
+    bankable = [t for t in measured if 5 <= (t.get("mfe_points") or 0) < 10]
 
     return {
         "baseline_points": baseline_points,
@@ -495,10 +592,14 @@ def risk_analysis(year=None):
             "unknown": buckets["unknown"],
         },
         "runner_dips": {
-            "measured_trades": measured,
-            "dipped": dippers,
-            # Only meaningful once the path capture has real data behind it.
-            "note": "path data only exists for trades logged after the capture was added",
+            "measured_trades": len(measured),
+            "dipped": len(dippers),
+            "dipped_pct": round(100 * len(dippers) / len(measured), 1) if measured else 0.0,
+            "runner_dipped": len(runner_dippers),
+            "bankable_measured": len(bankable),
+            "bankable_dipped": sum(1 for t in bankable if (t.get("dips_below_bank") or 0) > 0),
+            "note": "Path data exists only for trades logged after capture was added. "
+                    "Until measured_trades is in the dozens, treat every figure here as provisional.",
         },
     }
 

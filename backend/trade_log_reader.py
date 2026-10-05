@@ -151,4 +151,13 @@ def _row_to_dict(row):
         "mfe_points": row["mfe_points"] if "mfe_points" in row.keys() else None,
         "mae_points": row["mae_points"] if "mae_points" in row.keys() else None,
         "sl_rungs_locked": row["sl_rungs_locked"] if "sl_rungs_locked" in row.keys() else None,
+        # Recorded price path. dips_below_bank is what makes the shadow engine
+        # tick-wise instead of hindsight: it counts how many times the price
+        # came back below +5 after touching it, i.e. exactly when a stop parked
+        # at +5 would have fired. NULL means the trade predates path capture.
+        "ticks_seen": row["ticks_seen"] if "ticks_seen" in row.keys() else None,
+        "peak_tick": row["peak_tick"] if "peak_tick" in row.keys() else None,
+        "bank_touched": row["bank_touched"] if "bank_touched" in row.keys() else None,
+        "first_bank_tick": row["first_bank_tick"] if "first_bank_tick" in row.keys() else None,
+        "dips_below_bank": row["dips_below_bank"] if "dips_below_bank" in row.keys() else None,
     }

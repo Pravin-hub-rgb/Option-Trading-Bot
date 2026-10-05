@@ -66,6 +66,7 @@ export interface SmartTrade {
   mfe_bucket: number;
   mfe_bucket_label: string;
   giveback_points: number | null;
+  dips_below_bank: number | null;
   actual_pnl: number | null;
   actual_net: number | null;
   smart_pnl: number | null;
@@ -73,6 +74,8 @@ export interface SmartTrade {
   delta_points: number | null;
   delta_net: number | null;
   rule_fired: string;
+  /** False when the counterfactual is a peak-based guess, not measured. */
+  verified: boolean;
   day_stopped: boolean;
 }
 
@@ -93,6 +96,11 @@ export interface RunSummary {
   gross_points: number;
   net_rupees: number;
   win_rate: number;
+  /** Trades whose counterfactual came from recorded tick path. */
+  verified_trades: number;
+  unverified_trades: number;
+  verified_net_rupees: number;
+  verified_actual_net_rupees: number;
 }
 
 export interface MfeBucket {
@@ -116,8 +124,13 @@ export interface MfeReport {
   leak: {
     count: number;
     actual_net: number;
-    banked_at_5_net: number;
-    recoverable: number;
+    /** HINDSIGHT guess: assumes every one of them banked a clean +5. */
+    hindsight_net: number;
+    hindsight_recoverable: number;
+    /** MEASURED: only trades whose real tick path we captured. */
+    verified_trades: number;
+    unverified_trades: number;
+    verified_gain: number;
   };
   never_reached_5: {
     count: number;
@@ -129,13 +142,16 @@ export interface MfeReport {
 }
 
 export interface SmartPnlReport {
-  settings: { bank_at: number; prove_at: number; day_stop_at: number | null };
+  settings: { bank_at: number; prove_at: number; day_stop_at: number | null; exit_buffer_pts?: number };
   trades: SmartTrade[];
   days: SmartDay[];
   summary: RunSummary;
   baseline: RunSummary;
   delta_net: number;
   per_day_delta: number;
+  /** Delta counting ONLY trades whose tick path was actually recorded. */
+  verified_delta_net: number;
+  verified_coverage_pct: number;
   monthly: {
     month: string;
     trades: number;
@@ -188,6 +204,15 @@ export interface RiskReport {
     never_reached: number;
     runner: number;
     unknown: number;
+  };
+  runner_dips?: {
+    measured_trades: number;
+    dipped: number;
+    dipped_pct: number;
+    runner_dipped: number;
+    bankable_measured: number;
+    bankable_dipped: number;
+    note: string;
   };
 }
 

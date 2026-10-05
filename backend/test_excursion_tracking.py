@@ -373,6 +373,58 @@ def main():
 
     save_setting("observe_dip_level", keep_bank if keep_bank is not None else "5")
 
+    # ---------- 10. the smart engine must not use hindsight ----------
+    # A peak-only counterfactual ("MFE was 8, so it banked 8") is the trap that
+    # made this study look worth lakhs. Option prices go 5 -> 4.5 -> 6 -> 8, so a
+    # stop parked at +5 fires on the 4.5 tick. dips_below_bank is what tells us
+    # that happened, and the engine has to honour it.
+    print("\n10) shadow engine is tick-wise, not peak-wise")
+    from smart_pnl import smart_exit, is_measured, EXIT_BUFFER_PTS
+    check("exit buffer is 1 point", EXIT_BUFFER_PTS, 1.0)
+
+    def sim(mfe, actual, dips, prove=10):
+        pnl, rule = smart_exit({"pnl": actual, "mfe_points": mfe,
+                                "dips_below_bank": dips}, 5, prove)
+        return pnl, rule
+
+    # 10a. the exact shape that fooled us: peaked at 8 but broke +5 on the way
+    check("dipped trade exits at +5 - buffer, NOT at its peak",
+          sim(8.8, -0.45, 1), (4.0, "stopped_at_rung"))
+    check("...even with a big peak", sim(18.0, 3.0, 1), (4.0, "stopped_at_rung"))
+
+    # 10b. no dip + proved it => the +5 stop never fired, keep the real result
+    check("clean runner keeps its real result", sim(22.1, 14.85, 0), (14.85, "survived"))
+
+    # 10c. touched +5, never broke it, but never proved it -> stop was armed
+    check("touched but unproven exits at +5 - buffer", sim(7.0, 0.9, 0), (4.0, "stopped_at_rung"))
+
+    # 10d. never reached the rung at all -> untouched
+    check("never reached +5 is untouched", sim(1.0, -4.45, 0), (-4.45, "untouched"))
+
+    # 10e. no path data => must be flagged unverified, never presented as measured
+    pnl, rule = smart_exit({"pnl": 0.9, "mfe_points": 8.0, "dips_below_bank": None}, 5, 10)
+    check("no path data is labelled hindsight", rule, "hindsight")
+    check("...and is_measured() says so", is_measured(rule), False)
+    check("...and it still subtracts the buffer", pnl, 4.0)
+
+    # 10f. measured rows must always be flagged verified
+    for args, want in (((8.8, -0.45, 1), True), ((22.1, 14.85, 0), True),
+                       ((1.0, -4.45, 0), True)):
+        _p, r = sim(*args)
+        check(f"{args} verified={want}", is_measured(r), want)
+
+    # 10g. the simulation must never beat a trade that already did better
+    for mfe in (5.0, 6.0, 9.9, 12.0, 30.0):
+        for actual in (0.5, 4.0, 9.0, 25.0):
+            for dips in (0, 1, 2):
+                p, _r = sim(mfe, actual, dips)
+                check(f"mfe={mfe} actual={actual} dips={dips}: never worse than reality",
+                      p >= actual, True)
+
+    # 10h. a buffer of 0 must be honoured exactly
+    p, r = smart_exit({"pnl": -0.45, "mfe_points": 8.8, "dips_below_bank": 1}, 5, 10, 0)
+    check("zero buffer exits exactly at the rung", p, 5.0)
+
     db_mod.DB_PATH = real_db
     shutil.rmtree(tmpdir, ignore_errors=True)
 

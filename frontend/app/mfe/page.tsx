@@ -90,8 +90,33 @@ export default function MfeReportPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card label="Actual net" value={rs(report.baseline.net_rupees)} sub={`${report.baseline.trades} trades`} color={report.baseline.net_rupees >= 0 ? GREEN : RED} />
         <Card label="Smart net" value={rs(report.summary.net_rupees)} sub={`${report.summary.trades} taken · ${report.summary.trades_skipped} skipped`} color={report.summary.net_rupees >= 0 ? GREEN : RED} />
-        <Card label="Improvement" value={rs(report.delta_net)} sub={`${rs(report.per_day_delta)} per day`} color={report.delta_net >= 0 ? GREEN : RED} />
+        <Card
+          label="Measured only"
+          value={rs(report.verified_delta_net)}
+          sub={`${report.summary.verified_trades} trades with real tick path`}
+          color={report.verified_delta_net >= 0 ? GREEN : RED}
+        />
         <Card label="Win rate" value={`${report.summary.win_rate}%`} sub={`was ${report.baseline.win_rate}%`} color={INDIGO} />
+      </div>
+
+      <div className="card p-4 border-l-2" style={{ borderLeftColor: AMBER }}>
+        <div className="flex items-start gap-2">
+          <Icon icon="lucide:triangle-alert" width={15} className="text-[#f59e0b] mt-0.5 shrink-0" />
+          <div className="text-[11px] text-[#94a3b8] leading-relaxed">
+            <p>
+              <b className="text-[#f59e0b]">Read the "Measured only" card, not "Improvement".</b>{" "}
+              <b>Smart net</b> blends real tick-path data with{" "}
+              {report.summary.unverified_trades} older trades whose path we never recorded, so for those it
+              has to <i>guess</i> that the price held all the way to its peak. It usually does not —
+              option prices travel 5 → 4.5 → 6 → 8, and a stop at +5 fires on the 4.5.
+            </p>
+            <p className="mt-1.5">
+              Only <b className="text-white">{report.summary.verified_trades} of {report.summary.trades}</b>{" "}
+              trades ({report.verified_coverage_pct}%) have measured path data. Until that count is in the
+              dozens, treat every figure here as provisional and keep the live bot on its current rules.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="card p-4">
@@ -215,6 +240,34 @@ export default function MfeReportPage() {
               This is the honest limit: the exit rule only touches about a fifth of the book. The red block is
               an entry problem — those trades never moved in our favour at all, so no exit rule can save them.
             </p>
+            {risk.runner_dips && risk.runner_dips.measured_trades > 0 && (
+              <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.06)]">
+                <h3 className="text-xs font-semibold text-[#e2e8f0] mb-1">
+                  Measured: did the price break +5 after touching it?
+                </h3>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <Mini label="Trades measured" value={String(risk.runner_dips.measured_trades)} />
+                  <Mini
+                    label="Dipped below +5"
+                    value={`${risk.runner_dips.dipped} (${risk.runner_dips.dipped_pct}%)`}
+                    color={risk.runner_dips.dipped > 0 ? AMBER : GREEN}
+                  />
+                  <Mini
+                    label="Would be stopped"
+                    value={`${risk.runner_dips.bankable_dipped} / ${risk.runner_dips.bankable_measured}`}
+                    color={risk.runner_dips.bankable_dipped > 0 ? AMBER : GREEN}
+                  />
+                </div>
+                <p className="text-[10px] text-[#64748b] mt-2 leading-relaxed">
+                  This is the number that decides whether parking the stop at +5 is safe. Of the{" "}
+                  {risk.runner_dips.bankable_measured} measured trades that reached +5 (where the rule would
+                  act), <b className="text-[#f59e0b]">{risk.runner_dips.bankable_dipped}</b> traded back
+                  through +5 at least once — those would have been stopped before reaching their peak, not
+                  after. Only {risk.runner_dips.measured_trades} trades have path data so far, so treat this
+                  as an early read, not a conclusion.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -226,13 +279,39 @@ export default function MfeReportPage() {
             <h2 className="text-sm font-semibold text-[#f59e0b]">Exit problem — recoverable</h2>
           </div>
           <p className="text-xs text-[#64748b] mb-3">
-            Reached +5, gave it all back to scratch. This is what the staged rule targets.
+            Reached +5, gave it all back to scratch. This is what the study targets.
           </p>
           <div className="grid grid-cols-3 gap-2 text-center">
             <Mini label="Trades" value={String(m.leak.count)} />
             <Mini label="Actual" value={rs(m.leak.actual_net)} color={m.leak.actual_net >= 0 ? GREEN : RED} />
-            <Mini label="Recoverable" value={rs(m.leak.recoverable)} color={m.leak.recoverable >= 0 ? GREEN : RED} />
+            <Mini
+              label="If all held +5"
+              value={rs(m.leak.hindsight_recoverable)}
+              color={m.leak.hindsight_recoverable >= 0 ? GREEN : RED}
+            />
           </div>
+          <p className="text-[11px] text-[#f59e0b] mt-3 leading-relaxed">
+            <b>That last number is a guess.</b> It assumes every one of those{" "}
+            {m.leak.count} trades sat through the wiggle and banked a clean +5. Option prices
+            go 5 → 4.5 → 6, so a +5 stop would have fired on the 4.5.
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-center mt-2 pt-3 border-t border-white/5">
+            <Mini
+              label="Measured gain"
+              value={rs(m.leak.verified_gain)}
+              color={m.leak.verified_gain >= 0 ? GREEN : RED}
+            />
+            <Mini
+              label="Trades measured"
+              value={`${m.leak.verified_trades} / ${m.leak.count}`}
+              color={m.leak.verified_trades > 0 ? GREEN : "#64748b"}
+            />
+          </div>
+          <p className="text-[11px] text-[#64748b] mt-2 leading-relaxed">
+            Measured gain uses only the {m.leak.verified_trades} trades whose real tick path we
+            captured, each run through the actual stop logic. The other{" "}
+            {m.leak.unverified_trades} predate path capture and are excluded rather than guessed.
+          </p>
         </div>
 
         <div className="card p-4 border-l-2" style={{ borderLeftColor: RED }}>

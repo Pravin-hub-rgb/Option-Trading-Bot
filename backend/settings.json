@@ -91,7 +91,7 @@
     "category": "logging"
   },
   "access_token": {
-    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YWJjNzYwMzZkYzM5ODI1YjViOGZkMDYiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc5MDczNTg3NSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzkwODA1NjAwfQ.8DlSE80z17OjyLCciUi5wWe0EtO097nin7DigBlzi0k",
+    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YWMzMTIwNTE3YzBmNDE4NjA1YTNjODgiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc5MTE2OTAyOSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzkxMjM3NjAwfQ.xY6GiWrb-NVZLWToFfrVmIH2KH9HAj3J2dDgf_Z6GQ8",
     "type": "password",
     "label": "Upstox Access Token",
     "category": "credentials"

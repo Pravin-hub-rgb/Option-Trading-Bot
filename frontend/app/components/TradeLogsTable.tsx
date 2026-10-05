@@ -9,6 +9,7 @@ type RowInfo = {
   mfe: number | null;
   giveback: number | null;
   source: string | null;
+  dips: number | null;
   smartPnl: number | null;
   smartNet: number | null;
   deltaNet: number | null;
@@ -16,7 +17,9 @@ type RowInfo = {
 };
 
 const RULE_TEXT: Record<string, { label: string; tone: string; help: string }> = {
-  hypothetical: { label: "would bank", tone: "#f59e0b", help: "SIMULATION, not live. This trade reached a higher rung than the original stop allowed, so a study-only rule that parked the stop there would have exited higher. The live bot still ran the original ladder on this trade." },
+  stopped_at_rung: { label: "stopped at +5", tone: "#10b981", help: "MEASURED from the recorded tick path. This trade touched +5 and then traded back through it, so a stop parked at +5 would have fired on the way down. The figure already subtracts a 1-point fill buffer. The peak is irrelevant here - this is the whole point of recording the path." },
+  survived: { label: "no change", tone: "#64748b", help: "MEASURED. The price never broke +5, so the hypothetical +5 stop was never hit. Above +10 both rules run the same ladder, so this trade keeps its real result." },
+  hindsight: { label: "guess", tone: "#f59e0b", help: "NOT MEASURED. This trade predates tick-path capture, so we cannot know whether it dipped back through +5. The figure assumes it banked its peak, which option prices usually do NOT allow. Treat it as an optimistic guess, not a result." },
   trailed: { label: "no change", tone: "#64748b", help: "The trade already banked at or above that rung, so the study rule would have given the same result." },
   untouched: { label: "no change", tone: "#64748b", help: "Price never got near +5, so the stop never moved. No exit rule can help here - this is an entry problem." },
   skipped: { label: "not taken", tone: "#6366f1", help: "Day-stop simulation: an earlier trade had already hit the day's target, so this one would never have been opened." },
@@ -56,6 +59,7 @@ export default function TradeLogsTable({
             smartPnl: t.smart_pnl,
             smartNet: t.smart_net,
             deltaNet: t.delta_net,
+            dips: t.dips_below_bank,
             rule: t.rule_fired,
           };
         }
@@ -93,7 +97,7 @@ export default function TradeLogsTable({
       {showHelp && (
         <div className="px-3 pb-3 text-[11px] text-[#94a3b8] leading-relaxed space-y-2">
           <p className="p-2 rounded bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.25)] text-[#f59e0b]">
-            <b>Peak</b>, <b>Gave back</b> and <b>would bank</b> are a <b>study only</b>. The live bot
+            <b>Peak</b>, <b>Gave back</b>, <b>Dips</b> and <b>Exit at</b> are a <b>study only</b>. The live bot
             runs its original untouched stop ladder — nothing on this page changes how it trades.
           </p>
           <p>
@@ -106,10 +110,18 @@ export default function TradeLogsTable({
             +9 but closed at +0.9, it gave back 8.1 points — that is recoverable profit we left on the table.
           </p>
           <p>
-            <b className="text-white">would bank</b> is a what-if, never live. It asks: <i>if we had parked
-            the stop on the highest whole rung the price reached (5.5 → +5, 10.5 → +10), would this trade
-            have returned more?</i> Whether it actually would have is exactly what{" "}
-            <span className="font-mono text-white">dips_below_bank</span> is being recorded to find out.
+            <b className="text-white">Dips</b> = how many times the price came back <b>below +5</b> after
+            touching it. This is the column that matters. Option prices travel <i>5 → 4.5 → 6 → 8</i>, so a
+            stop parked at +5 fires on that 4.5 tick — it does not wait for the +8. A trade with{" "}
+            <b className="text-white">Dips = 1</b> would have exited at roughly +4 (we subtract a 1-point
+            fill buffer), <b>not</b> at its peak.
+          </p>
+          <p>
+            <b className="text-white">Exit at</b> is what a stop parked at +5 would realistically have
+            returned, <b>not</b> the peak. <span className="text-emerald-400">Stopped at +5</span> means that
+            is measured from real recorded ticks. <span className="text-amber-400">Guess</span> (in italics,
+            and the <span className="text-amber-400">~₹</span> prefix) means the trade predates path capture,
+            so we do not know if it dipped — the figure assumes the best case.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 pt-1">
             {Object.entries(RULE_TEXT).filter(([k]) => k !== "current" && k !== "unsettled").map(([k, v]) => (
@@ -179,7 +191,14 @@ export default function TradeLogsTable({
               Gave&nbsp;back
             </th>
             <th className="text-center py-2 px-3 border-l border-white/10" style={{ color: "#818cf8" }}>Do</th>
-            <th className="text-right py-2 px-3" style={{ color: "#818cf8" }} title="Exit price in points">Exit at</th>
+            <th
+              className="text-center py-2 px-3"
+              style={{ color: "#818cf8" }}
+              title="How many times the price came back below +5 after touching it. Above zero means a stop parked at +5 would have fired before the peak."
+            >
+              Dips
+            </th>
+            <th className="text-right py-2 px-3" style={{ color: "#818cf8" }} title="Exit price in points, minus a 1-point fill buffer">Exit at</th>
             <th className="text-right py-2 pr-3" style={{ color: "#818cf8" }} title="Difference in net rupees">Worth</th>
             <th className="py-2"></th>
           </tr>
@@ -189,7 +208,10 @@ export default function TradeLogsTable({
             const m = t.id != null ? info[t.id] : undefined;
             const inferred = m?.source === "rung";
             const rule = RULE_TEXT[m?.rule ?? "current"] ?? { label: m?.rule ?? "—", tone: "#64748b", help: "" };
-            const banked = m?.rule === "hypothetical";
+            // Only a MEASURED stop actually changes the outcome. A "guess" row
+            // must never be coloured like a result.
+            const measured = m?.rule === "stopped_at_rung";
+            const guessed = m?.rule === "hindsight";
             const skipped = m?.rule === "skipped";
             return (
             <tr
@@ -271,9 +293,27 @@ export default function TradeLogsTable({
                   {rule.label}
                 </span>
               </td>
-              <td className="py-2 px-3 text-right font-mono" style={{ color: banked ? "#10b981" : "#475569" }}>
-                {banked ? (
-                  <span className="font-semibold">+{(m?.smartPnl ?? 0).toFixed(2)}</span>
+              <td
+                className="py-2 px-3 text-center font-mono"
+                style={{
+                  color:
+                    m?.dips == null ? "#334155" : m.dips > 0 ? "#f59e0b" : "#10b981",
+                }}
+                title={
+                  m?.dips == null
+                    ? "No path data for this trade"
+                    : m.dips > 0
+                      ? `Price came back below +5 ${m.dips} time(s) after touching it. A stop parked at +5 would have fired here.`
+                      : "Price never broke +5 after touching it, so a +5 stop would never have fired."
+                }
+              >
+                {m?.dips == null ? "—" : m.dips > 0 ? m.dips : "0"}
+              </td>
+              <td className="py-2 px-3 text-right font-mono" style={{ color: measured ? "#10b981" : guessed ? "#f59e0b" : "#475569" }}>
+                {measured || guessed ? (
+                  <span className={guessed ? "italic" : "font-semibold"}>
+                    +{(m?.smartPnl ?? 0).toFixed(2)}
+                  </span>
                 ) : skipped ? (
                   <span className="text-[#6366f1]">—</span>
                 ) : (
@@ -286,18 +326,26 @@ export default function TradeLogsTable({
                   color:
                     m?.deltaNet == null
                       ? "#475569"
-                      : m.deltaNet > 0.5
-                        ? "#10b981"
-                        : m.deltaNet < -0.5
-                          ? "#ef4444"
-                          : "#64748b",
+                      : guessed
+                        ? "#f59e0b"
+                        : m.deltaNet > 0.5
+                          ? "#10b981"
+                          : m.deltaNet < -0.5
+                            ? "#ef4444"
+                            : "#64748b",
+                  opacity: guessed ? 0.65 : 1,
                 }}
+                title={
+                  guessed
+                    ? "Unverified: this trade has no recorded tick path, so the figure is a peak-based guess."
+                    : undefined
+                }
               >
                 {m?.deltaNet == null
                   ? "—"
                   : Math.abs(m.deltaNet) < 0.5
                     ? "same"
-                    : `${m.deltaNet > 0 ? "+" : "-"}₹${Math.abs(m.deltaNet).toFixed(0)}`}
+                    : `${guessed ? "~" : ""}${m.deltaNet > 0 ? "+" : "-"}₹${Math.abs(m.deltaNet).toFixed(0)}`}
               </td>
               <td className="py-2">
                 <button

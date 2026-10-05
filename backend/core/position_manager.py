@@ -57,7 +57,10 @@ class PositionManager:
             'first_bank_tick': None,
             'was_above_bank': False,
             'dips_below_bank': 0,
-            'last_ltp': entry_price
+            'last_ltp': entry_price,
+            # Raw tick series, kept for the shadow study's chart. Purely
+            # observational - nothing in the exit ladder ever reads this.
+            'tick_path': [],
         }
         return self.position.copy()
     
@@ -85,6 +88,7 @@ class PositionManager:
             p['lowest_price'] = current_ltp
 
         p['ticks_seen'] += 1
+        p['tick_path'].append(round(float(current_ltp), 2))
 
         # Observation only - this never influences an exit.
         bank = self.get_dip_watch_level()
@@ -242,6 +246,7 @@ class PositionManager:
             'bank_touched': self.position.get('bank_touched', False),
             'first_bank_tick': self.position.get('first_bank_tick'),
             'dips_below_bank': self.position.get('dips_below_bank', 0),
+            'tick_path': list(self.position.get('tick_path') or []),
         }
         
         self.position = None

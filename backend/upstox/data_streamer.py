@@ -292,6 +292,7 @@ class DataStreamer:
                 bank_touched=trade_summary.get('bank_touched'),
                 first_bank_tick=trade_summary.get('first_bank_tick'),
                 dips_below_bank=trade_summary.get('dips_below_bank'),
+                tick_path=trade_summary.get('tick_path'),
             )
         except Exception as e:
             print(f"[ERROR] exit_position: log_exit failed: {e}")

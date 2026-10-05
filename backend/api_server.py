@@ -125,6 +125,65 @@ def create_app(bot_manager):
             raise HTTPException(status_code=404, detail="Trade not found")
         return {"status": "deleted"}
 
+    @app.get("/api/trades/{trade_id}/path")
+    async def trade_path(trade_id: int):
+        """
+        The real entry-to-exit tick path, plus where a stop parked at +5 would
+        have fired.
+
+        This is the evidence behind the study: the chart draws the actual ticks
+        and marks the exact tick where the hypothetical exit would have
+        happened, instead of inferring it from the peak. Read-only.
+        """
+        from trade_log_reader import load_all_trades
+        from smart_pnl import EXIT_BUFFER_PTS, replay_stop_on_ticks
+
+        trade = next((t for t in load_all_trades() if t.get("id") == trade_id), None)
+        if trade is None:
+            raise HTTPException(status_code=404, detail="Trade not found")
+
+        ticks = trade.get("tick_path")
+        if not ticks:
+            return {
+                "id": trade_id,
+                "available": False,
+                "reason": "This trade was logged before tick-path capture was enabled.",
+                "entry_price": trade.get("entry_price"),
+                "exit_price": trade.get("exit_price"),
+                "pnl": trade.get("pnl"),
+                "mfe_points": trade.get("mfe_points"),
+                "dips_below_bank": trade.get("dips_below_bank"),
+            }
+
+        entry = trade["entry_price"]
+        # Replayed over the real ticks, not inferred from the peak. This is the
+        # difference between "it would have banked 8" and "it would have been
+        # stopped at tick 47 on the way back down".
+        sim = replay_stop_on_ticks(ticks, entry)
+
+        return {
+            "id": trade_id,
+            "available": True,
+            "ticks": ticks,
+            "entry_price": entry,
+            "exit_price": trade.get("exit_price"),
+            "pnl": trade.get("pnl"),
+            "mfe_points": trade.get("mfe_points"),
+            "mae_points": trade.get("mae_points"),
+            "dips_below_bank": trade.get("dips_below_bank"),
+            "bank_touched": trade.get("bank_touched"),
+            "first_bank_tick": trade.get("first_bank_tick"),
+            "peak_tick": trade.get("peak_tick"),
+            "sl_initial": trade.get("stop_loss"),
+            "sim_stop_price": sim["stop_price"],
+            "sim_armed_at": sim["armed_at"],
+            "sim_exit_idx": sim["exit_idx"],
+            "sim_exit_price": sim["exit_price"],
+            "sim_exit_points": sim["exit_points"],
+            "sim_hit_stop": sim["hit_stop"],
+            "exit_buffer_pts": EXIT_BUFFER_PTS,
+        }
+
     @app.get("/api/ticks/{instrument}/{slot}")
     async def get_ticks(instrument: str, slot: int):
         if not bot_manager.live_feed_server:

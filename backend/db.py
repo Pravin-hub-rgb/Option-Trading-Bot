@@ -47,6 +47,11 @@ MIGRATION_COLUMNS = [
     ("bank_touched", "INTEGER"),
     ("first_bank_tick", "INTEGER"),
     ("dips_below_bank", "INTEGER"),
+    # The actual per-tick price series, as a JSON array of numbers. The
+    # aggregates above answer "did it dip?" but a chart needs the real path to
+    # show where the hypothetical stop would have fired. ~200-400 ticks per trade
+    # is a couple of KB, which SQLite handles without complaint.
+    ("tick_path", "TEXT"),
 ]
 
 

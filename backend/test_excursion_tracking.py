@@ -425,6 +425,88 @@ def main():
     p, r = smart_exit({"pnl": -0.45, "mfe_points": 8.8, "dips_below_bank": 1}, 5, 10, 0)
     check("zero buffer exits exactly at the rung", p, 5.0)
 
+    # ---------- 11. tick_path is recorded but never acted on ----------
+    # The chart needs the real entry-to-exit series. Storing it must not change
+    # a single exit decision, and it must survive the round trip to the DB.
+    print("\n11) tick path capture (feeds the study chart)")
+    from db import get_conn as _gc
+    save_setting("trailing_trigger", "5"); save_setting("trailing_step", "5")
+
+    ticks = [100.5, 103.0, 105.2, 107.0, 104.5, 102.0, 106.0, 110.0, 108.0, 109.0]
+    # Control runs the exact live tick order; the other captures the path too.
+    # The two stops must be identical - capture cannot influence an exit.
+    a = PositionManager(); a.open_position(100.0, t0, "PATH_A")
+    b = PositionManager(); b.open_position(100.0, t0, "PATH_B")
+    for px in ticks:
+        a.track_price(px)
+        a.update_trailing_sl(px)
+        b.update_trailing_sl(px)
+    check("tick_path captures every price", a.position["tick_path"], ticks)
+    check("no capture without track_price", b.position["tick_path"], [])
+    check("capturing did not move the stop", a.get_current_sl(), b.get_current_sl())
+
+    # and the persisted copy round-trips
+    sa = a.close_position(109.0, t0)
+    sb = b.close_position(109.0, t0)
+    check("summary carries the path", sa["tick_path"], ticks)
+    check("same exit with and without capture", sa["pnl"], sb["pnl"])
+    conn2 = _gc()
+    cols = {r["name"] for r in conn2.execute("PRAGMA table_info(trades)")}
+    check("tick_path column exists", "tick_path" in cols, True)
+    conn2.close()
+
+    # 11a. full round trip: manager -> logger -> DB -> reader -> replay.
+    # This is what the chart depends on, so prove the whole chain rather than
+    # just that the column exists.
+    # Aliased: `TradeLogger` is already bound as a local further up in main(), and
+    # a second plain import would make Python treat it as local-only everywhere.
+    from core.trade_logger import TradeLogger as PathLogger
+    from trade_log_reader import load_all_trades, _parse_tick_path
+    from smart_pnl import replay_stop_on_ticks
+    tl = PathLogger("test", "PATHSYM")
+    tl.log_entry("PATHSYM", 100.0, 96.0, t0)
+    wig = [100.0, 102.0, 104.0, 105.3, 104.4, 106.0, 110.0, 112.0, 108.0, 109.5]
+    mgr = PositionManager()
+    mgr.open_position(100.0, t0, "PATHSYM")
+    for px in wig:
+        mgr.track_price(px)
+    summary = mgr.close_position(109.5, t0)
+    tl.log_exit("PATHSYM", 109.5, summary["sl_final"], t0, "Trailing SL Hit",
+                summary["pnl"], tick_path=summary["tick_path"])
+
+    row = next((t for t in load_all_trades() if t["symbol"] == "PATHSYM"), None)
+    check("trade round-tripped through the DB", row is not None, True)
+    check("tick_path survived the DB write", row.get("tick_path"), wig)
+    check("tick_path parsed as floats", all(isinstance(x, float) for x in row["tick_path"]), True)
+    check("_parse_tick_path(None) is None, not []", _parse_tick_path({"tick_path": None}), None)
+    check("_parse_tick_path(garbage) is None", _parse_tick_path({"tick_path": "{oops"}), None)
+
+    rr = replay_stop_on_ticks(row["tick_path"], row["entry_price"])
+    check("round-tripped path replays to the dip, not the peak",
+          (rr["armed_at"], rr["exit_idx"]), (3, 4))
+    check("...and the fill is at the dipped price", rr["exit_points"], 4.4)
+
+    print("\n11b) chart replay: stop parked at +5 over real ticks")
+    # 5 -> 4.5 -> 6 -> 8: the dip at 4.5 must fire the stop, even though the
+    # trade went on to reach 8. A peak-based engine would wrongly say "+8".
+    wiggle = [100.0, 102.0, 105.2, 104.5, 106.0, 108.0]
+    r = replay_stop_on_ticks(wiggle, 100.0)
+    check("stop armed at tick 2", r["armed_at"], 2)
+    check("stop fired at tick 3 (the 4.5 dip)", r["exit_idx"], 3)
+    check("filled at the dipped price, not the peak", r["exit_points"], 4.5)
+    check("flagged as a genuine early stop", r["hit_stop"], True)
+
+    # never reached +5 -> never armed
+    r2 = replay_stop_on_ticks([100.0, 101.0, 99.0], 100.0)
+    check("never reached +5 => never armed", r2["armed_at"], None)
+    check("...and no exit", r2["exit_idx"], None)
+
+    # reached +5 and held to the end -> not an early stop
+    r3 = replay_stop_on_ticks([100.0, 106.0, 110.0, 108.0], 100.0)
+    check("held +5 to the end => armed", r3["armed_at"], 1)
+    check("...exits on the last tick", r3["exit_idx"], 3)
+    check("...and is NOT an early stop", r3["hit_stop"], False)
+
     db_mod.DB_PATH = real_db
     shutil.rmtree(tmpdir, ignore_errors=True)
 

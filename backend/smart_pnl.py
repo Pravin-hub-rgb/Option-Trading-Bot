@@ -150,6 +150,50 @@ def net_for(trade, pnl_points):
 EXIT_BUFFER_PTS = 1.0
 
 
+def replay_stop_on_ticks(ticks, entry_price, stop_offset=5.0):
+    """
+    Walk a real tick series with a stop parked at entry+stop_offset.
+
+    This is the tick-wise counterfactual the chart draws. Arm the stop the
+    moment price first reaches it, then fire on the first tick that trades back
+    through. Nothing here is estimated from the peak - it is replayed.
+
+    Returns a dict:
+      armed_at    index where the stop was armed (None if never reached)
+      exit_idx    index where it fired (None if it never fired)
+      exit_price  the fill price
+      exit_points fill price - entry, in points
+      hit_stop    True only if it fired BEFORE the last tick, i.e. the real
+                  trade carried on past it
+    """
+    stop = entry_price + stop_offset
+    armed_at = None
+    exit_idx = None
+    exit_price = None
+    for i, px in enumerate(ticks or []):
+        if exit_idx is not None:
+            break
+        if px >= stop:
+            if armed_at is None:
+                armed_at = i
+        elif armed_at is not None:
+            exit_idx = i
+            exit_price = px
+    if exit_price is None and armed_at is not None and ticks:
+        # Touched the stop, never broke it, and the trade ended above it.
+        exit_idx = len(ticks) - 1
+        exit_price = ticks[-1]
+    return {
+        "stop_price": round(stop, 2),
+        "armed_at": armed_at,
+        "exit_idx": exit_idx,
+        "exit_price": exit_price,
+        "exit_points": None if exit_price is None else round(exit_price - entry_price, 2),
+        "hit_stop": (armed_at is not None and exit_idx is not None
+                     and len(ticks or []) > 1 and exit_idx < len(ticks) - 1),
+    }
+
+
 def smart_exit(trade, bank_at=5, prove_at=None, buffer_pts=EXIT_BUFFER_PTS):
     """
     SIMULATION ONLY - this is not what the bot does.

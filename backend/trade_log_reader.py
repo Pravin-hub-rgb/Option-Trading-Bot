@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -10,6 +11,36 @@ EXCHANGE_TXN_RATE = 0.000355
 STT_RATE = 0.0015
 SEBI_RATE = 0.000001
 GST_RATE = 0.18
+
+
+def _parse_tick_path(row):
+    """
+    The stored entry-to-exit tick series, as a list of floats.
+
+    Returns None - not [] - when there is nothing stored, so callers can tell
+    "this trade predates path capture" apart from "this trade had no ticks".
+    Corrupt JSON also yields None rather than raising, because one bad row must
+    not take down the whole history page.
+    """
+    try:
+        raw = row["tick_path"]
+    except (IndexError, KeyError):
+        return None
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(data, list):
+        return None
+    out = []
+    for x in data:
+        try:
+            out.append(float(x))
+        except (TypeError, ValueError):
+            return None
+    return out or None
 
 
 def per_point_value():
@@ -160,4 +191,8 @@ def _row_to_dict(row):
         "bank_touched": row["bank_touched"] if "bank_touched" in row.keys() else None,
         "first_bank_tick": row["first_bank_tick"] if "first_bank_tick" in row.keys() else None,
         "dips_below_bank": row["dips_below_bank"] if "dips_below_bank" in row.keys() else None,
+        # Raw entry-to-exit tick series, when we captured it. Parsed here so the
+        # API hands the chart an array rather than a JSON string. NULL means the
+        # trade predates path capture.
+        "tick_path": _parse_tick_path(row),
     }

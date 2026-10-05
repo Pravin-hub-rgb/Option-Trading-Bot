@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { fetchTrades, deleteTrade, fetchSmartPnl } from "../lib/api";
+import TradePathChart from "./TradePathChart";
 import type { TradeEntry, SmartTrade } from "../lib/types";
 
 type RowInfo = {
@@ -40,6 +41,9 @@ export default function TradeLogsTable({
   const [trades, setTrades] = useState<TradeEntry[]>([]);
   const [info, setInfo] = useState<Record<number, RowInfo>>({});
   const [showHelp, setShowHelp] = useState(true);
+  // Which trade has its price-path chart expanded, if any.
+  const [openPath, setOpenPath] = useState<number | null>(null);
+  const pathTrade = trades.find((t) => t.id === openPath) ?? null;
   useEffect(() => {
     fetchTrades(year)
       .then((res) => setTrades(res.trades))
@@ -200,7 +204,10 @@ export default function TradeLogsTable({
             </th>
             <th className="text-right py-2 px-3" style={{ color: "#818cf8" }} title="Exit price in points, minus a 1-point fill buffer">Exit at</th>
             <th className="text-right py-2 pr-3" style={{ color: "#818cf8" }} title="Difference in net rupees">Worth</th>
-            <th className="py-2"></th>
+            <th className="py-2 w-8">
+              <span className="sr-only">Show price path</span>
+            </th>
+            <th className="py-2 w-6"></th>
           </tr>
         </thead>
         <tbody>
@@ -349,6 +356,18 @@ export default function TradeLogsTable({
               </td>
               <td className="py-2">
                 <button
+                  onClick={() => setOpenPath(openPath === t.id ? null : t.id)}
+                  className="text-[#64748b] hover:text-[#818cf8] transition-colors"
+                  title="Draw the real entry-to-exit tick path, with a stop parked at +5 replayed over it"
+                >
+                  <Icon
+                    icon={openPath === t.id ? "lucide:chevron-down" : "lucide:line-chart"}
+                    width={14}
+                  />
+                </button>
+              </td>
+              <td className="py-2">
+                <button
                   onClick={() => handleDelete(t.id)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity text-[#64748b] hover:text-[#ef4444]"
                 >
@@ -357,9 +376,28 @@ export default function TradeLogsTable({
               </td>
             </tr>
             );
-          })}
-        </tbody>
-      </table>
+            })}
+          </tbody>
+        </table>
+
+        {openPath != null && pathTrade && (
+          <div className="px-3 py-4 border-t border-white/10 bg-black/20">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-[#e2e8f0] flex items-center gap-2">
+                <Icon icon="lucide:line-chart" width={14} className="text-[#818cf8]" />
+                {pathTrade.symbol} · {pathTrade.entry_time.slice(0, 19)}
+              </h3>
+              <button
+                onClick={() => setOpenPath(null)}
+                className="text-[#64748b] hover:text-white"
+                title="Close"
+              >
+                <Icon icon="lucide:x" width={14} />
+              </button>
+            </div>
+            <TradePathChart tradeId={openPath} />
+          </div>
+        )}
       </div>
     </div>
   );

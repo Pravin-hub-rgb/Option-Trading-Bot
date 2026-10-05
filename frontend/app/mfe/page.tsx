@@ -66,6 +66,7 @@ export default function MfeReportPage() {
   if (!report) return null;
 
   const m = report.mfe_coverage;
+  const rv = report.replay_verdict;
   const maxHist = Math.max(...m.histogram.map((h) => h.count), 1);
   const maxSweep = Math.max(...sweep.map((s) => Math.abs(s.net_rupees)), 1);
   const bestDay = Math.max(...report.days.map((d) => Math.abs(d.delta_net)), 1);
@@ -97,6 +98,52 @@ export default function MfeReportPage() {
           color={report.verified_delta_net >= 0 ? GREEN : RED}
         />
         <Card label="Win rate" value={`${report.summary.win_rate}%`} sub={`was ${report.baseline.win_rate}%`} color={INDIGO} />
+      </div>
+
+      {/* ---------- THE DEFINITIVE ANSWER ---------- */}
+      <div className="card p-4 border-l-2" style={{ borderLeftColor: GREEN }}>
+        <div className="flex items-center gap-2 mb-1">
+          <Icon icon="lucide:check-check" width={15} className="text-[#10b981]" />
+          <h2 className="text-sm font-semibold text-[#10b981]">
+            Did it actually work? — replayed on real recorded ticks
+          </h2>
+        </div>
+        <p className="text-[11px] text-[#64748b] mb-3 leading-relaxed">
+          Every number here is replayed tick by tick over the price path the bot actually received. The
+          stop is armed at <b className="text-white">entry+5</b> the moment price gets there, and fires
+          on the first tick back through. No peak-based guessing anywhere. This is the only figure on
+          the page that can settle the question.
+        </p>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+          <Mini label="Trades replayed" value={String(rv.trades)} color={rv.trades ? GREEN : SLATE} />
+          <Mini label="HELPED" value={String(rv.helped)} color={rv.helped ? GREEN : SLATE} />
+          <Mini label="HURT" value={String(rv.hurt)} color={rv.hurt ? RED : SLATE} />
+          <Mini label="No change" value={String(rv.same)} color={SLATE} />
+          <Mini
+            label="Delta (points)"
+            value={`${rv.delta_points >= 0 ? "+" : ""}${rv.delta_points.toFixed(2)}`}
+            color={rv.delta_points >= 0 ? GREEN : RED}
+          />
+        </div>
+
+        {rv.rows.length === 0 ? (
+          <div className="mt-3 pt-3 border-t border-white/5">
+            <p className="text-[11px] text-[#f59e0b] leading-relaxed">
+              <b>No trades have recorded tick paths yet.</b> Path capture went live just now, so the
+              first replayable trade will be the next one the bot takes. Until then this reads zero —
+              which is the honest number, not a missing one.
+            </p>
+            <p className="text-[11px] text-[#64748b] mt-1.5">
+              The {report.summary.unverified_trades} older trades can never be replayed: their prices
+              were never recorded, so any figure for them would be an assumption.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3 pt-3 border-t border-white/5 overflow-x-auto">
+            <ReplayTable rows={rv.rows} />
+          </div>
+        )}
       </div>
 
       <div className="card p-4 border-l-2" style={{ borderLeftColor: AMBER }}>
@@ -500,5 +547,83 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
         className="bg-[#0a0a0a] border border-white/10 rounded px-2 py-1 text-sm font-mono text-white w-24 focus:outline-none focus:border-indigo-500"
       />
     </label>
+  );
+}
+
+/**
+ * Per-trade evidence for the replayed verdict. Deliberately plain data, no
+ * chart: the point is that every number here can be re-checked by hand against
+ * the tick indices shown in the last column.
+ */
+function ReplayTable({ rows }: { rows: SmartPnlReport["replay_verdict"]["rows"] }) {
+  return (
+    <>
+      <table className="w-full text-[11px]">
+        <thead>
+          <tr className="text-[#64748b]">
+            <th className="text-left py-1 pr-2 font-medium">date</th>
+            <th className="text-left py-1 pr-2 font-medium">symbol</th>
+            <th className="text-right py-1 pr-2 font-medium">peak</th>
+            <th className="text-right py-1 pr-2 font-medium">dips</th>
+            <th className="text-right py-1 pr-2 font-medium">live</th>
+            <th className="text-right py-1 pr-2 font-medium">sim</th>
+            <th className="text-right py-1 pr-2 font-medium">&Delta;</th>
+            <th className="text-left py-1 pr-2 font-medium">verdict</th>
+            <th className="text-left py-1 font-medium">replay evidence</th>
+          </tr>
+        </thead>
+        <tbody className="font-mono">
+          {rows.map((r) => {
+            const e = r.evidence;
+            const tone =
+              r.verdict === "helped" ? GREEN : r.verdict === "hurt" ? RED : SLATE;
+            return (
+              <tr key={r.id ?? r.entry_time} className="border-t border-white/5">
+                <td className="py-1 pr-2 text-[#94a3b8]">{r.date}</td>
+                <td className="py-1 pr-2 text-[#e2e8f0]">{r.symbol}</td>
+                <td className="py-1 pr-2 text-right text-[#94a3b8]">
+                  +{(r.mfe_points ?? 0).toFixed(1)}
+                </td>
+                <td
+                  className="py-1 pr-2 text-right"
+                  style={{ color: (r.dips ?? 0) > 0 ? AMBER : SLATE }}
+                >
+                  {r.dips ?? "—"}
+                </td>
+                <td className="py-1 pr-2 text-right text-[#e2e8f0]">
+                  {r.actual_points != null ? r.actual_points.toFixed(2) : "—"}
+                </td>
+                <td className="py-1 pr-2 text-right text-[#e2e8f0]">
+                  {r.sim_points != null ? r.sim_points.toFixed(2) : "—"}
+                </td>
+                <td
+                  className="py-1 pr-2 text-right font-semibold"
+                  style={{ color: (r.delta_points ?? 0) >= 0 ? GREEN : RED }}
+                >
+                  {r.delta_points != null
+                    ? `${r.delta_points >= 0 ? "+" : ""}${r.delta_points.toFixed(2)}`
+                    : "—"}
+                </td>
+                <td className="py-1 pr-2" style={{ color: tone }}>
+                  {r.verdict.toUpperCase()}
+                </td>
+                <td className="py-1 text-[9px] text-[#64748b]">
+                  {e
+                    ? `${e.ticks} ticks · armed @${e.armed_at_tick} · fired @${
+                        e.fired_at_tick
+                      } @${e.exit_price ?? "—"}`
+                    : "—"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="text-[10px] text-[#64748b] mt-2 leading-relaxed">
+        Evidence column: how many ticks were recorded, which tick armed the +5 stop, and which tick it
+        fired on. A row marked <b style={{ color: RED }}>HURT</b> means the real exit beat the
+        hypothetical stop — we keep the real number rather than book the flattering one.
+      </p>
+    </>
   );
 }

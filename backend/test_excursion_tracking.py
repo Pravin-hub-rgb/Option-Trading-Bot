@@ -507,6 +507,42 @@ def main():
     check("...exits on the last tick", r3["exit_idx"], 3)
     check("...and is NOT an early stop", r3["hit_stop"], False)
 
+    # ---------- 12. the definitive per-trade verdict ----------
+    # The one number that answers "did it actually work": for every trade with a
+    # recorded tick path, did the +5 stop have helped, hurt, or done nothing?
+    # Replayed tick by tick, with the evidence attached so it can be re-checked.
+    print("\n12) definitive verdict from replayed ticks")
+    import smart_pnl as sp
+
+    def verdict_for_trade(entry, ticks, actual):
+        t = {"pnl": actual, "mfe_points": round(max(ticks) - entry, 2),
+             "entry_price": entry, "dips_below_bank": 0, "tick_path": ticks}
+        return sp.smart_exit(t, 5, 10)
+
+    # peaked 8 but broke +5 on the way up -> the stop fires early, and that is
+    # still BETTER than exiting at scratch.
+    p1, r1 = verdict_for_trade(100.0, [100.0, 105.2, 104.4, 108.0, 101.0], 0.9)
+    check("dipped trade: replay rule fires", r1, "replayed_help")
+    check("dipped trade: exits at the dip, not the peak", p1, 4.4)
+    check("dipped trade: verdict is helped", sp.verdict_for(r1), "helped")
+
+    # ran away cleanly -> stop never hit, identical outcome
+    p2, r2 = verdict_for_trade(100.0, [100.0, 106.0, 110.0, 108.0], 8.0)
+    check("clean runner: replay rule", r2, "replayed_same")
+    check("clean runner: verdict is same", sp.verdict_for(r2), "same")
+
+    # the dangerous case: it ran to +20 but only after dipping, and the REAL
+    # exit beat the hypothetical stop. Must never book the worse number.
+    p3, r3 = verdict_for_trade(100.0, [100.0, 105.2, 104.4, 120.0, 112.0], 12.0)
+    check("real exit beat the sim: rule flags hurt", r3, "replayed_hurt")
+    check("real exit beat the sim: keeps the real number", p3, 12.0)
+    check("real exit beat the sim: verdict is hurt", sp.verdict_for(r3), "hurt")
+
+    # no ticks at all -> must never be reported as replayed
+    p4, r4 = sp.smart_exit({"pnl": 0.9, "mfe_points": 8.0, "dips_below_bank": None}, 5, 10)
+    check("no ticks => not replayed", sp.is_replayed(r4), False)
+    check("no ticks => verdict unknown", sp.verdict_for(r4), "unknown")
+
     db_mod.DB_PATH = real_db
     shutil.rmtree(tmpdir, ignore_errors=True)
 

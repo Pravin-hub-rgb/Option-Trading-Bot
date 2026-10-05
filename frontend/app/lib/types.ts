@@ -152,6 +152,39 @@ export interface SmartPnlReport {
   /** Delta counting ONLY trades whose tick path was actually recorded. */
   verified_delta_net: number;
   verified_coverage_pct: number;
+  /**
+   * The definitive view: trades replayed tick by tick over recorded paths,
+   * each with a helped/hurt/same verdict and the evidence behind it.
+   */
+  replay_verdict: {
+    trades: number;
+    helped: number;
+    hurt: number;
+    same: number;
+    actual_points: number;
+    sim_points: number;
+    delta_points: number;
+    rows: {
+      id: number | null;
+      date: string;
+      entry_time: string;
+      symbol: string;
+      verdict: "helped" | "hurt" | "same" | "unknown";
+      actual_points: number | null;
+      sim_points: number | null;
+      delta_points: number | null;
+      mfe_points: number | null;
+      dips: number | null;
+      evidence: {
+        ticks: number;
+        armed_at_tick: number | null;
+        fired_at_tick: number | null;
+        exit_price: number | null;
+        exit_points: number | null;
+        fired_early: boolean;
+      } | null;
+    }[];
+  };
   monthly: {
     month: string;
     trades: number;

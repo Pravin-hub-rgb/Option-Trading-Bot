@@ -37,6 +37,13 @@ from trade_log_reader import load_all_trades, compute_charges, per_point_value
 # so allow a tick of tolerance when matching a fill back to its rung.
 TICK_TOLERANCE = 0.06
 
+# Prices are accumulated as floats, so a replayed exit can land a few times
+# 1e-15 away from the real one (25.549999999999997 vs 25.55). Anything inside
+# this band is arithmetic noise, not a different outcome, so comparisons that
+# decide "did the rule help" must use it - otherwise an unchanged trade gets
+# reported as a win.
+POINTS_EPS = 0.005
+
 # rung -> MFE band it implies. rung N locks when profit reaches 5 + 5*(N-1).
 RUNGS = [
     (1.0, 5),    # SL=entry+1   => MFE was in [5, 10)
@@ -194,6 +201,111 @@ def replay_stop_on_ticks(ticks, entry_price, stop_offset=5.0):
     }
 
 
+def replay_trailing_ladder(ticks, entry_price, first_rung=5.0, step=5.0):
+    """
+    Walk a real tick series with a stop that RATCHETS.
+
+    This is the ladder we want to know about: the first rung sits at
+    `first_rung` (not entry+1), and every further `step` points of profit
+    locks another rung. A trade that runs to +10.5 parks the stop at +10, so
+    a pullback banks +10 instead of the +5 a flat barrier would have given up.
+
+    ORDER OF THE TWO CHECKS IS THE WHOLE POINT
+    -----------------------------------------
+    Each tick is judged in this order:
+      1. does the price breach the stop as it stands RIGHT NOW? -> fire
+      2. if not, and the tick is high enough, ratchet the stop up one rung
+
+    Checking the breach before ratcheting is what lets a gap up through
+    several rungs survive. Flip the order and a tick that jumps 5 -> 10.5
+    would fill at the old +5 stop on the same tick that earned the +10 rung,
+    which never happens in a live book - the exchange cannot retroactively
+    fill a stop you had not yet placed.
+
+    Returns the rung ladder alongside the fill, so the chart can draw the
+    staircase instead of a flat line.
+    """
+    stop = entry_price - 5.0
+    armed_at = None
+    exit_idx = None
+    exit_price = None
+    stop_at_exit = None
+    rungs = 0
+    stop_path = []
+    for i, px in enumerate(ticks or []):
+        if exit_idx is not None:
+            break
+        # 1. breach the current stop?
+        if armed_at is not None and px <= stop:
+            exit_idx = i
+            exit_price = px
+            stop_at_exit = stop
+            break
+        # 2. safe on this tick - ratchet up
+        profit = px - entry_price
+        if profit >= first_rung:
+            milestones = int((profit - first_rung) / step)
+            new_stop = entry_price + first_rung + milestones * step
+            if new_stop > stop:
+                stop = new_stop
+                rungs = milestones + 1
+            if armed_at is None:
+                armed_at = i
+        stop_path.append(stop)
+
+    if exit_price is None and armed_at is not None and ticks:
+        # Touched a rung, never broke it, and the trade ended above it.
+        exit_idx = len(ticks) - 1
+        exit_price = ticks[-1]
+        stop_at_exit = stop
+
+    return {
+        "stop_price": round(stop_at_exit if stop_at_exit is not None else stop, 2),
+        "armed_at": armed_at,
+        "exit_idx": exit_idx,
+        "exit_price": exit_price,
+        "exit_points": None if exit_price is None else round(exit_price - entry_price, 2),
+        "rungs_locked": rungs,
+        "stop_path": stop_path,
+        "hit_stop": (armed_at is not None and exit_idx is not None
+                     and len(ticks or []) > 1 and exit_idx < len(ticks) - 1),
+    }
+
+
+def _confirmed_crossing_points(trade, first_rung, step, buffer_pts):
+    """
+    No tick path, but the outcome is still PROVABLE - not a guess.
+
+    If the peak (mfe_points, recorded exactly) reached `first_rung` and the
+    real exit came in BELOW it, then price necessarily traded back down through
+    that level: options move in 0.05 ticks, so it cannot jump from above the
+    rung to below it without printing the cross. A stop parked at the first
+    rung was therefore hit, guaranteed, on the way down.
+
+    What we still do NOT know is the exact fill tick, because the recorded
+    path has gaps - hence `buffer_pts`. The DIRECTION is measured; only the
+    exact rupee is approximate, and this is not the peak-based guess the
+    `hindsight` rule used to make.
+
+    Returns None when nothing can be proven: the trade never reached the first
+    rung (no rung was ever armed), or the real exit came in at or above it
+    (so the price may never have traded back down through it at all).
+    """
+    mfe = trade.get("mfe_points")
+    actual = trade.get("pnl")
+    if mfe is None or actual is None:
+        return None
+    if mfe < first_rung:
+        return None                    # never reached, no rung ever armed
+    if actual >= first_rung:
+        return None                    # exited above the rung - unknowable
+
+    # Price came back down through it. The fill lands at or just under the
+    # rung, so subtract the same allowance the other inferences use.
+    fill = first_rung - (buffer_pts or 0.0)
+    return fill if fill > 0 else 0.0
+
+
 def smart_exit(trade, bank_at=5, prove_at=None, buffer_pts=EXIT_BUFFER_PTS):
     """
     SIMULATION ONLY - this is not what the bot does.
@@ -217,100 +329,109 @@ def smart_exit(trade, bank_at=5, prove_at=None, buffer_pts=EXIT_BUFFER_PTS):
     SO WE REPLAY THE REAL TICKS
     ---------------------------
     Whenever tick_path is stored, the answer is not estimated at all. We walk
-    the actual prices, arm the stop when price first reaches entry+5, and fire
-    it on the first tick back through. The exit is read off the recorded path,
-    tick for tick. That is a measurement, not a model, and it is the only kind
-    of number that settles the question.
+    the actual prices through the ladder, ratcheting the stop up as the price
+    earns each rung, and fire on the first tick that breaks it. The exit is read
+    off the recorded path, tick for tick. That is a measurement, not a model.
 
     Sources, in order of trustworthiness:
 
-      1. tick_path present  -> replayed on real ticks. Exact. Returns a
-         "helped" / "hurt" / "same" verdict the caller can rely on.
-      2. dips_below_bank present but no ticks -> inferred from the dip count
-         and the peak. Close, but the exact fill tick is unknown.
-      3. neither -> the old peak-based guess, labelled "hindsight" so it can
-         never be mistaken for a measurement.
+      1. tick_path present  -> replayed on real ticks through the trailing
+         ladder. Exact, including which rung filled. This is the gold standard
+         and the only source strong enough to settle the question.
+      2. no tick path, but mfe reached the first rung AND the real exit came
+         in below it -> PROVABLE. Price was above the rung and then below it,
+         so it traded back through and a stop there would have fired. Only the
+         exact fill tick is unknown, so the buffer is subtracted. This is a
+         measurement of direction, not a peak-based guess.
+      3. neither -> genuinely unknowable without the path. No claim is made.
+
+    The old `hindsight` rule (assume every trade that peaked high banked the
+    rung nearest its peak) is deliberately gone: with a ratcheting ladder that
+    guess is wrong more often than it is right, and it is what once made this
+    page look worth lakhs.
 
     Returns (pnl_points, rule_fired).
     """
     actual = trade["pnl"]
     mfe = trade.get("mfe_points")
+    first_rung = float(bank_at or 5.0)
+    step = 5.0
     if actual is None:
         return None, "unsettled"
     if mfe is None:
         return actual, "unknown-mfe"
-    if mfe < 5:
+    if mfe < first_rung:
         # Never reached the first rung, so no rung was ever armed.
         return actual, "untouched"
 
-    rung = 5.0
-    banked = rung - (buffer_pts or 0.0)
-    if banked < 0:
-        banked = 0.0
-
-    # --- 1. THE DEFINITIVE PATH: replay the actual recorded ticks ------------
+    # --- 1. THE DEFINITIVE PATH: replay the actual recorded ticks -------------
     ticks = trade.get("tick_path")
     if ticks:
         entry = trade.get("entry_price")
         if entry is not None:
-            r = replay_stop_on_ticks(ticks, entry, stop_offset=rung)
+            r = replay_trailing_ladder(ticks, entry, first_rung, step)
             pts = r["exit_points"]
             if pts is None:
-                # Reached +5 but the series ends without a break in either
+                # Reached the rung but the series ends without a break in either
                 # direction; treat as untouched rather than invent a fill.
                 return actual, "survived"
-            if pts > actual:
-                return pts, "replayed_help"
-            if pts < actual:
-                # The real exit beat the hypothetical stop. Never book a worse
-                # number as if it were the alternative.
-                return actual, "replayed_hurt"
-            return actual, "replayed_same"
+            if pts > actual + POINTS_EPS:
+                return pts, "ladder_help"
+            if pts < actual - POINTS_EPS:
+                # The real exit beat the hypothetical ladder. The replayed number
+                # is a MEASUREMENT, not a guess, so the loss is booked like any
+                # other. Flooring it to `actual` here would make this branch a
+                # no-op and leave delta_net structurally incapable of going
+                # negative - the headline could then only ever ratchet upwards.
+                return pts, "ladder_hurt"
+            return actual, "ladder_same"
 
-    # --- 2. dip aggregate only (older trades) --------------------------------
-    dips = trade.get("dips_below_bank")
-    if dips is not None:
-        if dips > 0:
-            # The price really did come back through +5. The MFE is irrelevant.
-            return (banked if banked > actual else actual), "stopped_at_rung"
-        if mfe >= (prove_at or 10):
-            # Never broke +5, and above the prove level both rules are the same
-            # ladder. Nothing changes.
-            return actual, "survived"
-        return (banked if banked > actual else actual), "stopped_at_rung"
+    # --- 2. provable without the path: it crossed the first rung --------------
+    pts = _confirmed_crossing_points(trade, first_rung, step, buffer_pts)
+    if pts is not None:
+        if pts > actual + POINTS_EPS:
+            return pts, "confirmed_help"
+        if pts < actual - POINTS_EPS:
+            # Book the loss. Symmetry matters: this fill is the SAME estimate
+            # used by confirmed_help above, so crediting the estimate when it
+            # helps while discarding it when it hurts would overstate the rule
+            # by construction.
+            return pts, "confirmed_hurt"
+        return actual, "confirmed_same"
 
-    # --- 3. no path data at all: the optimistic guess -------------------------
-    peak_rung = float(int(mfe // 5) * 5)
-    if peak_rung < 5:
-        peak_rung = 5.0
-    if peak_rung <= actual:
-        return actual, "trailed"
-    return peak_rung - (buffer_pts or 0.0), "hindsight"
+    # --- 3. nothing provable - say so rather than guess ----------------------
+    return actual, "no_path"
 
 
-# A row is a measurement only when it was replayed over real recorded ticks,
-# or when it is provably identical to the live result (never reached the rung,
-# or the stop was never hit). Anything derived from the peak alone is a guess.
+# A row is a measurement only when it was replayed over real recorded ticks, or
+# when the outcome is provable from what WAS recorded (never reached the rung,
+# the stop was never hit, or price provably crossed the rung on the way back
+# down). The exact fill tick of an inferred row is approximate - only its
+# direction is measured.
 MEASURED_RULES = {
-    "replayed_help", "replayed_hurt", "replayed_same",   # exact, from ticks
-    "survived", "untouched", "trailed", "unknown-mfe",   # exact, no exit change
-    "stopped_at_rung",                                   # dip aggregate only
+    "ladder_help", "ladder_hurt", "ladder_same",       # exact, from ticks
+    "confirmed_help", "confirmed_hurt", "confirmed_same",  # provable crossing
+    "survived", "untouched", "unknown-mfe",           # exact, no exit change
 }
-UNVERIFIED_RULES = {"hindsight"}
+# No claim at all: without the tick path and without a provable crossing, the
+# trade is simply unknown. These must never be summed as if they were results.
+UNVERIFIED_RULES = {"no_path"}
 
 # Rules whose verdict comes from a full tick-by-tick replay. These are the only
 # ones strong enough to decide whether the idea works.
-REPLAYED_RULES = {"replayed_help", "replayed_hurt", "replayed_same"}
+REPLAYED_RULES = {"ladder_help", "ladder_hurt", "ladder_same"}
 
 VERDICT_FOR = {
-    "replayed_help": "helped",
-    "replayed_hurt": "hurt",
-    "replayed_same": "same",
-    "stopped_at_rung": "helped",
+    "ladder_help": "helped",
+    "ladder_hurt": "hurt",
+    "ladder_same": "same",
+    "confirmed_help": "helped",
+    "confirmed_hurt": "hurt",
+    "confirmed_same": "same",
     "survived": "same",
     "untouched": "same",
-    "trailed": "same",
-    "hindsight": "unknown",
+    "unknown-mfe": "same",
+    "no_path": "unknown",
 }
 
 
@@ -327,6 +448,34 @@ def is_replayed(rule_fired):
 def verdict_for(rule_fired):
     """did the rule help, hurt, or make no difference - or is it unknown?"""
     return VERDICT_FOR.get(rule_fired, "unknown")
+
+
+# Rules whose name alone must never be trusted as a verdict: any rule that
+# returns the live result unchanged in some branch ("*_hurt", "*_same") or one
+# that fires on a float compare arithmetic noise can win ("*_help"). The delta
+# decides, not the label.
+RULES_NEEDING_DELTA = {
+    "ladder_help", "ladder_hurt",
+    "confirmed_help", "confirmed_hurt",
+}
+
+
+def _verdict_from_delta(rule, delta_points):
+    """
+    The verdict that the numbers support, not the one the rule name implies.
+
+    A rule says what the stop DID; only the delta says whether that was worth
+    anything. Where a rule can fire without moving the result, the delta
+    decides. Rows with no provable outcome stay "unknown" no matter what they
+    moved, because a number we cannot stand behind is not evidence.
+    """
+    if rule == "skipped" or rule == "no_path":
+        return "unknown"
+    if rule not in RULES_NEEDING_DELTA:
+        return verdict_for(rule)
+    if delta_points is None or abs(delta_points) <= POINTS_EPS:
+        return "same"
+    return "helped" if delta_points > 0 else "hurt"
 
 
 def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None,
@@ -366,11 +515,13 @@ def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None,
             ticks = t.get("tick_path")
             replay = None
             if ticks and t.get("entry_price") is not None:
-                rp = replay_stop_on_ticks(ticks, t["entry_price"], stop_offset=bank_at or 5.0)
+                rp = replay_trailing_ladder(ticks, t["entry_price"],
+                                            bank_at or 5.0, 5.0)
                 replay = {
                     "ticks": len(ticks),
                     "armed_at_tick": rp["armed_at"],
                     "fired_at_tick": rp["exit_idx"],
+                    "rungs_locked": rp["rungs_locked"],
                     "exit_price": rp["exit_price"],
                     "exit_points": rp["exit_points"],
                     "fired_early": rp["hit_stop"],
@@ -378,6 +529,8 @@ def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None,
 
             actual_net = t.get("net_pnl")
             smart_net = None if pnl is None else net_for(t, pnl)
+            delta_pts = None if (skipped or pnl is None or t.get("pnl") is None) \
+                            else round(pnl - t["pnl"], 2)
             rows.append({
                 "id": t.get("id"),
                 "date": day,
@@ -396,14 +549,26 @@ def simulate(trades, bank_at=None, prove_at=None, day_stop_at=None,
                 "actual_net": actual_net,
                 "smart_pnl": None if skipped else pnl,
                 "smart_net": None if skipped else smart_net,
-                "delta_points": None if (skipped or pnl is None or t.get("pnl") is None)
-                                else round(pnl - t["pnl"], 2),
+                "delta_points": delta_pts,
                 "delta_net": None if (skipped or smart_net is None or actual_net is None)
                               else round(smart_net - actual_net, 2),
                 "rule_fired": rule,
                 "verified": is_measured(rule),
                 "replayed": is_replayed(rule),
-                "verdict": verdict_for(rule),
+                # How solid is THIS row's number? The caller must keep these
+                # apart - summing them together is how an estimate gets
+                # presented as a result.
+                #   "tick"      exit read off real recorded ticks (gold standard)
+                #   "crossing"  the crossing is PROVED, but the exact fill is not
+                #                known, so it carries the allowance - a close
+                #                estimate, NOT a measurement
+                #   "assumed"   nothing provable; the live result is kept
+                #   "live"      rule left the result untouched either way
+                "proof": ("tick" if is_replayed(rule)
+                          else "crossing" if rule.startswith("confirmed_")
+                          else "assumed" if rule == "no_path"
+                          else "live"),
+                "verdict": _verdict_from_delta(rule, delta_pts),
                 "evidence": replay,
                 "day_stopped": stopped and not skipped,
             })
@@ -516,6 +681,33 @@ def smart_pnl_report(year=None, bank_at=5, prove_at=10, day_stop_at=0):
             smart["verified_net_rupees"] - smart["verified_actual_net_rupees"], 2),
         "verified_coverage_pct": round(
             100 * smart["verified_trades"] / max(1, smart["trades"]), 1),
+        # THE SPLIT THAT MATTERS. `delta_net` above blends all three strengths
+        # and will read far better than the evidence supports. A "crossing" row
+        # is proven to have stopped, but WHERE it filled is an assumption, so it
+        # is counted separately from a row replayed on real recorded ticks.
+        "evidence_split": {
+            "tick_replayed": {
+                "trades": smart["replayed_trades"],
+                "delta_net": round(
+                    sum(r["delta_net"] for r in rows
+                        if r.get("proof") == "tick" and r["delta_net"] is not None), 2),
+                "delta_points": smart["replayed_points"],
+            },
+            "crossing_estimated": {
+                "trades": sum(1 for r in rows if r.get("proof") == "crossing"),
+                "delta_net": round(
+                    sum(r["delta_net"] for r in rows
+                        if r.get("proof") == "crossing" and r["delta_net"] is not None), 2),
+            },
+            "not_provable": {
+                "trades": sum(1 for r in rows if r.get("proof") == "assumed"),
+                "delta_net": 0.0,
+            },
+            "unchanged": {
+                "trades": sum(1 for r in rows if r.get("proof") == "live"),
+                "delta_net": 0.0,
+            },
+        },
         # The definitive view: only trades replayed tick by tick, listed with
         # the evidence needed to check the arithmetic by hand.
         "replay_verdict": {
@@ -573,20 +765,23 @@ def mfe_report(year=None):
 
     # The recoverable leak: reached +5, exited at or below the BE rung (+1).
     #
-    # The counterfactual has to go through smart_exit, NOT a flat "+5". A trade
-    # that touched +5 and then traded back through it would have been stopped on
-    # the way down, so assuming it banked a clean +5 overstates the leak. We
-    # split it so the guess and the measurement are never summed together.
+    # Both figures go through smart_exit rather than a hardcoded "+5", because
+    # the ladder now ratchets: a trade that peaked inside this band locks only
+    # the first rung, so the flat assumption is no longer the right counterfactual.
+    # The two are kept apart so a measurement is never summed with a guess.
     leak = [t for t in known if 5 <= (t["mfe_points"] or 0) < 10]
     leak_actual = sum(net_for(t, t["pnl"]) for t in leak)
     leak_hindsight = sum(net_for(t, 5) for t in leak)
 
-    leak_verified = [t for t in leak if t.get("dips_below_bank") is not None]
+    # MEASURED: every trade in this band whose outcome is provable or replayed.
+    leak_verified = []
     leak_measured_gain = 0.0
-    for t in leak_verified:
-        pts, _rule = smart_exit(t, 5, None)
-        if pts is not None:
-            leak_measured_gain += net_for(t, pts) - net_for(t, t["pnl"])
+    for t in leak:
+        pts, rule = smart_exit(t, 5, None)
+        if pts is None or rule == "no_path":
+            continue
+        leak_verified.append(t)
+        leak_measured_gain += net_for(t, pts) - net_for(t, t["pnl"])
 
     never = [t for t in known if t["mfe_points"] is not None and t["mfe_points"] < 5]
     runner = [t for t in known if (t["mfe_points"] or 0) >= 10]

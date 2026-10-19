@@ -376,54 +376,78 @@ def main():
     # ---------- 10. the smart engine must not use hindsight ----------
     # A peak-only counterfactual ("MFE was 8, so it banked 8") is the trap that
     # made this study look worth lakhs. Option prices go 5 -> 4.5 -> 6 -> 8, so a
-    # stop parked at +5 fires on the 4.5 tick. dips_below_bank is what tells us
-    # that happened, and the engine has to honour it.
+    # stop on that path fires on the 4.5 tick. The MFE plus the real exit price
+    # PROVE the crossing happened, which is what the engine now relies on.
     print("\n10) shadow engine is tick-wise, not peak-wise")
     from smart_pnl import smart_exit, is_measured, EXIT_BUFFER_PTS
     check("exit buffer is 1 point", EXIT_BUFFER_PTS, 1.0)
 
-    def sim(mfe, actual, dips, prove=10):
+    def sim(mfe, actual, dips=None, prove=10):
         pnl, rule = smart_exit({"pnl": actual, "mfe_points": mfe,
                                 "dips_below_bank": dips}, 5, prove)
         return pnl, rule
 
-    # 10a. the exact shape that fooled us: peaked at 8 but broke +5 on the way
+    # 10a. the exact shape that fooled us: peaked above +5 but broke it on the
+    # way back down. mfe >= rung AND actual < rung PROVES the crossing, so the
+    # stop is booked at the rung less the fill allowance - never at the peak.
     check("dipped trade exits at +5 - buffer, NOT at its peak",
-          sim(8.8, -0.45, 1), (4.0, "stopped_at_rung"))
-    check("...even with a big peak", sim(18.0, 3.0, 1), (4.0, "stopped_at_rung"))
+          sim(8.8, -0.45), (4.0, "confirmed_help"))
+    check("...even with a big peak", sim(18.0, 3.0), (4.0, "confirmed_help"))
 
-    # 10b. no dip + proved it => the +5 stop never fired, keep the real result
-    check("clean runner keeps its real result", sim(22.1, 14.85, 0), (14.85, "survived"))
+    # 10b. the real exit came in ABOVE the rung: no proof it ever traded back
+    # through, so keep the real result rather than invent a fill.
+    check("clean runner keeps its real result", sim(22.1, 14.85), (14.85, "no_path"))
 
-    # 10c. touched +5, never broke it, but never proved it -> stop was armed
-    check("touched but unproven exits at +5 - buffer", sim(7.0, 0.9, 0), (4.0, "stopped_at_rung"))
+    # 10c. exited just under the rung, so the crossing is still provable
+    check("touched and came back exits at +5 - buffer", sim(7.0, 0.9), (4.0, "confirmed_help"))
 
     # 10d. never reached the rung at all -> untouched
-    check("never reached +5 is untouched", sim(1.0, -4.45, 0), (-4.45, "untouched"))
+    check("never reached +5 is untouched", sim(1.0, -4.45), (-4.45, "untouched"))
 
-    # 10e. no path data => must be flagged unverified, never presented as measured
-    pnl, rule = smart_exit({"pnl": 0.9, "mfe_points": 8.0, "dips_below_bank": None}, 5, 10)
-    check("no path data is labelled hindsight", rule, "hindsight")
+    # 10e. exit at or above the rung with no tick path => genuinely unknowable,
+    # never presented as measured
+    pnl, rule = smart_exit({"pnl": 9.0, "mfe_points": 8.0, "dips_below_bank": None}, 5, 10)
+    check("unprovable with no path is labelled no_path", rule, "no_path")
     check("...and is_measured() says so", is_measured(rule), False)
-    check("...and it still subtracts the buffer", pnl, 4.0)
+    check("...and it keeps the real result", pnl, 9.0)
 
     # 10f. measured rows must always be flagged verified
-    for args, want in (((8.8, -0.45, 1), True), ((22.1, 14.85, 0), True),
-                       ((1.0, -4.45, 0), True)):
+    for args, want in (((8.8, -0.45), True), ((1.0, -4.45), True)):
         _p, r = sim(*args)
         check(f"{args} verified={want}", is_measured(r), want)
+    _p, r = sim(22.1, 14.85)
+    check("(22.1, 14.85) verified=False", is_measured(r), False)
 
-    # 10g. the simulation must never beat a trade that already did better
+    # 10g. the simulation must be two-sided: it is allowed to land on EITHER
+    # side of the real result. It used to be forced to p >= actual, which meant
+    # a rule that lost could never show it - the headline could only ever grow.
+    # Now the only requirement is that the verdict matches the side it landed on.
     for mfe in (5.0, 6.0, 9.9, 12.0, 30.0):
-        for actual in (0.5, 4.0, 9.0, 25.0):
-            for dips in (0, 1, 2):
-                p, _r = sim(mfe, actual, dips)
-                check(f"mfe={mfe} actual={actual} dips={dips}: never worse than reality",
-                      p >= actual, True)
+        for actual in (0.5, 4.0, 4.9, 9.0, 25.0):
+            p, r = sim(mfe, actual)
+            if p > actual + 0.005:
+                check(f"mfe={mfe} actual={actual}: helped -> agrees",
+                      r, "confirmed_help")
+            elif p < actual - 0.005:
+                check(f"mfe={mfe} actual={actual}: hurt -> agrees",
+                      r, "confirmed_hurt")
+            else:
+                check(f"mfe={mfe} actual={actual}: unchanged -> agrees",
+                      p, actual)
 
     # 10h. a buffer of 0 must be honoured exactly
-    p, r = smart_exit({"pnl": -0.45, "mfe_points": 8.8, "dips_below_bank": 1}, 5, 10, 0)
+    p, r = smart_exit({"pnl": -0.45, "mfe_points": 8.8}, 5, 10, 0)
     check("zero buffer exits exactly at the rung", p, 5.0)
+
+    # 10i. the ladder must ratchet, not sit flat: this is the whole point of the
+    # change. A path that runs to +10.5 and pulls back must bank +10, not +5.
+    from smart_pnl import replay_trailing_ladder
+    run = replay_trailing_ladder([105.10, 110.50, 106.00, 104.50], 100.0)
+    check("ladder: peak +10.5 locks rung at entry+10", run["stop_path"][1], 110.0)
+    check("ladder: pullback banks +6, not the flat +5", run["exit_points"], 6.0)
+    check("ladder: two rungs locked", run["rungs_locked"], 2)
+    check("ladder: never arms below the first rung",
+          replay_trailing_ladder([100.0, 101.0, 99.0], 100.0)["armed_at"], None)
 
     # ---------- 11. tick_path is recorded but never acted on ----------
     # The chart needs the real entry-to-exit series. Storing it must not change
@@ -462,7 +486,7 @@ def main():
     # a second plain import would make Python treat it as local-only everywhere.
     from core.trade_logger import TradeLogger as PathLogger
     from trade_log_reader import load_all_trades, _parse_tick_path
-    from smart_pnl import replay_stop_on_ticks
+    from smart_pnl import replay_trailing_ladder
     tl = PathLogger("test", "PATHSYM")
     tl.log_entry("PATHSYM", 100.0, 96.0, t0)
     wig = [100.0, 102.0, 104.0, 105.3, 104.4, 106.0, 110.0, 112.0, 108.0, 109.5]
@@ -481,31 +505,37 @@ def main():
     check("_parse_tick_path(None) is None, not []", _parse_tick_path({"tick_path": None}), None)
     check("_parse_tick_path(garbage) is None", _parse_tick_path({"tick_path": "{oops"}), None)
 
-    rr = replay_stop_on_ticks(row["tick_path"], row["entry_price"])
+    rr = replay_trailing_ladder(row["tick_path"], row["entry_price"])
     check("round-tripped path replays to the dip, not the peak",
           (rr["armed_at"], rr["exit_idx"]), (3, 4))
     check("...and the fill is at the dipped price", rr["exit_points"], 4.4)
 
-    print("\n11b) chart replay: stop parked at +5 over real ticks")
+    print("\n11b) chart replay: trailing ladder over real ticks")
     # 5 -> 4.5 -> 6 -> 8: the dip at 4.5 must fire the stop, even though the
     # trade went on to reach 8. A peak-based engine would wrongly say "+8".
     wiggle = [100.0, 102.0, 105.2, 104.5, 106.0, 108.0]
-    r = replay_stop_on_ticks(wiggle, 100.0)
+    r = replay_trailing_ladder(wiggle, 100.0)
     check("stop armed at tick 2", r["armed_at"], 2)
     check("stop fired at tick 3 (the 4.5 dip)", r["exit_idx"], 3)
     check("filled at the dipped price, not the peak", r["exit_points"], 4.5)
     check("flagged as a genuine early stop", r["hit_stop"], True)
 
     # never reached +5 -> never armed
-    r2 = replay_stop_on_ticks([100.0, 101.0, 99.0], 100.0)
+    r2 = replay_trailing_ladder([100.0, 101.0, 99.0], 100.0)
     check("never reached +5 => never armed", r2["armed_at"], None)
     check("...and no exit", r2["exit_idx"], None)
 
     # reached +5 and held to the end -> not an early stop
-    r3 = replay_stop_on_ticks([100.0, 106.0, 110.0, 108.0], 100.0)
+    r3 = replay_trailing_ladder([100.0, 106.0, 110.0, 108.0], 100.0)
     check("held +5 to the end => armed", r3["armed_at"], 1)
     check("...exits on the last tick", r3["exit_idx"], 3)
     check("...and is NOT an early stop", r3["hit_stop"], False)
+
+    # the ratchet: a runner must bank the higher rung, not the flat first one.
+    r4 = replay_trailing_ladder([100.0, 105.2, 110.5, 106.0], 100.0)
+    check("runner locks two rungs", r4["rungs_locked"], 2)
+    check("...and the stop reached entry+10", r4["stop_path"][2], 110.0)
+    check("...so the pullback banks +6 rather than +5", r4["exit_points"], 6.0)
 
     # ---------- 12. the definitive per-trade verdict ----------
     # The one number that answers "did it actually work": for every trade with a
@@ -522,26 +552,37 @@ def main():
     # peaked 8 but broke +5 on the way up -> the stop fires early, and that is
     # still BETTER than exiting at scratch.
     p1, r1 = verdict_for_trade(100.0, [100.0, 105.2, 104.4, 108.0, 101.0], 0.9)
-    check("dipped trade: replay rule fires", r1, "replayed_help")
+    check("dipped trade: replay rule fires", r1, "ladder_help")
     check("dipped trade: exits at the dip, not the peak", p1, 4.4)
     check("dipped trade: verdict is helped", sp.verdict_for(r1), "helped")
 
-    # ran away cleanly -> stop never hit, identical outcome
+    # ran away cleanly: the ladder ratchets to entry+10 on the way up, then the
+    # path pulls back to exactly +8 - the same tick and price the real exit used.
+    # Identical outcome, so this is "same", not "hurt".
     p2, r2 = verdict_for_trade(100.0, [100.0, 106.0, 110.0, 108.0], 8.0)
-    check("clean runner: replay rule", r2, "replayed_same")
+    check("clean runner: replay rule", r2, "ladder_same")
+    check("clean runner: lands on the same +8 fill", p2, 8.0)
     check("clean runner: verdict is same", sp.verdict_for(r2), "same")
 
     # the dangerous case: it ran to +20 but only after dipping, and the REAL
-    # exit beat the hypothetical stop. Must never book the worse number.
+    # exit beat the hypothetical ladder. The loss is booked, not hidden - this
+    # is the whole point: a counterfactual that can only ever win is useless.
     p3, r3 = verdict_for_trade(100.0, [100.0, 105.2, 104.4, 120.0, 112.0], 12.0)
-    check("real exit beat the sim: rule flags hurt", r3, "replayed_hurt")
-    check("real exit beat the sim: keeps the real number", p3, 12.0)
+    check("real exit beat the sim: rule flags hurt", r3, "ladder_hurt")
+    check("real exit beat the sim: books the LOSS, not the real number", p3, 4.4)
     check("real exit beat the sim: verdict is hurt", sp.verdict_for(r3), "hurt")
 
     # no ticks at all -> must never be reported as replayed
     p4, r4 = sp.smart_exit({"pnl": 0.9, "mfe_points": 8.0, "dips_below_bank": None}, 5, 10)
     check("no ticks => not replayed", sp.is_replayed(r4), False)
-    check("no ticks => verdict unknown", sp.verdict_for(r4), "unknown")
+    check("no ticks => provable from the crossing, not replayed", r4, "confirmed_help")
+    check("no ticks => but still measured", sp.is_measured(r4), True)
+
+    # and a genuinely unprovable no-tick row must stay unknown
+    p5, r5 = sp.smart_exit({"pnl": 9.0, "mfe_points": 8.0, "dips_below_bank": None}, 5, 10)
+    check("unprovable, no ticks => no_path", r5, "no_path")
+    check("...never presented as replayed", sp.is_replayed(r5), False)
+    check("...and never presented as measured", sp.is_measured(r5), False)
 
     db_mod.DB_PATH = real_db
     shutil.rmtree(tmpdir, ignore_errors=True)

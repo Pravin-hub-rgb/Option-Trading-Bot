@@ -264,40 +264,53 @@ class TradingScheduler:
             
             self.log(f"🔍 Found {len(ce_list)} CE and {len(pe_list)} PE strikes near spot")
             
-            # Find strikes >= ₹100, closest to ₹100
-            self.log(f"🔍 Scanning for strikes >= ₹100...")
-            ce_candidates = [x for x in ce_list if x['premium'] >= 100]
-            pe_candidates = [x for x in pe_list if x['premium'] >= 100]
-            
-            # Fallback to >= ₹80 if needed
-            if not ce_candidates or not pe_candidates:
-                self.log(f"⚠️ No strikes >= ₹100, trying >= ₹80...")
-                ce_candidates = [x for x in ce_list if x['premium'] >= 80]
-                pe_candidates = [x for x in pe_list if x['premium'] >= 80]
-            
-            # Fallback to >= ₹50 if needed
-            if not ce_candidates or not pe_candidates:
-                self.log(f"⚠️ No strikes >= ₹80, trying >= ₹50...")
-                ce_candidates = [x for x in ce_list if x['premium'] >= 50]
-                pe_candidates = [x for x in pe_list if x['premium'] >= 50]
-            
-            if not ce_candidates or not pe_candidates:
+            # Pick the premium closest to Rs 100, per side, INDEPENDENTLY.
+            #
+            # The old code used `if not ce_candidates or not pe_candidates`
+            # and rebuilt BOTH lists inside that block. So when PE had nothing
+            # at a tier, CE's perfectly good list at that tier was thrown away
+            # and rebuilt at a looser one - CE then got picked from a pool that
+            # no longer resembled the Rs 100 target. Each side now drops a level
+            # on its own, so a thin PE cannot drag a healthy CE down with it.
+            TARGET_PREMIUM = 100.0
+            PREMIUM_TIERS = (100.0, 80.0, 50.0)
+
+            def pick(side_list, label):
+                for tier in PREMIUM_TIERS:
+                    pool = [x for x in side_list if x['premium'] >= tier]
+                    if not pool:
+                        self.log(f"⚠️ {label}: nothing >= ₹{tier:.0f}, dropping a level")
+                        continue
+                    best = min(pool, key=lambda x: abs(x['premium'] - TARGET_PREMIUM))
+                    self.log(f"   {label}: {best['strike']} @ ₹{best['premium']:.2f} (tier ≥₹{tier:.0f})")
+                    # The tier travels with the pick. It is the only record of
+                    # WHICH basket won, and the only way to tell later whether
+                    # the entry filled near the intended Rs100 or near a fallback.
+                    best['tier'] = tier
+                    return best
+                return None
+
+            self.log(f"🔍 Scanning for strikes >= ₹100 (closest to ₹100 wins)...")
+            ce_best = pick(ce_list, "CE")
+            pe_best = pick(pe_list, "PE")
+
+            if not ce_best or not pe_best:
                 self.log(f"❌ No suitable strikes found")
                 return None
             
-            # Select best (closest to ₹100)
-            ce_best = min(ce_candidates, key=lambda x: x['diff'])
-            pe_best = min(pe_candidates, key=lambda x: x['diff'])
-            
             self.log(f"✅ Selected: CE={ce_best['strike']}@{ce_best['premium']:.2f} ({ce_best['key']}), PE={pe_best['strike']}@{pe_best['premium']:.2f} ({pe_best['key']})")
             
+            selected_at = datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S")
             return {
                 'ce_key': ce_best['key'],
                 'ce_strike': ce_best['strike'],
                 'ce_premium': ce_best['premium'],
+                'ce_tier': int(ce_best['tier']),
                 'pe_key': pe_best['key'],
                 'pe_strike': pe_best['strike'],
-                'pe_premium': pe_best['premium']
+                'pe_premium': pe_best['premium'],
+                'pe_tier': int(pe_best['tier']),
+                'selected_at': selected_at,
             }
             
         except Exception as e:
@@ -315,7 +328,7 @@ class TradingScheduler:
             self.log(f"❌ Error in get_prescan_keys: {e}")
             return None
 
-    def start_streaming(self, ce_key=None, pe_key=None, ce_strike=None, pe_strike=None, prescan_keys=None):
+    def start_streaming(self, ce_key=None, pe_key=None, ce_strike=None, pe_strike=None, prescan_keys=None, selection=None):
         """Start the data streamer with specific strikes or prescan keys for Path A"""
         if prescan_keys:
             self.log(f"🚀 Starting pre-subscribe streaming with {len(prescan_keys)} instruments...")
@@ -326,10 +339,11 @@ class TradingScheduler:
             session_name="day",
             ce_key=ce_key,
             pe_key=pe_key,
-            ce_strike=ce_strike,
-            pe_strike=pe_strike,
-            prescan_keys=prescan_keys,
-        )
+ce_strike=ce_strike,
+                pe_strike=pe_strike,
+                prescan_keys=prescan_keys,
+                selection=selection,
+            )
         threading.Thread(target=self.data_streamer.run, daemon=True).start()
         if prescan_keys:
             self.log(f"✅ Pre-subscribe streaming started — waiting for strike selection")
@@ -419,6 +433,7 @@ class TradingScheduler:
                     pe_key=strikes['pe_key'],
                     ce_strike=strikes['ce_strike'],
                     pe_strike=strikes['pe_strike'],
+                    selection=strikes,
                 )
                 self.log(f"📊 Strategy started — prescan aggregators injected")
                 # Publish the finalized strikes so the dashboard navbar (bot_manager.strikes)
@@ -434,7 +449,8 @@ class TradingScheduler:
                 self.stop_streaming()
             self.start_streaming(
                 strikes['ce_key'], strikes['pe_key'],
-                ce_strike=strikes['ce_strike'], pe_strike=strikes['pe_strike']
+                ce_strike=strikes['ce_strike'], pe_strike=strikes['pe_strike'],
+                selection=strikes,
             )
             self.log(f"📊 Waiting for first OHLC candle to start strategy...")
         

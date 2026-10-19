@@ -4,7 +4,7 @@ RED CANDLE HIGH BREAK STRATEGY
 Logic:
 1. Find first red candle (open > close)
 2. Enter when price breaks above red candle high
-3. Enter AT reference high (not current LTP - matches backtest)
+3. Enter AT the price that triggered the breakout, not the reference high
 4. Wait max 2 candles for breakout
 5. If newer red candle appears while waiting, shift to it
 6. Trailing stop loss management
@@ -46,9 +46,9 @@ class RedCandleHighBreak:
         Returns:
             dict or None: {
                 'enter': True,
-                'entry_price': float (reference high - NOT current LTP),
+                'entry_price': float (the LTP that triggered the breakout),
                 'stop_loss': float,
-                'reference_high': float
+                'reference_high': float (the candle high that was broken)
             }
         """
         with self._lock:
@@ -100,15 +100,25 @@ class RedCandleHighBreak:
             from settings_db import get_as_dict
             s = get_as_dict()
             sl_points = int(s.get('initial_sl_points', self._initial_sl_points))
-            entry_price = self.reference_candle['high']
+            reference_high = self.reference_candle['high']
+            # Fill at the price that actually triggered the breakout, NOT at the
+            # reference high. The breakout only fires once the market is already
+            # trading ABOVE reference_high, so booking the entry at the reference
+            # high records a fill nobody could have got - it flattered the logged
+            # P&L by ~0.6 points a trade across the recorded paths, up to 3.15 on
+            # a wide breakout. The reference high is kept alongside it because it
+            # is the signal, not the price.
+            entry_price = current_ltp
             entry_signal = {
                 'enter': True,
                 'entry_price': entry_price,
                 'stop_loss': entry_price - sl_points,
-                'reference_high': self.reference_candle['high']
+                'reference_high': reference_high,
+                'entry_gap': round(entry_price - reference_high, 2),
             }
             print(f"[STRATEGY][{self.label}] BREAKOUT: ref {self.reference_candle['timestamp'].strftime('%H:%M')} "
-                  f"high={entry_price:.2f}, ltp={current_ltp:.2f}, "
+                  f"high={reference_high:.2f}, ltp={entry_price:.2f} "
+                  f"(+{entry_signal['entry_gap']:.2f} over signal), "
                   f"candles_since_ref={self.candles_since_reference}/{self.max_wait_candles}")
             return entry_signal
         

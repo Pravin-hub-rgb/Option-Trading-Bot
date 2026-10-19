@@ -78,6 +78,7 @@ export default function AppHeader() {
     { href: "/", label: "Terminal", icon: "lucide:terminal" },
     { href: "/analytics", label: "Strategy", icon: "lucide:bar-chart-3" },
     { href: "/history", label: "History", icon: "lucide:clock" },
+    { href: "/mfe", label: "Smart P&L", icon: "lucide:activity" },
     { href: "/token", label: "Token", icon: "lucide:key-round" },
     { href: "/settings", label: "Settings", icon: "lucide:settings" },
   ];

@@ -37,6 +37,9 @@ export interface TradePath {
   sim_exit_idx: number | null;
   sim_exit_points: number | null;
   sim_hit_stop: boolean;
+  /** Rung level at every tick - a staircase, not a flat line. */
+  sim_stop_path: number[];
+  sim_rungs_locked: number;
   exit_buffer_pts: number;
 }
 
@@ -98,8 +101,10 @@ useEffect(() => {
       priceLineVisible: false,
       lastValueVisible: false,
     });
-    // The hypothetical stop: flat from the tick it was armed until the tick it
-    // fired, then dropped to the fill price.
+    // The hypothetical stop: a RATCHETING LADDER, so it steps up as the price
+    // earns each rung (first rung +5, then +5 steps). sim_stop_path carries the
+    // level at every tick; stepping between equal values is what draws the
+    // staircase. It drops to the fill price on the tick the stop actually fired.
     sim.current = c.addSeries(LineSeries, {
       color: data.sim_hit_stop ? AMBER : GREEN,
       lineWidth: 2,
@@ -117,9 +122,18 @@ useEffect(() => {
     price.current.setData(p);
 
     if (data.sim_armed_at != null && data.sim_exit_idx != null) {
+      const path = data.sim_stop_path ?? [];
       const line: LineData<Time>[] = [];
+      let prev = -Infinity;
       for (let i = data.sim_armed_at; i <= data.sim_exit_idx; i++) {
-        line.push({ time: i as Time, value: data.sim_stop_price });
+        const lvl = path[i] ?? data.sim_stop_price;
+        // Step to the new rung one tick early so each flat run reads as a
+        // distinct step instead of a single diagonal.
+        if (lvl !== prev && i > data.sim_armed_at) {
+          line.push({ time: i - 1 as Time, value: prev });
+        }
+        line.push({ time: i as Time, value: lvl });
+        prev = lvl;
       }
       if (data.sim_exit_idx < p.length - 1 && data.sim_exit_points != null) {
         line.push({
@@ -140,7 +154,7 @@ useEffect(() => {
       {
         price: data.sim_stop_price,
         color: data.sim_hit_stop ? AMBER : GREEN,
-        title: "SIM stop (entry+5)",
+        title: `SIM stop (trailing +5, ${data.sim_rungs_locked ?? 0} rung${data.sim_rungs_locked === 1 ? "" : "s"})`,
       },
     ];
     for (const m of marks) {
@@ -198,8 +212,8 @@ if (loading) {
         </span>
         <span style={{ color: stoppedEarly ? AMBER : GREEN }}>
           {stoppedEarly
-            ? `SIM stop fired at tick ${data.sim_exit_idx} → +${simPts?.toFixed(2)} pts`
-            : "SIM stop never hit → same as live"}
+            ? `SIM ladder fired at tick ${data.sim_exit_idx} → +${simPts?.toFixed(2)} pts`
+            : "SIM ladder never fired → same as live"}
         </span>
         {better != null && Math.abs(better) > 0.01 && (
           <span style={{ color: better > 0 ? GREEN : "#ef4444" }}>
@@ -211,16 +225,22 @@ if (loading) {
       <p className="text-[10px] text-[#64748b] leading-relaxed">
         {stoppedEarly ? (
           <>
-            The dashed line is where a stop parked at <b className="text-white">entry+5</b> would have
-            fired on the <i>real</i> ticks — the price traded back through it before reaching its peak.
-            Peak-based maths would have claimed +{(data.mfe_points ?? 0).toFixed(1)} here; the replay says{" "}
-            +{simPts?.toFixed(2)}. That gap is exactly why the old numbers looked too good.
+            The dashed staircase is where a <b className="text-white">trailing stop</b> would have{" "}
+            {data.sim_rungs_locked === 1 ? (
+              <>parked at <b className="text-white">entry+5</b></>
+            ) : (
+              <>
+                ratcheted through <b className="text-white">{data.sim_rungs_locked} rungs</b>, ending
+                at entry+{(data.sim_rungs_locked - 1) * 5}
+              </>
+            )}{" "}
+            and fired on the <i>real</i> ticks. Peak-based maths would have claimed +{(data.mfe_points ?? 0).toFixed(1)}{" "}
+            here; the replay says +{simPts?.toFixed(2)}.
           </>
         ) : (
           <>
-            A stop parked at <b className="text-white">entry+5</b> would never have been hit on this path,
-            so parking it there changes nothing. This is the case the idea is meant to help — and here it
-            does, for free.
+            A trailing stop (first rung <b className="text-white">entry+5</b>) would never have been hit
+            on this path, so the ladder makes no difference — same as live.
           </>
         )}
       </p>

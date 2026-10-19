@@ -136,7 +136,7 @@ def create_app(bot_manager):
         happened, instead of inferring it from the peak. Read-only.
         """
         from trade_log_reader import load_all_trades
-        from smart_pnl import EXIT_BUFFER_PTS, replay_stop_on_ticks
+        from smart_pnl import EXIT_BUFFER_PTS, replay_trailing_ladder
 
         trade = next((t for t in load_all_trades() if t.get("id") == trade_id), None)
         if trade is None:
@@ -158,8 +158,10 @@ def create_app(bot_manager):
         entry = trade["entry_price"]
         # Replayed over the real ticks, not inferred from the peak. This is the
         # difference between "it would have banked 8" and "it would have been
-        # stopped at tick 47 on the way back down".
-        sim = replay_stop_on_ticks(ticks, entry)
+        # stopped at tick 47 on the way back down". The stop is a RATCHETING
+        # LADDER (first rung +5, then +5 steps), so stop_path carries the rung
+        # level at every tick and the chart draws the staircase.
+        sim = replay_trailing_ladder(ticks, entry, first_rung=5.0, step=5.0)
 
         return {
             "id": trade_id,
@@ -181,6 +183,8 @@ def create_app(bot_manager):
             "sim_exit_price": sim["exit_price"],
             "sim_exit_points": sim["exit_points"],
             "sim_hit_stop": sim["hit_stop"],
+            "sim_rungs_locked": sim["rungs_locked"],
+            "sim_stop_path": sim["stop_path"],
             "exit_buffer_pts": EXIT_BUFFER_PTS,
         }
 

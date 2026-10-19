@@ -44,6 +44,11 @@ export interface TradeEntry {
   charges?: number | null;
   buy_value?: number | null;
   sell_value?: number | null;
+  /** Premium the strike selector paid for this option, and when. Null on trades logged before selection capture existed. */
+  sel_premium?: number | null;
+  /** Which basket the selector landed on: 100 / 80 / 50. */
+  sel_tier?: number | null;
+  sel_at?: string | null;
 }
 
 export interface DayPnl {
@@ -76,6 +81,15 @@ export interface SmartTrade {
   rule_fired: string;
   /** False when the counterfactual is a peak-based guess, not measured. */
   verified: boolean;
+  /**
+   * How solid THIS row's number is. The API has always sent it; the UI now
+   * reads it so an estimate can never render the same as a measurement.
+   *   "tick"      exit read off real recorded ticks (gold standard)
+   *   "crossing"  the crossing is PROVED, but the exact fill is assumed
+   *   "live"      the rule left the result untouched either way
+   *   "assumed"   nothing provable; the live result is kept
+   */
+  proof: "tick" | "crossing" | "live" | "assumed";
   day_stopped: boolean;
 }
 
@@ -96,11 +110,16 @@ export interface RunSummary {
   gross_points: number;
   net_rupees: number;
   win_rate: number;
-  /** Trades whose counterfactual came from recorded tick path. */
+  /** Trades whose counterfactual was replayed over recorded ticks. */
   verified_trades: number;
   unverified_trades: number;
   verified_net_rupees: number;
   verified_actual_net_rupees: number;
+  /** Subset of verified_trades replayed tick by tick (the gold standard). */
+  replayed_trades?: number;
+  replayed_helped?: number;
+  replayed_hurt?: number;
+  replayed_same?: number;
 }
 
 export interface MfeBucket {
@@ -153,9 +172,19 @@ export interface SmartPnlReport {
   verified_delta_net: number;
   verified_coverage_pct: number;
   /**
-   * The definitive view: trades replayed tick by tick over recorded paths,
-   * each with a helped/hurt/same verdict and the evidence behind it.
+   * Splits the headline delta_net by how strong each row's evidence actually
+   * is. Only `tick_replayed` rests on real recorded prices; `crossing_estimated`
+   * proves the stop fired but ASSUMES where it filled.
    */
+  evidence_split: {
+    tick_replayed: { trades: number; delta_net: number; delta_points: number };
+    crossing_estimated: { trades: number; delta_net: number };
+    not_provable: { trades: number; delta_net: number };
+    unchanged: { trades: number; delta_net: number };
+  };
+  /**
+   * The definitive view: trades replayed tick by tick over recorded paths,
+   * each with a helped/hurt/same verdict and the evidence behind it.   */
   replay_verdict: {
     trades: number;
     helped: number;

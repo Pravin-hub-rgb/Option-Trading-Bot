@@ -67,6 +67,7 @@ export default function MfeReportPage() {
 
   const m = report.mfe_coverage;
   const rv = report.replay_verdict;
+  const es = report.evidence_split;
   const maxHist = Math.max(...m.histogram.map((h) => h.count), 1);
   const maxSweep = Math.max(...sweep.map((s) => Math.abs(s.net_rupees)), 1);
   const bestDay = Math.max(...report.days.map((d) => Math.abs(d.delta_net)), 1);
@@ -77,9 +78,10 @@ export default function MfeReportPage() {
     <div className="max-w-6xl mx-auto space-y-5 pb-24">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold">MFE &amp; Smart P&amp;L Report</h1>
+          <h1 className="text-lg font-semibold">Smart P&amp;L</h1>
           <p className="text-xs text-[#64748b] mt-1">
-            Shadow analysis — how each day would have looked with different exit rules.
+            Trailing ladder (pehla rung +5, phir +5 steps) — replayed on real recorded ticks, against
+            what the live bot actually banked.
             <span className="text-[#f59e0b] font-semibold"> This does not change live trading.</span>
           </p>
         </div>
@@ -92,12 +94,59 @@ export default function MfeReportPage() {
         <Card label="Actual net" value={rs(report.baseline.net_rupees)} sub={`${report.baseline.trades} trades`} color={report.baseline.net_rupees >= 0 ? GREEN : RED} />
         <Card label="Smart net" value={rs(report.summary.net_rupees)} sub={`${report.summary.trades} taken · ${report.summary.trades_skipped} skipped`} color={report.summary.net_rupees >= 0 ? GREEN : RED} />
         <Card
-          label="Measured only"
-          value={rs(report.verified_delta_net)}
-          sub={`${report.summary.verified_trades} trades with real tick path`}
-          color={report.verified_delta_net >= 0 ? GREEN : RED}
+          label="Headline gain"
+          value={rs(report.delta_net)}
+          sub="blends measured + estimated — see below"
+          color={INDIGO}
         />
         <Card label="Win rate" value={`${report.summary.win_rate}%`} sub={`was ${report.baseline.win_rate}%`} color={INDIGO} />
+      </div>
+
+      {/* ---------- HOW MUCH OF THAT GAIN IS ACTUALLY EVIDENCE ---------- */}
+      <div className="card p-4 border-l-2" style={{ borderLeftColor: AMBER }}>
+        <div className="flex items-center gap-2 mb-1">
+          <Icon icon="lucide:scale" width={15} className="text-[#f59e0b]" />
+          <h2 className="text-sm font-semibold text-[#f59e0b]">
+            The Rs{rs(report.delta_net)} headline is NOT all measured
+          </h2>
+        </div>
+        <p className="text-[11px] text-[#64748b] mb-3 leading-relaxed">
+          Fees are already deducted from every figure here. But the gains are not all the same
+          quality, and adding them up hides it. Split by what each trade can actually prove:
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center mb-3">
+          <Mini
+            label="MEASURED — real ticks"
+            value={rs(es.tick_replayed.delta_net)}
+            sub={`${es.tick_replayed.trades} trades · ${es.tick_replayed.delta_points} pts`}
+            color={es.tick_replayed.delta_net >= 0 ? GREEN : RED}
+          />
+          <Mini
+            label="ESTIMATED — crossing proven"
+            value={rs(es.crossing_estimated.delta_net)}
+            sub={`${es.crossing_estimated.trades} trades · exit price assumed`}
+            color={AMBER}
+          />
+          <Mini
+            label="NOT PROVABLE"
+            value="—"
+            sub={`${es.not_provable.trades} trades · no path, no claim`}
+            color={SLATE}
+          />
+        </div>
+
+        <p className="text-[11px] text-[#94a3b8] leading-relaxed">
+          Only <b className="text-white">₹{rs(Math.abs(es.tick_replayed.delta_net))}</b> of the{" "}
+          <b className="text-white">₹{rs(report.delta_net)}</b> headline rests on real recorded ticks. The
+          rest is trades where we <i>know</i> price crossed the stop (peak was above it, exit came in
+          below it) but <b>where exactly it filled is an assumption</b> — those carry a small allowance
+          and are marked ESTIMATED, not measured.
+          <span className="text-[#64748b]">
+            {" "}This is why the number moves as new trades arrive: a replayed trade needs real ticks,
+            and those only exist from 4 Oct onward. Decide on the measured row, not the headline.
+          </span>
+        </p>
       </div>
 
       {/* ---------- THE DEFINITIVE ANSWER ---------- */}
@@ -112,8 +161,16 @@ export default function MfeReportPage() {
           Every number here is replayed tick by tick over the price path the bot actually received. The
           stop is armed at <b className="text-white">entry+5</b> the moment price gets there, and fires
           on the first tick back through. No peak-based guessing anywhere. This is the only figure on
-          the page that can settle the question.
+          the page built from measurement — but it is also the smallest sample, so read it with the
+          trade count next to it.
         </p>
+        {rv.trades > 0 && rv.trades < 50 && (
+          <p className="text-[11px] text-[#f59e0b] mb-3 leading-relaxed">
+            <b>Not enough trades to call this a win.</b> {rv.trades} replayed trades is a thin sample:
+            a single unlucky trade here moves the total by more than the whole edge. Treat this as
+            provisional and leave the live bot on its current rules until the count is in the dozens.
+          </p>
+        )}
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
           <Mini label="Trades replayed" value={String(rv.trades)} color={rv.trades ? GREEN : SLATE} />
@@ -151,16 +208,17 @@ export default function MfeReportPage() {
           <Icon icon="lucide:triangle-alert" width={15} className="text-[#f59e0b] mt-0.5 shrink-0" />
           <div className="text-[11px] text-[#94a3b8] leading-relaxed">
             <p>
-              <b className="text-[#f59e0b]">Read the "Measured only" card, not "Improvement".</b>{" "}
-              <b>Smart net</b> blends real tick-path data with{" "}
-              {report.summary.unverified_trades} older trades whose path we never recorded, so for those it
-              has to <i>guess</i> that the price held all the way to its peak. It usually does not —
-              option prices travel 5 → 4.5 → 6 → 8, and a stop at +5 fires on the 4.5.
+              <b className="text-[#f59e0b]">Read the split card above, not the headline.</b>{" "}
+              <b>Smart net</b> adds up three very different kinds of trade:{" "}
+              {es.tick_replayed.trades} replayed on real recorded ticks,{" "}
+              {es.crossing_estimated.trades} where the crossing is proven but the fill is assumed, and{" "}
+              {es.not_provable.trades} that genuinely cannot be determined at all. Only the first group is
+              a measurement.
             </p>
             <p className="mt-1.5">
-              Only <b className="text-white">{report.summary.verified_trades} of {report.summary.trades}</b>{" "}
-              trades ({report.verified_coverage_pct}%) have measured path data. Until that count is in the
-              dozens, treat every figure here as provisional and keep the live bot on its current rules.
+              Only <b className="text-white">{es.tick_replayed.trades} of {report.summary.trades}</b>{" "}
+              trades have real recorded ticks. Until that count is in the dozens, treat every figure here
+              as provisional and keep the live bot on its current rules.
             </p>
           </div>
         </div>
@@ -527,11 +585,23 @@ function Card({ label, value, sub, color }: { label: string; value: string; sub?
   );
 }
 
-function Mini({ label, value, color }: { label: string; value: string; color?: string }) {
+function Mini({
+  label,
+  value,
+  color,
+  sub,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+  /** Small qualifier under the value - e.g. how many trades it covers. */
+  sub?: string;
+}) {
   return (
     <div className="bg-[rgba(255,255,255,0.03)] rounded p-2">
       <div className="text-[9px] uppercase text-[#64748b] font-bold">{label}</div>
       <div className="text-sm font-bold font-mono mt-0.5" style={{ color: color ?? "#e2e8f0" }}>{value}</div>
+      {sub && <div className="text-[9px] text-[#64748b] mt-0.5 leading-tight">{sub}</div>}
     </div>
   );
 }
@@ -622,7 +692,8 @@ function ReplayTable({ rows }: { rows: SmartPnlReport["replay_verdict"]["rows"] 
       <p className="text-[10px] text-[#64748b] mt-2 leading-relaxed">
         Evidence column: how many ticks were recorded, which tick armed the +5 stop, and which tick it
         fired on. A row marked <b style={{ color: RED }}>HURT</b> means the real exit beat the
-        hypothetical stop — we keep the real number rather than book the flattering one.
+        hypothetical stop — the replayed loss is booked in full, exactly like a win is. Both sides count,
+        so the total below is a real net rather than a best case.
       </p>
     </>
   );

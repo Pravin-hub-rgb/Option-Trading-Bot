@@ -36,7 +36,7 @@ def _first_candle_minute():
 class DataStreamer:
     def __init__(self, session_name="day", instruments=None, ce_key=None, pe_key=None,
                  live_feed_server=None, bot_manager=None, access_token=None,
-                 ce_strike=None, pe_strike=None, prescan_keys=None):
+                 ce_strike=None, pe_strike=None, prescan_keys=None, selection=None):
         self.session_name = session_name
         self.running = True
         self._stop_requested = False
@@ -53,6 +53,12 @@ class DataStreamer:
 
         self._prescan_keys = prescan_keys
         self._prescan_aggregators = {}
+
+        # What the strike selector chose, and when. Held for the whole session
+        # and written onto every trade, so the answer to "what did we actually
+        # pay at selection, and how far did it move before we filled?" survives
+        # the terminal closing. See _selection_for().
+        self._selection = selection or {}
 
         if prescan_keys:
             self.CE_KEY = None
@@ -103,7 +109,13 @@ class DataStreamer:
                         trailing_trigger=s.get('trailing_trigger'),
                         trailing_step=s.get('trailing_step'),
                     ),
-                    'trade_logger': TradeLogger(session_name=session_name, symbol=symbol),
+                    'trade_logger': TradeLogger(
+                        session_name=session_name,
+                        symbol=symbol,
+                        sel_premium=self._selection_for(inst)[0],
+                        sel_tier=self._selection_for(inst)[1],
+                        sel_at=self._selection_for(inst)[2],
+                    ),
                     'trades_taken': 0,
                     'trade_slot': 1,
                     'can_trade': True,
@@ -192,7 +204,26 @@ class DataStreamer:
                 feed_time=feed_time
             )
 
-    def finalize_selection(self, ce_key, pe_key, ce_strike=None, pe_strike=None):
+    def _selection_for(self, inst_type):
+        """
+        The strike-selector's record for one side, as the columns the trade
+        table stores: (premium, tier, selected_at).
+
+        Returns (None, None, None) when the selection was never captured (older
+        sessions, or a Path B start with no selection passed), so those trades
+        keep NULL rather than a fabricated zero.
+        """
+        sel = self._selection or {}
+        if not sel:
+            return None, None, None
+        side = (inst_type or "").lower()
+        return (
+            sel.get(f"{side}_premium"),
+            sel.get(f"{side}_tier"),
+            sel.get("selected_at"),
+        )
+
+    def finalize_selection(self, ce_key, pe_key, ce_strike=None, pe_strike=None, selection=None):
         if not self._prescan_aggregators:
             print(f"[ERROR] finalize_selection called without prescan aggregators")
             return
@@ -203,6 +234,8 @@ class DataStreamer:
         # observe a half-constructed component (the race that caused KeyError 'PE').
         new_components = {}
         first_minute = _first_candle_minute()
+        if selection:
+            self._selection = selection
         for inst, key, strike in [('CE', ce_key, ce_strike), ('PE', pe_key, pe_strike)]:
             symbol = f"{strike} {inst}" if strike else key
 
@@ -231,7 +264,13 @@ class DataStreamer:
                     trailing_trigger=s.get('trailing_trigger'),
                     trailing_step=s.get('trailing_step'),
                 ),
-                'trade_logger': TradeLogger(session_name=self.session_name, symbol=symbol),
+                'trade_logger': TradeLogger(
+                    session_name=self.session_name,
+                    symbol=symbol,
+                    sel_premium=self._selection_for(inst)[0],
+                    sel_tier=self._selection_for(inst)[1],
+                    sel_at=self._selection_for(inst)[2],
+                ),
                 'trades_taken': 0,
                 'trade_slot': 1,
                 'can_trade': True,

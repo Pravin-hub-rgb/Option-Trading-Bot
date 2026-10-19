@@ -52,6 +52,13 @@ MIGRATION_COLUMNS = [
     # show where the hypothetical stop would have fired. ~200-400 ticks per trade
     # is a couple of KB, which SQLite handles without complaint.
     ("tick_path", "TEXT"),
+    # What the strike selector picked, and when. Without this the only record
+    # of it was a console line, so once the terminal closed there was no way to
+    # tell an option that was genuinely near Rs100 at selection from one that
+    # was pushed there by the market moving before the entry filled.
+    ("sel_premium", "REAL"),   # premium of THIS option at selection time
+    ("sel_tier", "INTEGER"),   # which basket won: 100 / 80 / 50
+    ("sel_at", "TEXT"),        # selection timestamp, for drift vs entry_time
 ]
 
 

@@ -11,21 +11,33 @@ IST = pytz.timezone('Asia/Kolkata')
 
 
 class TradeLogger:
-    def __init__(self, session_name, symbol):
+    def __init__(self, session_name, symbol, sel_premium=None, sel_tier=None, sel_at=None):
         self.symbol = symbol
         self.session_name = session_name
+        # What the strike selector paid when it picked THIS option, and when.
+        # Written onto every trade from this logger so the gap between the
+        # targeted premium and the price actually filled at stays answerable
+        # after the console that printed it is long gone. None on older
+        # sessions - those rows simply stay NULL.
+        self.sel_premium = sel_premium
+        self.sel_tier = sel_tier
+        self.sel_at = sel_at
         init_db()
 
     def log_entry(self, symbol, entry_price, stop_loss, entry_time):
         conn = get_conn()
         conn.execute("""
-            INSERT INTO trades (symbol, entry_time, entry_price, stop_loss)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO trades (symbol, entry_time, entry_price, stop_loss,
+                                sel_premium, sel_tier, sel_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             symbol,
             entry_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
             entry_price,
             stop_loss,
+            self.sel_premium,
+            self.sel_tier,
+            self.sel_at,
         ))
         conn.commit()
         conn.close()

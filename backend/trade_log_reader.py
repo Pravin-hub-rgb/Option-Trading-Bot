@@ -195,4 +195,11 @@ def _row_to_dict(row):
         # API hands the chart an array rather than a JSON string. NULL means the
         # trade predates path capture.
         "tick_path": _parse_tick_path(row),
+        # What the strike selector paid for THIS option, and when. NULL on
+        # every trade logged before selection capture existed. Comparing
+        # sel_premium against entry_price is the only honest way to see how far
+        # the option moved between being chosen and being bought.
+        "sel_premium": row["sel_premium"] if "sel_premium" in row.keys() else None,
+        "sel_tier": row["sel_tier"] if "sel_tier" in row.keys() else None,
+        "sel_at": row["sel_at"] if "sel_at" in row.keys() else None,
     }

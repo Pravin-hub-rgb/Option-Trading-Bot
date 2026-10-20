@@ -48,13 +48,13 @@
     "category": "risk"
   },
   "trailing_trigger": {
-    "value": 5,
+    "value": "5",
     "type": "number",
     "label": "Trailing Trigger (points)",
     "category": "risk"
   },
   "trailing_step": {
-    "value": 5,
+    "value": "5",
     "type": "number",
     "label": "Trailing Step (points)",
     "category": "risk"
@@ -91,7 +91,7 @@
     "category": "logging"
   },
   "access_token": {
-    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YWMzMTIwNTE3YzBmNDE4NjA1YTNjODgiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc5MTE2OTAyOSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzkxMjM3NjAwfQ.xY6GiWrb-NVZLWToFfrVmIH2KH9HAj3J2dDgf_Z6GQ8",
+    "value": "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI0SENZTkYiLCJqdGkiOiI2YWQ2ZGI0Y2Y5MTM3YzdkNjIyMzc0ODYiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc5MjQ2NTc0MCwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzkyNTMzNjAwfQ.gm994hA62vqePZeoMIFlwCbo4KbChKCWYWEV_ig9Umg",
     "type": "password",
     "label": "Upstox Access Token",
     "category": "credentials"

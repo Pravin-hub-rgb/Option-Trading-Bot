@@ -335,6 +335,8 @@ class TradingScheduler:
         else:
             self.log(f"🚀 Starting streaming with strikes...")
         self.current_session = "day"
+        self._stream_started_at = datetime.now(IST)
+        self._no_ticks_last = None
         self.data_streamer = self.data_streamer_factory(
             session_name="day",
             ce_key=ce_key,
@@ -359,14 +361,46 @@ ce_strike=ce_strike,
             self.current_session = None
             self.log(f"✅ Streaming stopped")
 
+    def _report_no_ticks(self):
+        """Ticks never arrived at all — say so instead of sitting silent, since
+        the dead-streamer check cannot fire when there is no newest tick to go
+        stale. Returns True when today is a holiday and the session should stop.
+        """
+        started_at = getattr(self, '_stream_started_at', None)
+        if not started_at:
+            return False
+        now = datetime.now(IST)
+        stalled_for = now - started_at
+        if stalled_for <= timedelta(minutes=3):
+            return False
+        from nse_holidays import holiday_name
+        today = holiday_name(now.date())
+        if today:
+            self.log(f"🔴 No ticks for over {int(stalled_for.seconds / 60)} min — today is {today}, there is no market")
+            self.log("🛑 Nothing to trade today — stopping session")
+            return True
+        if not self._no_ticks_last or now - self._no_ticks_last > timedelta(minutes=10):
+            self._no_ticks_last = now
+            self.log(f"🟠 No ticks received in {int(stalled_for.seconds / 60)} min of streaming — feed stalled or market not open. Waiting...")
+        return False
+
     async def start(self):
         self.is_running = True
         self.log(f"🚀 Bot Started")
         current_time = self.get_current_time_str()
-        
+
         from settings_db import get_as_dict
+        from nse_holidays import holiday_name
         s = get_as_dict()
-        
+
+        today = holiday_name(datetime.now(IST).date())
+        if today:
+            self.log(f"ℹ️ Today is a market holiday — {today}. No ticks will come today.")
+            self.log(f"🛑 Nothing to trade — stopping")
+            self.stop_streaming()
+            self.is_running = False
+            return
+
         market_start = s.get('market_start', '09:15')
         market_end = s.get('market_end', '15:30')
         market_open_delay = int(s.get('market_open_delay', 40))
@@ -499,6 +533,10 @@ ce_strike=ce_strike,
                             except Exception as e:
                                 self.log(f"⚠️ Force-exit on dead streamer failed: {e}")
                             break
+                elif self._report_no_ticks():
+                    self.stop_streaming()
+                    self.is_running = False
+                    return
         self.stop_streaming()
         self.log(f"✅ Done for today")
         self.is_running = False

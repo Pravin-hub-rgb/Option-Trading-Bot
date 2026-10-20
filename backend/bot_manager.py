@@ -1,11 +1,13 @@
 ﻿import asyncio
 import threading
 import time
+import traceback
 from collections import deque
 from datetime import datetime, timedelta
 import pytz
 from upstox.data_streamer import DataStreamer
 from scheduler import TradingScheduler
+from nse_holidays import holiday_name
 
 IST = pytz.timezone('Asia/Kolkata')
 
@@ -84,7 +86,7 @@ class BotManager:
         try:
             from settings_db import get_setting
 
-            def create_streamer(session_name, ce_key=None, pe_key=None, ce_strike=None, pe_strike=None, prescan_keys=None):
+            def create_streamer(session_name, ce_key=None, pe_key=None, ce_strike=None, pe_strike=None, prescan_keys=None, selection=None):
                 ds = DataStreamer(
                     session_name=session_name,
                     instruments=instruments,
@@ -93,6 +95,7 @@ class BotManager:
                     ce_strike=ce_strike,
                     pe_strike=pe_strike,
                     prescan_keys=prescan_keys,
+                    selection=selection,
                     live_feed_server=self.live_feed_server,
                     bot_manager=self,
                     access_token=get_setting("access_token"),
@@ -111,7 +114,12 @@ class BotManager:
             loop.run_until_complete(self._scheduler.start())
 
         except Exception as e:
+            tb = traceback.format_exc()
             self.emit_log(f"Bot error: {e}")
+            print(
+                f"[bot_manager] scheduler crashed:\n{tb}",
+                flush=True,
+            )
         finally:
             with self.lock:
                 self.mode = "stopped"
@@ -152,6 +160,13 @@ class BotManager:
             )
             if now > market_end:
                 return {"status": "error", "message": "Market closed"}
+
+            holiday = holiday_name(now.date())
+            if holiday:
+                return {
+                    "status": "error",
+                    "message": f"Today is a market holiday ({holiday}) — no ticks will come.",
+                }
 
             self.instruments = instruments if instruments else ["CE", "PE"]
             self.positions = {

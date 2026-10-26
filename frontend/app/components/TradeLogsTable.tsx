@@ -24,6 +24,11 @@ export default function TradeLogsTable({
 }) {
   const [trades, setTrades] = useState<TradeEntry[]>([]);
   const [info, setInfo] = useState<Record<number, RowInfo>>({});
+  // The legacy counterfactual only means something on trades that ran under a
+  // DIFFERENT rule than the legacy ladder itself - anything logged before the
+  // bank-first switch replays as itself ("as_traded") and would just print
+  // "same" 185 times. So the column stays hidden until real deltas accrue.
+  const [showLegacy, setShowLegacy] = useState(false);
   // Which trade has its price-path chart expanded, if any.
   const [openPath, setOpenPath] = useState<number | null>(null);
   const pathTrade = trades.find((t) => t.id === openPath) ?? null;
@@ -47,6 +52,9 @@ export default function TradeLogsTable({
           };
         }
         setInfo(map);
+        setShowLegacy(
+          Object.values(map).some((m) => m.proof === "tick" || m.proof === "crossing"),
+        );
       })
       .catch(() => setInfo({}));
   }, [year]);
@@ -111,13 +119,15 @@ export default function TradeLogsTable({
             <th className="text-right py-2 pr-3">P&amp;L</th>
             <th className="text-right py-2 pr-3">Net</th>
             <th className="text-right py-2 pr-3">Fees</th>
-            <th
-              className="text-right py-2 pr-3 border-l border-white/10"
-              style={{ color: "#818cf8" }}
-              title="What the retired ladder (first rung banks entry+1, then +5 steps) would have BANKED on this trade, replayed over the real recorded ticks. Compare it against the Net column. The small figure underneath is the difference against what we actually banked - red means the old rule would have lost money here."
-            >
-              Legacy&nbsp;book
-            </th>
+            {showLegacy && (
+              <th
+                className="text-right py-2 pr-3 border-l border-white/10"
+                style={{ color: "#818cf8" }}
+                title="What the retired ladder (first rung banks entry+1, then +5 steps) would have BANKED on this trade, replayed over the real recorded ticks. Compare it against the Net column. The small figure underneath is the difference against what we actually banked - red means the old rule would have lost money here."
+              >
+                Legacy&nbsp;book
+              </th>
+            )}
             <th className="py-2 w-8">
               <span className="sr-only">Show price path</span>
             </th>
@@ -232,6 +242,7 @@ export default function TradeLogsTable({
                 {t.charges !== null && t.charges !== undefined ? `₹${t.charges.toFixed(2)}` : "—"}
               </td>
               {/* ---- legacy book: what the retired +1 rung would have banked ---- */}
+              {showLegacy && (
               <td
                 className="py-2 pr-3 text-right font-mono font-semibold border-l border-white/10"
                 style={{ color: hasCounterfactual ? legacyTone : tone }}
@@ -264,6 +275,7 @@ export default function TradeLogsTable({
                   <span className="font-normal">—</span>
                 )}
               </td>
+              )}
               <td className="py-2">
                 <button
                   onClick={() => setOpenPath(openPath === t.id ? null : t.id)}

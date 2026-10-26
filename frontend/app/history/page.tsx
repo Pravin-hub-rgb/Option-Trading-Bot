@@ -29,11 +29,11 @@ export default function HistoryPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <h1 className="text-lg font-semibold">Trade History</h1>
 
-      {/* Rule book strip: the live bank-first ladder's own ledger, replayed
-          over every settled trade. On archive rows this is the would-have
-          study the rule switch rested on; once post-switch trades accrue it
-          doubles as the live mirror. The comparison against the as-traded
-          book sits in the sub line. */}
+      {/* Rule book strip: today's ladder replayed over every settled trade.
+          On archive rows this is the WOULD-HAVE (the old rule made the actual
+          money); once post-switch trades accrue it doubles as the live
+          mirror, and actual converges to it. The comparison against the
+          as-traded book sits in the sub line. */}
       <div
         className="card p-4 border-l-4"
         style={{ borderLeftColor: book && book.net_rupees >= 0 ? "#10b981" : "#ef4444" }}
@@ -41,7 +41,7 @@ export default function HistoryPage() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="text-xs text-[#64748b] uppercase tracking-wider">
-              Rule book · first rung banks +{book?.bank_at ?? "—"}, then every +5
+              Rule book · today&apos;s ladder, would-have over past trades
             </div>
             <div
               className="text-3xl font-mono font-semibold mt-1"
@@ -51,7 +51,7 @@ export default function HistoryPage() {
             </div>
             <div className="text-[0.65rem] text-[#64748b] mt-1">
               {book
-                ? `bank-first replay over ${book.trades} trades vs actual ${formatRs(book.actual_net_rupees)} · gap ${formatRs(book.delta_net)} on ${book.delta_points >= 0 ? "+" : ""}${book.delta_points} pts`
+                ? `first rung banks +${book.bank_at}, then every +5 · what actually happened: ${formatRs(book.actual_net_rupees)} · expected gap: ${formatRs(book.delta_net)} on ${book.delta_points >= 0 ? "+" : ""}${book.delta_points} pts`
                 : "…"}
             </div>
           </div>

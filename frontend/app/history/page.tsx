@@ -42,6 +42,7 @@ export default function HistoryPage() {
     (r) => Math.abs(r.actual_pnl ?? 9) <= tol && (r.rule_pnl ?? 0) > tol,
   ).length;
   const beTotal = bookRows.filter((r) => Math.abs(r.actual_pnl ?? 9) <= tol).length;
+  const bookDays = new Set(bookRows.map((r) => r.date)).size;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -91,6 +92,35 @@ export default function HistoryPage() {
           {book
             ? `the gap the switch closes: ${formatRs(book.delta_net)} on ${book.delta_points >= 0 ? "+" : ""}${book.delta_points} pts${beTotal ? ` · ${beConverted} of the ${beTotal} breakeven exits bank the +5 ratchet instead` : ""}`
             : "…"}
+        </div>
+      </div>
+
+      {/* Rule book stats: the engine the bot runs from tomorrow onward. Same
+          buckets and tolerance as the retired engine's grid below, so the two
+          rows read against each other factor for factor. */}
+      <div>
+        <div className="text-xs font-semibold text-[#10b981] mb-2">
+          Rule book · today&apos;s engine (bank-first) — the default
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
+          <StatCard label="Total Trades" value={book?.trades ?? "—"} />
+          <StatCard label="Profitable" value={bookProfitable ?? "—"} color="#10b981" />
+          <StatCard label="Breakeven" value={bookBreakeven ?? "—"} color="#f59e0b" />
+          <StatCard label="Losing" value={bookLosing ?? "—"} color="#ef4444" />
+          <StatCard label="Win Rate" value={bookWinRate != null ? `${bookWinRate}%` : "—"} color="#facc15" />
+          <StatCard
+            label="Net P&L"
+            value={book ? formatRs(book.net_rupees) : "—"}
+            color={book && book.net_rupees >= 0 ? "#10b981" : "#ef4444"}
+            sub={book ? `gross ${book.gross_points >= 0 ? "+" : ""}${book.gross_points} pts` : undefined}
+          />
+          <StatCard
+            label="Gap vs retired"
+            value={book ? formatRs(book.delta_net) : "—"}
+            color={book && book.delta_net >= 0 ? "#10b981" : "#ef4444"}
+            sub={book ? `${book.delta_points >= 0 ? "+" : ""}${book.delta_points} pts` : undefined}
+          />
+          <StatCard label="Days Traded" value={bookDays ?? "—"} color="#6366f1" />
         </div>
       </div>
 

@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
-import { fetchTrades, deleteTrade, fetchSmartPnl } from "../lib/api";
+import { fetchTrades, deleteTrade, fetchExitRules } from "../lib/api";
 import TradePathChart from "./TradePathChart";
-import type { TradeEntry, SmartTrade } from "../lib/types";
+import type { TradeEntry, ExitRulesTrade } from "../lib/types";
 
 type RowInfo = {
   deltaNet: number | null;
-  smartNet: number | null;
-  proof: SmartTrade["proof"];
+  legacyNet: number | null;
+  proof: ExitRulesTrade["proof"];
   rule: string;
 };
 
@@ -34,14 +34,14 @@ export default function TradeLogsTable({
   }, [year]);
 
   useEffect(() => {
-    fetchSmartPnl(year)
+    fetchExitRules(year)
       .then((r) => {
         const map: Record<number, RowInfo> = {};
-        for (const t of r.trades as SmartTrade[]) {
+        for (const t of r.trades as ExitRulesTrade[]) {
           if (t.id === null) continue;
           map[t.id] = {
             deltaNet: t.delta_net,
-            smartNet: t.smart_net,
+            legacyNet: t.legacy_net,
             proof: t.proof,
             rule: t.rule_fired,
           };
@@ -114,9 +114,9 @@ export default function TradeLogsTable({
             <th
               className="text-right py-2 pr-3 border-l border-white/10"
               style={{ color: "#818cf8" }}
-              title="What a trailing ladder (pehla rung +5, phir +5 steps) would have BANKED on this trade, replayed over the real recorded ticks. Compare it against the Net column. The small figure underneath is the difference against what we actually banked — red means the rule would have lost money here."
+              title="What the retired ladder (first rung banks entry+1, then +5 steps) would have BANKED on this trade, replayed over the real recorded ticks. Compare it against the Net column. The small figure underneath is the difference against what we actually banked - red means the old rule would have lost money here."
             >
-              Smart&nbsp;book
+              Legacy&nbsp;book
             </th>
             <th className="py-2 w-8">
               <span className="sr-only">Show price path</span>
@@ -127,13 +127,19 @@ export default function TradeLogsTable({
         <tbody>
           {trades.map((t, i) => {
             const m = t.id != null ? info[t.id] : undefined;
-            // Smart book: what the trailing ladder (first rung +5, then +5 steps) would
-            // have BANKED on this trade, replayed over the real recorded ticks.
+            // Legacy book: what the RETIRED rule would have banked on this
+            // trade (first rung parks at entry+1, charges-only), replayed over
+            // the real recorded ticks.
             //
             // The big number is the counterfactual's own net, not a difference,
             // so it reads directly against the Net column beside it. The small
             // figure underneath is the delta against what we actually banked -
-            // that is the part that says whether switching would help or hurt.
+            // that is the part that says whether the old rule would help or hurt.
+            //
+            // Trades run before the bank-first switch were traded under exactly
+            // this rule, so they replay as "as_traded": the legacy book mirrors
+            // the actual and the column shows "same". Deltas only appear once
+            // post-switch trades (bank_rung 5) start accruing.
             //
             // Rows are split by how solid the counterfactual is, because they
             // are NOT equally trustworthy:
@@ -153,6 +159,7 @@ export default function TradeLogsTable({
                 rule === "survived" ||
                 rule === "untouched" ||
                 rule === "unknown-mfe" ||
+                rule === "as_traded" ||
                 rule === "ladder_same" ||
                 rule === "ladder_help" ||
                 rule === "ladder_hurt" ||
@@ -162,17 +169,17 @@ export default function TradeLogsTable({
                 rule === "current");
             const tone = !moved ? "#64748b" : d > 0 ? "#10b981" : "#ef4444";
             // A real counterfactual exists only for tick / crossing rows. For
-            // the other two smartNet just mirrors actual, so printing it would
+            // the other two legacyNet just mirrors actual, so printing it would
             // duplicate the Net column and read as though the rule had a view.
             const hasCounterfactual =
               m != null &&
-              m.smartNet != null &&
+              m.legacyNet != null &&
               (m.proof === "tick" || m.proof === "crossing");
             const inferred = m?.proof === "crossing";
-            const smartTone =
-              m?.smartNet == null || m.smartNet === 0
+            const legacyTone =
+              m?.legacyNet == null || m.legacyNet === 0
                 ? "#64748b"
-                : m.smartNet > 0
+                : m.legacyNet > 0
                   ? "#10b981"
                   : "#ef4444";
             return (
@@ -224,24 +231,24 @@ export default function TradeLogsTable({
               <td className="py-2 pr-3 text-right font-mono text-[#64748b]">
                 {t.charges !== null && t.charges !== undefined ? `₹${t.charges.toFixed(2)}` : "—"}
               </td>
-              {/* ---- smart book: what the +5 ladder would have banked ---- */}
+              {/* ---- legacy book: what the retired +1 rung would have banked ---- */}
               <td
                 className="py-2 pr-3 text-right font-mono font-semibold border-l border-white/10"
-                style={{ color: hasCounterfactual ? smartTone : tone }}
+                style={{ color: hasCounterfactual ? legacyTone : tone }}
                 title={
                   hasCounterfactual
                     ? inferred
-                      ? `Trailing ladder would have netted Rs ${m?.smartNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked — a difference of ${d != null && d < 0 ? "-" : "+"}Rs ${Math.abs(d ?? 0).toFixed(0)}. ESTIMATED: the stop provably fired, but exactly where it filled is an assumption, so this is a close estimate, not a measurement.`
-                      : `Trailing ladder would have netted Rs ${m?.smartNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked — a difference of ${d != null && d < 0 ? "-" : "+"}Rs ${Math.abs(d ?? 0).toFixed(0)}. Replayed tick by tick over the prices the bot actually received.`
+                      ? `Retired ladder would have netted Rs ${m?.legacyNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked - a difference of ${d != null && d < 0 ? "-" : "+"}Rs ${Math.abs(d ?? 0).toFixed(0)}. ESTIMATED: the stop provably fired, but exactly where it filled is an assumption, so this is a close estimate, not a measurement.`
+                      : `Retired ladder would have netted Rs ${m?.legacyNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked - a difference of ${d != null && d < 0 ? "-" : "+"}Rs ${Math.abs(d ?? 0).toFixed(0)}. Replayed tick by tick over the prices the bot actually received.`
                     : m?.proof === "assumed"
                       ? "No counterfactual is possible for this trade: without a recorded price path there is nothing to replay, and the peak does not prove where the stop would have filled."
-                      : "The trailing ladder provably would not have changed this exit."
+                      : "The retired rule provably would not have changed this exit."
                 }
               >
-                {hasCounterfactual && m?.smartNet != null ? (
+                {hasCounterfactual && m?.legacyNet != null ? (
                   <div className="leading-tight">
                     <div className={inferred ? "italic opacity-60" : undefined}>
-                      {m.smartNet >= 0 ? "+" : "-"}₹{Math.abs(m.smartNet).toFixed(0)}
+                      {m.legacyNet >= 0 ? "+" : "-"}₹{Math.abs(m.legacyNet).toFixed(0)}
                     </div>
                     {moved && d != null && (
                       <div className="text-[9px] font-normal" style={{ color: tone }}>

@@ -17,6 +17,8 @@ DEFAULT_SETTINGS = {
     "initial_sl_points": {"value": "4", "type": "number", "label": "Initial SL (points)", "category": "risk"},
     "trailing_trigger": {"value": "5", "type": "number", "label": "Trailing Trigger (points)", "category": "risk"},
     "trailing_step": {"value": "5", "type": "number", "label": "Trailing Step (points)", "category": "risk"},
+    "bank_rung": {"value": "5", "type": "number", "label": "Bank First Rung (points above entry)", "category": "risk"},
+    "day_stop_at": {"value": "0", "type": "number", "label": "Day Stop (cumulative realized points, 0 = off)", "category": "risk"},
     # OBSERVATION ONLY - this does not affect trading in any way.
     "observe_dip_level": {"value": "5", "type": "number", "label": "Observation: Dip Watch Level (points, 0 = off)", "category": "risk"},
     "stop_after_first_win": {"value": "true", "type": "boolean", "label": "Stop After First Win", "category": "limits"},

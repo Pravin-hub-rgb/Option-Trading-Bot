@@ -49,6 +49,8 @@ export interface TradeEntry {
   /** Which basket the selector landed on: 100 / 80 / 50. */
   sel_tier?: number | null;
   sel_at?: string | null;
+  /** Exit-rule generation live when this trade ran: 5 = bank-first, 1 = the retired charges-only ladder. NULL on archive rows logged before the switch. */
+  bank_rung?: number | null;
 }
 
 export interface DayPnl {
@@ -58,7 +60,7 @@ export interface DayPnl {
   net_rupees?: number | null;
 }
 
-export interface SmartTrade {
+export interface ExitRulesTrade {
   id: number | null;
   date: string;
   entry_time: string;
@@ -72,33 +74,40 @@ export interface SmartTrade {
   mfe_bucket_label: string;
   giveback_points: number | null;
   dips_below_bank: number | null;
+  /** Exit-rule generation this trade ran under; NULL on archive rows. */
+  bank_rung: number | null;
   actual_pnl: number | null;
   actual_net: number | null;
-  smart_pnl: number | null;
-  smart_net: number | null;
+  legacy_pnl: number | null;
+  legacy_net: number | null;
   delta_points: number | null;
   delta_net: number | null;
   rule_fired: string;
   /** False when the counterfactual is a peak-based guess, not measured. */
   verified: boolean;
-  /**
-   * How solid THIS row's number is. The API has always sent it; the UI now
-   * reads it so an estimate can never render the same as a measurement.
-   *   "tick"      exit read off real recorded ticks (gold standard)
-   *   "crossing"  the crossing is PROVED, but the exact fill is assumed
-   *   "live"      the rule left the result untouched either way
-   *   "assumed"   nothing provable; the live result is kept
-   */
+  /** True only when the outcome was replayed over recorded ticks. */
+  replayed: boolean;
+  /** helped / hurt / same / unknown - the delta decides, not the label. */
+  verdict: string;
+  evidence: {
+    ticks: number;
+    armed_at_tick: number | null;
+    fired_at_tick: number | null;
+    rungs_locked: number;
+    exit_price: number | null;
+    exit_points: number | null;
+    fired_early: boolean;
+  } | null;
   proof: "tick" | "crossing" | "live" | "assumed";
   day_stopped: boolean;
 }
 
-export interface SmartDay {
+export interface ExitRulesDay {
   date: string;
   trades_actual: number;
   trades_taken: number;
   actual_net: number | null;
-  smart_net: number | null;
+  legacy_net: number | null;
   delta_net: number;
   stopped_early: boolean;
   first_trade_pnl: number | null;
@@ -110,6 +119,9 @@ export interface RunSummary {
   gross_points: number;
   net_rupees: number;
   win_rate: number;
+  /** The as-traded book alongside, for honest comparisons. */
+  actual_gross_points: number;
+  actual_net_rupees: number;
   /** Trades whose counterfactual was replayed over recorded ticks. */
   verified_trades: number;
   unverified_trades: number;
@@ -120,6 +132,8 @@ export interface RunSummary {
   replayed_helped?: number;
   replayed_hurt?: number;
   replayed_same?: number;
+  replayed_points?: number;
+  replayed_actual_points?: number;
 }
 
 export interface MfeBucket {
@@ -160,10 +174,25 @@ export interface MfeReport {
   reached_10: { count: number; pct: number };
 }
 
-export interface SmartPnlReport {
-  settings: { bank_at: number; prove_at: number; day_stop_at: number | null; exit_buffer_pts?: number };
-  trades: SmartTrade[];
-  days: SmartDay[];
+/** The live rule's own book: the bank-first ladder replayed over every
+ * settled trade - the would-have study on archive rows, the live mirror on
+ * post-switch rows. This is the headline the rule card renders. */
+export interface RuleBook {
+  bank_at: number;
+  trades: number;
+  trades_skipped: number;
+  gross_points: number;
+  net_rupees: number;
+  actual_gross_points: number;
+  actual_net_rupees: number;
+  delta_points: number;
+  delta_net: number;
+}
+
+export interface ExitRulesReport {
+  settings: { bank_at: number; day_stop_at: number | null; exit_buffer_pts: number };
+  trades: ExitRulesTrade[];
+  days: ExitRulesDay[];
   summary: RunSummary;
   baseline: RunSummary;
   delta_net: number;
@@ -208,6 +237,7 @@ export interface SmartPnlReport {
         ticks: number;
         armed_at_tick: number | null;
         fired_at_tick: number | null;
+        rungs_locked: number;
         exit_price: number | null;
         exit_points: number | null;
         fired_early: boolean;
@@ -218,9 +248,11 @@ export interface SmartPnlReport {
     month: string;
     trades: number;
     actual_net: number;
-    smart_net: number;
+    legacy_net: number;
     delta_net: number;
   }[];
+  /** The bank-first ledger - see RuleBook. */
+  rule_book: RuleBook;
   mfe_coverage: MfeReport;
 }
 

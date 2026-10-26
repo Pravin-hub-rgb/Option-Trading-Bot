@@ -202,4 +202,7 @@ def _row_to_dict(row):
         "sel_premium": row["sel_premium"] if "sel_premium" in row.keys() else None,
         "sel_tier": row["sel_tier"] if "sel_tier" in row.keys() else None,
         "sel_at": row["sel_at"] if "sel_at" in row.keys() else None,
+        # Which first-rung arithmetic governed this trade: 1 = old charges-only
+        # bank, 5 = bank-first rung. NULL on rows predating the switch.
+        "bank_rung": row["bank_rung"] if "bank_rung" in row.keys() else None,
     }

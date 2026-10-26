@@ -63,7 +63,7 @@ def main():
         pm.update_trailing_sl(ltp)
     check("MFE (peak 107)", pm.get_mfe(), 7.0)
     check("MAE (low 99.8)", close(pm.get_mae(), 0.2), True)
-    check("SL moves only to entry+1 at peak +7 (baseline)", pm.get_current_sl(), 101.0)
+    check("SL parks at the bank, entry+5, at peak +7", pm.get_current_sl(), 105.0)
     summary = pm.close_position(101.0, t0 + timedelta(minutes=6))
     check("summary mfe_points", summary["mfe_points"], 7.0)
     check("summary mae_points", summary["mae_points"], 0.2)
@@ -78,16 +78,17 @@ def main():
         pm2.track_price(ltp)
         pm2.update_trailing_sl(ltp)
     check("MFE (peak 122)", pm2.get_mfe(), 22.0)
-    # profit 22 -> milestones_passed = int((22-5)/5) = 3 -> entry + 15
-    check("SL = entry+15 rung at profit 22", pm2.get_current_sl(), 115.0)
+    # profit 22 -> the ladder mirrored on the replay engine parks at the bank
+    # plus 3 steps: entry +5 + 3*5 = entry+20
+    check("SL = entry+20 rung at profit 22", pm2.get_current_sl(), 120.0)
     s2 = pm2.close_position(115.0, t0 + timedelta(minutes=5))
     check("runner mfe_points", s2["mfe_points"], 22.0)
     check("runner rungs locked", s2["sl_rungs_locked"] >= 3, True)
 
-    # ---------- 2b. the baseline ladder, spelled out ----------
-    print("\n2b) baseline rung arithmetic (first rung is +1, then every +5)")
-    for ltp, want_sl in ((105.5, 101.0), (110.5, 105.0), (115.0, 110.0),
-                         (120.0, 115.0), (125.0, 120.0)):
+    # ---------- 2b. the live ladder, spelled out ----------
+    print("\n2b) bank-first rung arithmetic (first rung parks at the bank, then every +5)")
+    for ltp, want_sl in ((105.5, 105.0), (110.5, 110.0), (115.0, 115.0),
+                         (120.0, 120.0), (125.0, 125.0)):
         p = PositionManager()
         p.open_position(100.0, t0, "T")
         p.update_trailing_sl(ltp)
@@ -158,30 +159,32 @@ def main():
         p.update_trailing_sl(ltp)
         return p.get_current_sl()
 
-    # 6a. THE key regression: +5.5 must NOT park the stop at +5.
-    # A design experiment briefly did this and it broke the strategy. If this
-    # assertion ever fails again, the live exit logic has been changed without
-    # approval.
-    check("+5.5 -> entry+1  (NOT entry+5)", sl_only(105.5), 101.0)
-    check("+5.0 -> entry+1", sl_only(105.0), 101.0)
+    # 6a. THE key regression for THIS rule, inverted from its first draft:
+    # +5.5 must park the stop at the bank (+5) so the first rung can no longer
+    # be given back to charges-only levels. The flip is the approved change.
+    check("+5.5 -> entry+5 (the bank, NOT the old entry+1)", sl_only(105.5), 105.0)
+    check("+5.0 -> entry+5", sl_only(105.0), 105.0)
 
-    # 6b. the rest of the ladder
-    check("+10.5 -> entry+5", sl_only(110.5), 105.0)
-    check("+10.0 -> entry+5", sl_only(110.0), 105.0)
-    check("+15.5 -> entry+10", sl_only(115.5), 110.0)
-    check("+20.5 -> entry+15", sl_only(120.5), 115.0)
+    # 6b. the rest of the ladder: one more rung per trailing_step of profit
+    check("+10.5 -> entry+10", sl_only(110.5), 110.0)
+    check("+10.0 -> entry+10", sl_only(110.0), 110.0)
+    check("+15.5 -> entry+15", sl_only(115.5), 115.0)
+    check("+20.5 -> entry+20", sl_only(120.5), 120.0)
 
     # 6c. below the trigger nothing ever moves
     check("+4.9 -> initial stop untouched", sl_only(104.9), 96.0)
     check("+0.0 -> initial stop untouched", sl_only(100.0), 96.0)
 
-    # 6d. full giveback path: runner that reached +20 then slid back.
+    # 6d. full giveback path: runner that reached +20 then slid back - and the
+    # bank-first ladder holds it at entry+20, so the first breaching tick exits.
     g = PositionManager()
     g.open_position(100.0, t0, "GIVEBACK")
     for ltp in (101.0, 105.5, 110.5, 115.5, 120.5, 118.0, 116.0, 115.0):
         g.update_trailing_sl(ltp)
-    check("giveback path trails to +15", g.get_current_sl(), 115.0)
-    check("giveback exits at +15", g.close_position(115.0, t0)["pnl"], 15.0)
+        g.check_exit(ltp)
+    check("giveback path trails to +20", g.get_current_sl(), 120.0)
+    check("giveback exits at the banked +18 when the pullback breaks it",
+          g.close_position(118.0, t0)["pnl"], 18.0)
 
     # 6e. a loser is completely unaffected
     l = PositionManager()
@@ -215,9 +218,9 @@ def main():
         check(f"observe_dip_level={level!r}: ladder with tracking = ladder without",
               ladder_rungs(True, level), control)
 
-    # The path ends at 99.0 after peaking at 121.0, so the stop parks at +15
-    # (milestones_passed = int((21-5)/5) = 3) and stays there.
-    check("ladder parks at +15 after peaking at +21", control[-1], 115.0)
+    # The path ends at 99.0 after peaking at 121.0, so the stop parks at +20
+    # (mirroring the replay: entry +5 + 3 steps) and stays there.
+    check("ladder parks at +20 after peaking at +21", control[-1], 120.0)
 
     save_setting("observe_dip_level", "5")
 
@@ -373,40 +376,57 @@ def main():
 
     save_setting("observe_dip_level", keep_bank if keep_bank is not None else "5")
 
-    # ---------- 10. the smart engine must not use hindsight ----------
+    # ---------- 10. the exit-rules engine must not use hindsight ----------
     # A peak-only counterfactual ("MFE was 8, so it banked 8") is the trap that
     # made this study look worth lakhs. Option prices go 5 -> 4.5 -> 6 -> 8, so a
-    # stop on that path fires on the 4.5 tick. The MFE plus the real exit price
+    # stop below the peak fires on the wiggle. The MFE plus the real exit price
     # PROVE the crossing happened, which is what the engine now relies on.
-    print("\n10) shadow engine is tick-wise, not peak-wise")
-    from smart_pnl import smart_exit, is_measured, EXIT_BUFFER_PTS
+    # The counterfactual under audit here is the LEGACY rule (first rung
+    # entry+1), compared against trades that ran under the live bank-first
+    # ladder (bank_rung=5 on the row makes that explicit).
+    print("\n10) exit rules engine is tick-wise, not peak-wise")
+    from exit_rules import legacy_exit, bank_first_exit, is_measured, EXIT_BUFFER_PTS
     check("exit buffer is 1 point", EXIT_BUFFER_PTS, 1.0)
 
-    def sim(mfe, actual, dips=None, prove=10):
-        pnl, rule = smart_exit({"pnl": actual, "mfe_points": mfe,
-                                "dips_below_bank": dips}, 5, prove)
-        return pnl, rule
+    def sim(mfe, actual, dips=None, buffer=None):
+        t = {"pnl": actual, "mfe_points": mfe, "dips_below_bank": dips,
+             "bank_rung": 5}
+        if buffer is None:
+            return legacy_exit(t)
+        return legacy_exit(t, buffer)
 
-    # 10a. the exact shape that fooled us: peaked above +5 but broke it on the
-    # way back down. mfe >= rung AND actual < rung PROVES the crossing, so the
-    # stop is booked at the rung less the fill allowance - never at the peak.
-    check("dipped trade exits at +5 - buffer, NOT at its peak",
-          sim(8.8, -0.45), (4.0, "confirmed_help"))
-    check("...even with a big peak", sim(18.0, 3.0), (4.0, "confirmed_help"))
+    # 10a. the exact shape that fooled us: price was above the level-1 rung
+    # (it was above +5, which is when that rung parked) and the real exit
+    # came back below it, so the crossing is PROVED. The legacy stop fills at
+    # the rung less the fill allowance - entry+1 less the buffer, i.e. bare
+    # scratch after slippage, never at the peak.
+    check("dipped trade closes at the +1 rung less buffer, NOT at its peak",
+          sim(8.8, -0.45), (0.0, "confirmed_help"))
+    # With mfe high but the real exit ABOVE the level-1 rung there is no
+    # proof the rung ever traded back through it - no claim at all.
+    check("...with the real exit above the rung: no_path",
+          sim(18.0, 3.0), (3.0, "no_path"))
 
-    # 10b. the real exit came in ABOVE the rung: no proof it ever traded back
-    # through, so keep the real result rather than invent a fill.
+    # 10b. the real exit came in ABOVE any proven level: keep the real result
+    # rather than invent a fill.
     check("clean runner keeps its real result", sim(22.1, 14.85), (14.85, "no_path"))
 
-    # 10c. exited just under the rung, so the crossing is still provable
-    check("touched and came back exits at +5 - buffer", sim(7.0, 0.9), (4.0, "confirmed_help"))
+    # 10c. the real exit sat between the bank (+5, where it actually filled)
+    # and the legacy rung (+1): the legacy stop is parked lower and never
+    # provably fired, so the legacy book keeps the real result too... unless
+    # the real exit is below +1, in which case the crossing IS provable and
+    # the legacy fill (scratch) lands BELOW the real one - a booked loss.
+    check("real exit just below the rung proves the cross - legacy loses here",
+          sim(7.0, 0.9), (0.0, "confirmed_hurt"))
 
-    # 10d. never reached the rung at all -> untouched
+    # 10d. never reached the trigger at all -> untouched: both ladders ran
+    # their initial stop, so there is nothing to compare.
     check("never reached +5 is untouched", sim(1.0, -4.45), (-4.45, "untouched"))
 
     # 10e. exit at or above the rung with no tick path => genuinely unknowable,
-    # never presented as measured
-    pnl, rule = smart_exit({"pnl": 9.0, "mfe_points": 8.0, "dips_below_bank": None}, 5, 10)
+    # never presented as measured (bank-first counterfactual here: a trade
+    # logged before the switch, so the live ladder is the would-have)
+    pnl, rule = bank_first_exit({"pnl": 9.0, "mfe_points": 8.0, "dips_below_bank": None}, 5)
     check("unprovable with no path is labelled no_path", rule, "no_path")
     check("...and is_measured() says so", is_measured(rule), False)
     check("...and it keeps the real result", pnl, 9.0)
@@ -436,12 +456,13 @@ def main():
                       p, actual)
 
     # 10h. a buffer of 0 must be honoured exactly
-    p, r = smart_exit({"pnl": -0.45, "mfe_points": 8.8}, 5, 10, 0)
-    check("zero buffer exits exactly at the rung", p, 5.0)
+    p, r = sim(8.8, -0.45, buffer=0)
+    check("zero buffer exits exactly at the +1 rung", p, 1.0)
 
-    # 10i. the ladder must ratchet, not sit flat: this is the whole point of the
-    # change. A path that runs to +10.5 and pulls back must bank +10, not +5.
-    from smart_pnl import replay_trailing_ladder
+    # 10i. the live ladder must ratchet, not sit flat: this is the whole point
+    # of the bank-first rule. A path that runs to +10.5 and pulls back must
+    # bank +10, not +5.
+    from exit_rules import replay_trailing_ladder
     run = replay_trailing_ladder([105.10, 110.50, 106.00, 104.50], 100.0)
     check("ladder: peak +10.5 locks rung at entry+10", run["stop_path"][1], 110.0)
     check("ladder: pullback banks +6, not the flat +5", run["exit_points"], 6.0)
@@ -486,7 +507,7 @@ def main():
     # a second plain import would make Python treat it as local-only everywhere.
     from core.trade_logger import TradeLogger as PathLogger
     from trade_log_reader import load_all_trades, _parse_tick_path
-    from smart_pnl import replay_trailing_ladder
+    from exit_rules import replay_trailing_ladder
     tl = PathLogger("test", "PATHSYM")
     tl.log_entry("PATHSYM", 100.0, 96.0, t0)
     wig = [100.0, 102.0, 104.0, 105.3, 104.4, 106.0, 110.0, 112.0, 108.0, 109.5]
@@ -538,23 +559,31 @@ def main():
     check("...so the pullback banks +6 rather than +5", r4["exit_points"], 6.0)
 
     # ---------- 12. the definitive per-trade verdict ----------
-    # The one number that answers "did it actually work": for every trade with a
-    # recorded tick path, did the +5 stop have helped, hurt, or done nothing?
-    # Replayed tick by tick, with the evidence attached so it can be re-checked.
+    # The one number that answers "did it actually work". Two counterfactuals:
+    # bank_first_exit replays the LIVE ladder over a trade (the would-have on
+    # archive rows); legacy_exit replays the retired ladder over a trade that
+    # ran on the live rule (bank_rung=5). Both replayed tick by tick, with the
+    # evidence attached so they can be re-checked.
     print("\n12) definitive verdict from replayed ticks")
-    import smart_pnl as sp
+    import exit_rules as er
 
     def verdict_for_trade(entry, ticks, actual):
         t = {"pnl": actual, "mfe_points": round(max(ticks) - entry, 2),
              "entry_price": entry, "dips_below_bank": 0, "tick_path": ticks}
-        return sp.smart_exit(t, 5, 10)
+        return er.bank_first_exit(t, 5)
+
+    def legacy_verdict(entry, ticks, actual):
+        t = {"pnl": actual, "mfe_points": round(max(ticks) - entry, 2),
+             "entry_price": entry, "dips_below_bank": 0, "tick_path": ticks,
+             "bank_rung": 5}
+        return er.legacy_exit(t)
 
     # peaked 8 but broke +5 on the way up -> the stop fires early, and that is
     # still BETTER than exiting at scratch.
     p1, r1 = verdict_for_trade(100.0, [100.0, 105.2, 104.4, 108.0, 101.0], 0.9)
     check("dipped trade: replay rule fires", r1, "ladder_help")
     check("dipped trade: exits at the dip, not the peak", p1, 4.4)
-    check("dipped trade: verdict is helped", sp.verdict_for(r1), "helped")
+    check("dipped trade: verdict is helped", er.verdict_for(r1), "helped")
 
     # ran away cleanly: the ladder ratchets to entry+10 on the way up, then the
     # path pulls back to exactly +8 - the same tick and price the real exit used.
@@ -562,7 +591,7 @@ def main():
     p2, r2 = verdict_for_trade(100.0, [100.0, 106.0, 110.0, 108.0], 8.0)
     check("clean runner: replay rule", r2, "ladder_same")
     check("clean runner: lands on the same +8 fill", p2, 8.0)
-    check("clean runner: verdict is same", sp.verdict_for(r2), "same")
+    check("clean runner: verdict is same", er.verdict_for(r2), "same")
 
     # the dangerous case: it ran to +20 but only after dipping, and the REAL
     # exit beat the hypothetical ladder. The loss is booked, not hidden - this
@@ -570,19 +599,35 @@ def main():
     p3, r3 = verdict_for_trade(100.0, [100.0, 105.2, 104.4, 120.0, 112.0], 12.0)
     check("real exit beat the sim: rule flags hurt", r3, "ladder_hurt")
     check("real exit beat the sim: books the LOSS, not the real number", p3, 4.4)
-    check("real exit beat the sim: verdict is hurt", sp.verdict_for(r3), "hurt")
+    check("real exit beat the sim: verdict is hurt", er.verdict_for(r3), "hurt")
+
+    # legacy ladder against a trade run on the bank-first rule: the wiggle
+    # dug between the two rungs (+1 parked vs +5 banked) and recovered, so
+    # the retired rule - still holding at +1 - rides the recovery to +7
+    # while the bank-first stop filled at +4.6.
+    p6, r6 = legacy_verdict(100.0, [100.0, 105.5, 104.6, 101.5, 107.0], 4.6)
+    check("legacy ladder survives the mid-rung wiggle", r6, "ladder_help")
+    check("...and banks the recovered +7, not the bank's +4.6", p6, 7.0)
+    check("...verdict is helped (legacy beat the live rule)", er.verdict_for(r6), "helped")
+
+    # and a trade that sat between the rungs and died there: the legacy stop
+    # filled at bare charges while the bank-first exit took +5-ish.
+    p7, r7 = legacy_verdict(100.0, [100.0, 105.2, 104.8, 103.0, 102.0, 101.0, 108.0], 4.8)
+    check("legacy cannot protect the +5 fill", r7, "ladder_hurt")
+    check("...books the legacy +1 fill, a loss of ~4 points", p7, 1.0)
+    check("...verdict is hurt", er.verdict_for(r7), "hurt")
 
     # no ticks at all -> must never be reported as replayed
-    p4, r4 = sp.smart_exit({"pnl": 0.9, "mfe_points": 8.0, "dips_below_bank": None}, 5, 10)
-    check("no ticks => not replayed", sp.is_replayed(r4), False)
+    p4, r4 = er.bank_first_exit({"pnl": 0.9, "mfe_points": 8.0, "dips_below_bank": None}, 5)
+    check("no ticks => not replayed", er.is_replayed(r4), False)
     check("no ticks => provable from the crossing, not replayed", r4, "confirmed_help")
-    check("no ticks => but still measured", sp.is_measured(r4), True)
+    check("no ticks => but still measured", er.is_measured(r4), True)
 
     # and a genuinely unprovable no-tick row must stay unknown
-    p5, r5 = sp.smart_exit({"pnl": 9.0, "mfe_points": 8.0, "dips_below_bank": None}, 5, 10)
+    p5, r5 = er.bank_first_exit({"pnl": 9.0, "mfe_points": 8.0, "dips_below_bank": None}, 5)
     check("unprovable, no ticks => no_path", r5, "no_path")
-    check("...never presented as replayed", sp.is_replayed(r5), False)
-    check("...and never presented as measured", sp.is_measured(r5), False)
+    check("...never presented as replayed", er.is_replayed(r5), False)
+    check("...and never presented as measured", er.is_measured(r5), False)
 
     db_mod.DB_PATH = real_db
     shutil.rmtree(tmpdir, ignore_errors=True)

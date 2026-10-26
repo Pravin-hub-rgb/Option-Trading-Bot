@@ -40,6 +40,10 @@ class DataStreamer:
         self.session_name = session_name
         self.running = True
         self._stop_requested = False
+        # Cumulative realised P&L (points) across all instruments this
+        # session. Only read by the Day Stop knob (day_stop_at); when that
+        # knob is 0, the default, nothing ever consults this.
+        self.day_realized = 0.0
         self.streamer = None
         self.last_running_print = {}
         self.tick_count = {}
@@ -108,6 +112,7 @@ class DataStreamer:
                         initial_sl_points=s.get('initial_sl_points'),
                         trailing_trigger=s.get('trailing_trigger'),
                         trailing_step=s.get('trailing_step'),
+                        bank_rung=s.get('bank_rung'),
                     ),
                     'trade_logger': TradeLogger(
                         session_name=session_name,
@@ -115,6 +120,7 @@ class DataStreamer:
                         sel_premium=self._selection_for(inst)[0],
                         sel_tier=self._selection_for(inst)[1],
                         sel_at=self._selection_for(inst)[2],
+                        bank_rung=s.get('bank_rung'),
                     ),
                     'trades_taken': 0,
                     'trade_slot': 1,
@@ -141,6 +147,17 @@ class DataStreamer:
         s = get_as_dict()
         end = min(s.get('entry_window_end', '15:00'), s.get('eod_exit_time', '14:59'))
         return s.get('strategy_start', '09:15') <= current_time <= end
+
+    def _day_stop_block(self):
+        """True when the cumulative realised day P&L has crossed the Day Stop.
+
+        day_stop_at == 0 (the default) keeps this permanently False, so the
+        live behaviour only changes when the user opts in."""
+        s = get_as_dict()
+        limit = float(s.get('day_stop_at', 0) or 0)
+        if limit <= 0:
+            return False
+        return self.day_realized >= limit
 
     def _on_candle_event(self, inst_type, event_type, candle):
         if self.live_feed_server:
@@ -338,6 +355,18 @@ class DataStreamer:
         
         comp['strategy'].reset()
 
+        # Bank the realised P&L into the day accumulator. The Day Stop knob
+        # (day_stop_at) is 0 by default, so this check is inert unless the
+        # user opts in from settings.
+        self.day_realized += trade_summary['pnl']
+        s = get_as_dict()
+        day_stop = float(s.get('day_stop_at', 0) or 0)
+        if day_stop > 0 and self.day_realized >= day_stop:
+            for c in self.components.values():
+                c['can_trade'] = False
+            print(f"[DAY STOP] Day realized {self.day_realized:+.2f} >= limit {day_stop:+.2f} "
+                  f"- no more trades today")
+
         slot = comp['trade_slot']
         outcome = _classify_pnl(trade_summary['pnl'])
         state_map = {'win': 'exited_win', 'loss': 'exited_loss', 'breakeven': 'exited_breakeven'}
@@ -447,7 +476,7 @@ class DataStreamer:
             if sl_moved:
                 print(f"[{inst_type}] SL moved to {new_sl:.2f} (LTP: {ltp:.2f})")
         
-        elif comp['can_trade'] and self.is_entry_window_open():
+        elif comp['can_trade'] and self.is_entry_window_open() and not self._day_stop_block():
             entry_signal = comp['strategy'].check_entry(ltp, candle_history)
             
             if entry_signal and entry_signal['enter']:

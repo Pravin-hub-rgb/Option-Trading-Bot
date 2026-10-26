@@ -11,7 +11,8 @@ IST = pytz.timezone('Asia/Kolkata')
 
 
 class TradeLogger:
-    def __init__(self, session_name, symbol, sel_premium=None, sel_tier=None, sel_at=None):
+    def __init__(self, session_name, symbol, sel_premium=None, sel_tier=None, sel_at=None,
+                 bank_rung=None):
         self.symbol = symbol
         self.session_name = session_name
         # What the strike selector paid when it picked THIS option, and when.
@@ -22,14 +23,18 @@ class TradeLogger:
         self.sel_premium = sel_premium
         self.sel_tier = sel_tier
         self.sel_at = sel_at
+        # The bank_rung setting in force at construction time. Written onto
+        # every entry so the audit trail can tell which first-rung arithmetic
+        # actually governed the trade once the old ladder is retired.
+        self.bank_rung = bank_rung
         init_db()
 
     def log_entry(self, symbol, entry_price, stop_loss, entry_time):
         conn = get_conn()
         conn.execute("""
             INSERT INTO trades (symbol, entry_time, entry_price, stop_loss,
-                                sel_premium, sel_tier, sel_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                                sel_premium, sel_tier, sel_at, bank_rung)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             symbol,
             entry_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
@@ -38,6 +43,7 @@ class TradeLogger:
             self.sel_premium,
             self.sel_tier,
             self.sel_at,
+            self.bank_rung,
         ))
         conn.commit()
         conn.close()

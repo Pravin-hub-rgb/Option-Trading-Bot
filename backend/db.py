@@ -59,6 +59,11 @@ MIGRATION_COLUMNS = [
     ("sel_premium", "REAL"),   # premium of THIS option at selection time
     ("sel_tier", "INTEGER"),   # which basket won: 100 / 80 / 50
     ("sel_at", "TEXT"),        # selection timestamp, for drift vs entry_time
+    # Which first-rung arithmetic governed this trade, as configured when the
+    # entry was logged: 1 = the old charges-only bank, 5 = the bank-first
+    # rung. NULL on rows logged before the switch, so "legacy book" rather
+    # than a wrong number is the honest label for them.
+    ("bank_rung", "INTEGER"),
 ]
 
 

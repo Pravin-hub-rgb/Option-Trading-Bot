@@ -4,8 +4,7 @@ import type {
   DayPnl,
   TradeStats,
   SettingMeta,
-  SmartPnlReport,
-  MfeReport,
+  ExitRulesReport,
   StrategyRow,
   SweepRow,
   RiskReport,
@@ -44,28 +43,14 @@ export async function fetchTradePnl(year?: number): Promise<{ days: DayPnl[] }> 
   return res.json();
 }
 
-// --- Shadow / MFE reports (read-only; these never affect the running bot) ---
+// --- Exit-rules report (read-only; this never affects the running bot) -------
 
-export async function fetchSmartPnl(
-  year?: number,
-  bankAt = 5,
-  proveAt = 10,
-  dayStopAt = 0
-): Promise<SmartPnlReport> {
-  const params = new URLSearchParams({
-    bank_at: String(bankAt),
-    prove_at: String(proveAt),
-  });
+export async function fetchExitRules(year?: number, dayStopAt = 0): Promise<ExitRulesReport> {
+  const params = new URLSearchParams();
   // 0 (or anything falsy) means "no day stop" - the live default.
   if (dayStopAt) params.set("day_stop_at", String(dayStopAt));
   if (year) params.set("year", String(year));
-  const res = await fetch(`${API}/api/report/smart-pnl?${params}`);
-  return res.json();
-}
-
-export async function fetchMfeReport(year?: number): Promise<MfeReport> {
-  const params = year ? `?year=${year}` : "";
-  const res = await fetch(`${API}/api/report/mfe${params}`);
+  const res = await fetch(`${API}/api/report/exit-rules?${params}`);
   return res.json();
 }
 

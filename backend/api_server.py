@@ -10,8 +10,8 @@ import uvicorn
 import requests
 from settings_db import get_settings_meta, save_setting, reset_settings, load_settings, get_setting
 from trade_log_reader import load_all_trades, load_trade_pnl, load_trade_stats
-from smart_pnl import (
-    smart_pnl_report,
+from exit_rules import (
+    exit_rules_report,
     mfe_report,
     strategy_comparison,
     threshold_sweep,
@@ -64,17 +64,16 @@ def create_app(bot_manager):
     async def get_trades_stats(year: int | None = None):
         return load_trade_stats(year=year)
 
-    @app.get("/api/report/smart-pnl")
-    async def get_smart_pnl(year: int | None = None, bank_at: int = 5,
-                            prove_at: int = 10, day_stop_at: int = 0):
+    @app.get("/api/report/exit-rules")
+    async def get_exit_rules_report(year: int | None = None, day_stop_at: int = 0):
         """
-        Read-only shadow report. Mirrors the LIVE rule the bot actually runs:
-        the first stop-loss rung is bank_at, and there is no day stop unless
-        day_stop_at is given explicitly.
+        Exit-rules audit, read-only. The LIVE rule is the bank-first ladder
+        (first rung at entry + bank_rung, from settings); the report measures
+        the LEGACY counterfactual - the old charges-only ladder (first rung
+        entry+1) - and answers "did retiring it cost anything?". No day stop
+        unless day_stop_at is given explicitly.
         """
-        return smart_pnl_report(year=year, bank_at=bank_at,
-                                prove_at=prove_at,
-                                day_stop_at=day_stop_at or None)
+        return exit_rules_report(year=year, day_stop_at=day_stop_at or None)
 
     @app.get("/api/report/mfe")
     async def get_mfe(year: int | None = None):
@@ -128,15 +127,17 @@ def create_app(bot_manager):
     @app.get("/api/trades/{trade_id}/path")
     async def trade_path(trade_id: int):
         """
-        The real entry-to-exit tick path, plus where a stop parked at +5 would
-        have fired.
+        The real entry-to-exit tick path, with the bank-first ladder replayed
+        over it: where a stop parked at the bank (first rung entry + bank_rung,
+        then one more every step) would have fired.
 
-        This is the evidence behind the study: the chart draws the actual ticks
-        and marks the exact tick where the hypothetical exit would have
+        This is the evidence behind the exit-rules audit: the chart draws the
+        actual ticks and marks the exact tick where the rung exit would have
         happened, instead of inferring it from the peak. Read-only.
         """
         from trade_log_reader import load_all_trades
-        from smart_pnl import EXIT_BUFFER_PTS, replay_trailing_ladder
+        from settings_db import get_as_dict
+        from exit_rules import EXIT_BUFFER_PTS, replay_trailing_ladder
 
         trade = next((t for t in load_all_trades() if t.get("id") == trade_id), None)
         if trade is None:
@@ -156,12 +157,14 @@ def create_app(bot_manager):
             }
 
         entry = trade["entry_price"]
-        # Replayed over the real ticks, not inferred from the peak. This is the
-        # difference between "it would have banked 8" and "it would have been
-        # stopped at tick 47 on the way back down". The stop is a RATCHETING
-        # LADDER (first rung +5, then +5 steps), so stop_path carries the rung
-        # level at every tick and the chart draws the staircase.
-        sim = replay_trailing_ladder(ticks, entry, first_rung=5.0, step=5.0)
+        # The rung level the trade was governed by: its own bank_rung when the
+        # audit column has it, else the live setting (the would-have view for
+        # archive trades). Replayed over the real ticks, not inferred from the
+        # peak - the stop is a RATCHETING LADDER, so stop_path carries the
+        # rung level at every tick and the chart draws the staircase.
+        first_rung = float(trade.get("bank_rung")
+                           or get_as_dict().get('bank_rung') or 5.0)
+        sim = replay_trailing_ladder(ticks, entry, first_rung, 5.0)
 
         return {
             "id": trade_id,

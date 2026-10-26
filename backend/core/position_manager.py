@@ -4,21 +4,24 @@ Position Manager: Handles single position lifecycle with trailing stop loss
 from datetime import datetime
 
 class PositionManager:
-    def __init__(self, initial_sl_points=4, 
-                 trailing_trigger=5, 
-                 trailing_step=5):
+    def __init__(self, initial_sl_points=4,
+                 trailing_trigger=5,
+                 trailing_step=5,
+                 bank_rung=5):
         """
         Initialize Position Manager
-        
+
         Args:
             initial_sl_points: Points below entry for initial SL (default: 4)
             trailing_trigger: Profit points to trigger first SL move (default: 5)
             trailing_step: Points to trail by (default: 5)
+            bank_rung: Points above entry the first rung banks (default: 5)
         """
         self.position = None
         self.initial_sl_points = initial_sl_points
         self.trailing_trigger = trailing_trigger
         self.trailing_step = trailing_step
+        self.bank_rung = bank_rung
     
     def is_in_position(self):
         """Check if currently holding a position"""
@@ -139,44 +142,47 @@ class PositionManager:
         """
         Update trailing stop loss based on current price.
 
-        THIS IS THE LIVE EXIT LOGIC and it is the original, unchanged ladder:
-        once the trade is up by `trailing_trigger`, the stop ratchets up in
-        `trailing_step` increments and never moves back down. The first rung
-        only covers charges (entry+1).
+        THIS IS THE LIVE EXIT LOGIC, the bank-first ratcheting ladder: the
+        moment profit reaches `bank_rung` (default 5, so the trade can bank
+        that much), the stop parks at entry + bank_rung, and every further
+        `trailing_step` of profit locks one more rung. It never moves back
+        down.
 
-        The "what if we banked earlier" study does NOT live here. It lives in
-        smart_pnl.py as a read-only simulation. See track_price() for the
-        observation-only DIP_WATCH_LEVEL threshold.
-        
+        The arithmetic MIRRORS the replay engine (exit_rules.py)
+        replay_trailing_ladder tick for tick, so the live rule is exactly the
+        ladder the study measured: the stop parks at the floor of the current
+        5-point band - e.g. profit +10.5 parks +10, profit +7 parks +5.
+
+        Counterfactual comparisons of the old rule live in exit_rules.py as
+        a read-only simulation. See track_price() for the observation-only
+        DIP_WATCH_LEVEL threshold.
+
         Args:
             current_ltp: Current last traded price
-        
+
         Returns:
             tuple: (sl_moved: bool, new_sl: float)
         """
         if not self.position:
             return False, None
-        
+
         from settings_db import get_as_dict
         s = get_as_dict()
-        trailing_trigger = int(s.get('trailing_trigger', self.trailing_trigger))
         trailing_step = int(s.get('trailing_step', self.trailing_step))
-        
+        bank_rung = float(s.get('bank_rung', self.bank_rung) or 5.0)
+
         self.position['last_ltp'] = current_ltp
-        
+
         profit = current_ltp - self.position['entry_price']
         old_sl = self.position['stop_loss']
-        
+
         # Calculate new SL based on profit milestones
-        if profit >= trailing_trigger:
-            # Reached at least the trigger. Count how many milestones passed.
-            milestones_passed = int((profit - trailing_trigger) / trailing_step)
-            # The first milestone moves the stop to true break-even
-            # (entry + 1 pt, to cover brokerage/STT/charges); higher rungs
-            # follow the normal trailing step.
-            new_sl = self.position['entry_price'] + (
-                1.0 if milestones_passed == 0 else milestones_passed * trailing_step
-            )
+        if profit >= bank_rung:
+            # One rung per trailing_step of profit past the bank. The stop
+            # lands at the floor of the current profit band, so it can never
+            # be armed above the price that set it.
+            milestones = int((profit - bank_rung) / trailing_step)
+            new_sl = self.position['entry_price'] + bank_rung + milestones * trailing_step
             
             # Only update if new SL is higher
             if new_sl > self.position['stop_loss']:

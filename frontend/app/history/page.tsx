@@ -11,7 +11,6 @@ export default function HistoryPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [stats, setStats] = useState<TradeStats | null>(null);
   const [book, setBook] = useState<RuleBook | null>(null);
-
   useEffect(() => {
     fetchTradeStats(year)
       .then(setStats)
@@ -25,24 +24,45 @@ export default function HistoryPage() {
     setRefreshKey((k) => k + 1);
   }, []);
 
+  const tol = stats?.breakeven_tolerance ?? 1;
+  // The books, bucketed with the same tolerance the stats row uses, so the
+  // two engines can be read against each other without any tolerance drift.
+  const bookRows = book?.rows ?? [];
+  const bookProfitable = bookRows.filter((r) => (r.rule_pnl ?? 9) > tol).length;
+  const bookBreakeven = bookRows.filter(
+    (r) => Math.abs(r.rule_pnl ?? 9) <= tol,
+  ).length;
+  const bookLosing = bookRows.filter((r) => (r.rule_pnl ?? -9) < -tol).length;
+  const bookWinRate = bookRows.length
+    ? (Math.round((100 * bookProfitable) / bookRows.length * 10) / 10)
+    : null;
+  // The exact phenomenon the switch was for: breakeven exits that the ratchet
+  // would have wrung a +5-band fill out of.
+  const beConverted = bookRows.filter(
+    (r) => Math.abs(r.actual_pnl ?? 9) <= tol && (r.rule_pnl ?? 0) > tol,
+  ).length;
+  const beTotal = bookRows.filter((r) => Math.abs(r.actual_pnl ?? 9) <= tol).length;
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <h1 className="text-lg font-semibold">Trade History</h1>
 
-      {/* Rule book strip: today's ladder replayed over every settled trade.
-          On archive rows this is the WOULD-HAVE (the old rule made the actual
-          money); once post-switch trades accrue it doubles as the live
-          mirror, and actual converges to it. The comparison against the
-          as-traded book sits in the sub line. */}
-      <div
-        className="card p-4 border-l-4"
-        style={{ borderLeftColor: book && book.net_rupees >= 0 ? "#10b981" : "#ef4444" }}
-      >
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <div className="text-xs text-[#64748b] uppercase tracking-wider">
-              Rule book · today&apos;s ladder, would-have over past trades
-            </div>
+      {/* THE BOOKS. Same trades, two exit rules, side by side. The rule book
+          (today's bank-first engine) is the default view; the retired engine's
+          as-traded record sits beside it because those lost breakeven exits
+          still happened and the comparison is the whole point. On archive rows
+          the rule book is the would-have; once post-switch trades accrue it
+          doubles as the live mirror and actual converges to it. */}
+      <div className="card p-4">
+        <div className="text-xs text-[#64748b] uppercase tracking-wider mb-3">
+          The books · {book ? `${book.trades} trades, two exit rules` : "…"}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div
+            className="card p-3 border-l-4"
+            style={{ borderLeftColor: book && book.net_rupees >= 0 ? "#10b981" : "#ef4444" }}
+          >
+            <div className="text-xs text-[#10b981] font-semibold">Rule book · today&apos;s engine</div>
             <div
               className="text-3xl font-mono font-semibold mt-1"
               style={{ color: book && book.net_rupees >= 0 ? "#10b981" : "#ef4444" }}
@@ -51,15 +71,37 @@ export default function HistoryPage() {
             </div>
             <div className="text-[0.65rem] text-[#64748b] mt-1">
               {book
-                ? `first rung banks +${book.bank_at}, then every +5 · what actually happened: ${formatRs(book.actual_net_rupees)} · expected gap: ${formatRs(book.delta_net)} on ${book.delta_points >= 0 ? "+" : ""}${book.delta_points} pts`
+                ? `bank-first · first rung banks +${book.bank_at}, then every +5 · ${bookProfitable} profitable / ${bookBreakeven} BE / ${bookLosing} L · ${bookWinRate ?? "—"}% win · ${book.gross_points >= 0 ? "+" : ""}${book.gross_points} pts`
+                : "…"}
+            </div>
+          </div>
+          <div className="card p-3 border-l-4" style={{ borderLeftColor: "#64748b" }}>
+            <div className="text-xs text-[#64748b] font-semibold">Retired engine · as-traded</div>
+            <div className="text-3xl font-mono font-semibold mt-1 text-[#94a3b8]">
+              {book ? formatRs(book.actual_net_rupees) : "—"}
+            </div>
+            <div className="text-[0.65rem] text-[#64748b] mt-1">
+              {book
+                ? `first rung +1 · ${stats?.profitable ?? "—"} profitable / ${stats?.breakeven ?? "—"} BE / ${stats?.losing ?? "—"} L · ${stats?.win_rate ?? "—"}% win · ${book.actual_gross_points >= 0 ? "+" : ""}${book.actual_gross_points} pts`
                 : "…"}
             </div>
           </div>
         </div>
+        <div className="mt-3 text-[0.65rem] text-[#64748b]">
+          {book
+            ? `the gap the switch closes: ${formatRs(book.delta_net)} on ${book.delta_points >= 0 ? "+" : ""}${book.delta_points} pts${beTotal ? ` · ${beConverted} of the ${beTotal} breakeven exits bank the +5 ratchet instead` : ""}`
+            : "…"}
+        </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
+      {/* As-traded stats row: real cash under the RETIRED engine. Fees are
+          money actually paid; the net is what the old ladder actually left on
+          the table. Read it against the rule book above, not as the default. */}
+      <div>
+        <div className="text-xs text-[#64748b] mb-2">
+          Actual money record · retired engine (what really hit the account)
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
         <StatCard label="Total Trades" value={stats?.total_trades ?? "—"} />
         <StatCard label="Profitable" value={stats?.profitable ?? "—"} color="#10b981" />
         <StatCard label="Breakeven" value={stats?.breakeven ?? "—"} color="#f59e0b" />
@@ -73,6 +115,7 @@ export default function HistoryPage() {
         />
         <StatCard label="Fees" value={formatRs(stats?.total_charges, false)} color="#94a3b8" />
         <StatCard label="Days Traded" value={stats?.days_traded ?? "—"} color="#6366f1" />
+        </div>
       </div>
 
       {/* Calendar */}

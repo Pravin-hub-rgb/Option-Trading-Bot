@@ -7,10 +7,18 @@ import TradePathChart from "./TradePathChart";
 import type { TradeEntry, ExitRulesTrade } from "../lib/types";
 
 type RowInfo = {
+  // The legacy pass: what the retired rule would have banked (the audit once
+  // post-switch trades accrue; a mirror on archive rows).
   deltaNet: number | null;
   legacyNet: number | null;
   proof: ExitRulesTrade["proof"];
   rule: string;
+  // The rule pass: what TODAY's ladder would have banked - the would-have on
+  // archive rows (the study), a mirror on post-switch rows.
+  ruleNet: number | null;
+  ruleDelta: number | null;
+  ruleProof: ExitRulesTrade["proof"];
+  ruleFired: string;
 };
 
 export default function TradeLogsTable({
@@ -49,6 +57,26 @@ export default function TradeLogsTable({
             legacyNet: t.legacy_net,
             proof: t.proof,
             rule: t.rule_fired,
+            ruleNet: null,
+            ruleDelta: null,
+            ruleProof: t.proof,
+            ruleFired: t.rule_fired,
+          };
+        }
+        // The rule pass is the same trades replayed through today's ladder.
+        // Overlay it so each row carries both books side by side.
+        for (const b of r.rule_book?.rows ?? []) {
+          if (b.id === null) continue;
+          const cur = map[b.id];
+          map[b.id] = {
+            deltaNet: cur?.deltaNet ?? null,
+            legacyNet: cur?.legacyNet ?? null,
+            proof: cur?.proof ?? b.proof,
+            rule: cur?.rule ?? b.rule_fired,
+            ruleNet: b.rule_net ?? null,
+            ruleDelta: b.delta_net,
+            ruleProof: b.proof,
+            ruleFired: b.rule_fired,
           };
         }
         setInfo(map);
@@ -128,6 +156,13 @@ export default function TradeLogsTable({
                 Legacy&nbsp;book
               </th>
             )}
+            <th
+              className="text-right py-2 pr-3 border-l border-white/10"
+              style={{ color: "#818cf8" }}
+              title="What TODAY's ladder (first rung banks entry+5, then every +5) would have BANKED on this trade, replayed over the real recorded ticks. Compare it against the Net column. The small figure underneath is the difference against what we actually banked. For trades run before the bank-first switch this is the would-have study; for post-switch trades the ladder IS reality, so this simply mirrors the Net column."
+            >
+              Rule&nbsp;book
+            </th>
             <th className="py-2 w-8">
               <span className="sr-only">Show price path</span>
             </th>
@@ -190,6 +225,40 @@ export default function TradeLogsTable({
               m?.legacyNet == null || m.legacyNet === 0
                 ? "#64748b"
                 : m.legacyNet > 0
+                  ? "#10b981"
+                  : "#ef4444";
+            // Rule book: what TODAY's ladder would have banked on this trade.
+            // Archive rows carry the would-have study; post-switch rows mirror
+            // reality (the ladder IS what ran), so they read "same" like the
+            // old archive did under the retired rule.
+            const bookRule = m?.ruleFired ?? "";
+            const bd = m?.ruleDelta;
+            const bookMoved = bd != null && Math.abs(bd) > 0.5;
+            const bookSame =
+              !bookMoved &&
+              (bookRule === "" ||
+                bookRule === "survived" ||
+                bookRule === "untouched" ||
+                bookRule === "unknown-mfe" ||
+                bookRule === "as_traded" ||
+                bookRule === "ladder_same" ||
+                bookRule === "ladder_help" ||
+                bookRule === "ladder_hurt" ||
+                bookRule === "confirmed_same" ||
+                bookRule === "confirmed_help" ||
+                bookRule === "confirmed_hurt" ||
+                bookRule === "skipped" ||
+                bookRule === "current");
+            const bookTone = !bookMoved ? "#64748b" : bd > 0 ? "#10b981" : "#ef4444";
+            const hasBookCounterfactual =
+              m != null &&
+              m.ruleNet != null &&
+              (m.ruleProof === "tick" || m.ruleProof === "crossing");
+            const bookInferred = m?.ruleProof === "crossing";
+            const bookNetTone =
+              m?.ruleNet == null || m.ruleNet === 0
+                ? "#64748b"
+                : m.ruleNet > 0
                   ? "#10b981"
                   : "#ef4444";
             return (
@@ -276,6 +345,41 @@ export default function TradeLogsTable({
                 )}
               </td>
               )}
+              {/* ---- rule book: what TODAY's ladder would have banked ---- */}
+              <td
+                className="py-2 pr-3 text-right font-mono font-semibold border-l border-white/10"
+                style={{ color: hasBookCounterfactual ? bookNetTone : bookTone }}
+                title={
+                  hasBookCounterfactual
+                    ? bookInferred
+                      ? `Today's ladder would have netted Rs ${m?.ruleNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked - a difference of ${bd != null && bd < 0 ? "-" : "+"}Rs ${Math.abs(bd ?? 0).toFixed(0)}. ESTIMATED: the bank was provably crossed, but exactly where the stop filled is an assumption, so this is a close estimate, not a measurement.`
+                      : `Today's ladder would have netted Rs ${m?.ruleNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked - a difference of ${bd != null && bd < 0 ? "-" : "+"}Rs ${Math.abs(bd ?? 0).toFixed(0)}. Replayed tick by tick over the prices the bot actually received.`
+                    : m?.ruleProof === "assumed"
+                      ? "No counterfactual is possible for this trade: without a recorded price path there is nothing to replay, and the peak does not prove where the stop would have filled."
+                      : m?.ruleProof === "live"
+                        ? "This trade ran under exactly this ladder, so the rule book mirrors reality."
+                        : "The bank-first ladder provably would not have changed this exit."
+                }
+              >
+                {hasBookCounterfactual && m?.ruleNet != null ? (
+                  <div className="leading-tight">
+                    <div className={bookInferred ? "italic opacity-60" : undefined}>
+                      {m.ruleNet >= 0 ? "+" : "-"}₹{Math.abs(m.ruleNet).toFixed(0)}
+                    </div>
+                    {bookMoved && bd != null && (
+                      <div className="text-[9px] font-normal" style={{ color: bookTone }}>
+                        {bd >= 0 ? "+" : "-"}₹{Math.abs(bd).toFixed(0)}
+                      </div>
+                    )}
+                  </div>
+                ) : m?.ruleProof === "assumed" ? (
+                  <span className="font-normal">—</span>
+                ) : bookSame ? (
+                  <span className="font-normal">same</span>
+                ) : (
+                  <span className="font-normal">—</span>
+                )}
+              </td>
               <td className="py-2">
                 <button
                   onClick={() => setOpenPath(openPath === t.id ? null : t.id)}

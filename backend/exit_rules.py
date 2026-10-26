@@ -974,6 +974,11 @@ def exit_rules_report(year=None, day_stop_at=0):
             "actual_net_rupees": rule_sum["actual_net_rupees"],
             "delta_points": round(rule_sum["gross_points"] - rule_sum["actual_gross_points"], 2),
             "delta_net": round(rule_sum["net_rupees"] - rule_sum["actual_net_rupees"], 2),
+            # The book row by row, so the trade table can show what today's
+            # ladder would have banked on each trade individually: the
+            # would-have on archive rows (under `rule_pnl` / `rule_net`), a
+            # mirror of reality on post-switch rows.
+            "rows": sorted(bank_rows, key=lambda r: r["entry_time"], reverse=True),
         },
         "monthly": monthly,
         "mfe_coverage": mfe_report(year=year),

@@ -80,6 +80,9 @@ export interface ExitRulesTrade {
   actual_net: number | null;
   legacy_pnl: number | null;
   legacy_net: number | null;
+  /** Report rows swap these for the bank-first pass (rule_book.rows). */
+  rule_pnl?: number | null;
+  rule_net?: number | null;
   delta_points: number | null;
   delta_net: number | null;
   rule_fired: string;
@@ -187,6 +190,9 @@ export interface RuleBook {
   actual_net_rupees: number;
   delta_points: number;
   delta_net: number;
+  /** The book per trade: bank-first would-have on archive rows (`rule_pnl` /
+   * `rule_net`), a mirror of reality on post-switch rows. */
+  rows?: ExitRulesTrade[];
 }
 
 export interface ExitRulesReport {

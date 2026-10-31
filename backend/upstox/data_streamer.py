@@ -280,6 +280,7 @@ class DataStreamer:
                     initial_sl_points=s.get('initial_sl_points'),
                     trailing_trigger=s.get('trailing_trigger'),
                     trailing_step=s.get('trailing_step'),
+                    bank_rung=s.get('bank_rung'),
                 ),
                 'trade_logger': TradeLogger(
                     session_name=self.session_name,
@@ -287,6 +288,7 @@ class DataStreamer:
                     sel_premium=self._selection_for(inst)[0],
                     sel_tier=self._selection_for(inst)[1],
                     sel_at=self._selection_for(inst)[2],
+                    bank_rung=s.get('bank_rung'),
                 ),
                 'trades_taken': 0,
                 'trade_slot': 1,

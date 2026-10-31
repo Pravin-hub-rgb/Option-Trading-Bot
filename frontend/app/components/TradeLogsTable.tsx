@@ -7,85 +7,52 @@ import TradePathChart from "./TradePathChart";
 import type { TradeEntry, ExitRulesTrade } from "../lib/types";
 
 type RowInfo = {
-  // The legacy pass: what the retired rule would have banked (the audit once
-  // post-switch trades accrue; a mirror on archive rows).
-  deltaNet: number | null;
-  legacyNet: number | null;
-  proof: ExitRulesTrade["proof"];
-  rule: string;
-  // The rule pass: what TODAY's ladder would have banked - the would-have on
-  // archive rows (the study), a mirror on post-switch rows.
+  rulePnl: number | null;
   ruleNet: number | null;
-  ruleDelta: number | null;
   ruleProof: ExitRulesTrade["proof"];
-  ruleFired: string;
+  mfePoints: number | null;
 };
 
 export default function TradeLogsTable({
   year,
   onDeleted,
   breakevenTolerance,
+  refreshKey,
+  bankAt,
 }: {
   year: number;
   onDeleted: () => void;
   breakevenTolerance: number;
+  refreshKey: number;
+  bankAt: number;
 }) {
   const [trades, setTrades] = useState<TradeEntry[]>([]);
   const [info, setInfo] = useState<Record<number, RowInfo>>({});
-  // The legacy counterfactual only means something on trades that ran under a
-  // DIFFERENT rule than the legacy ladder itself - anything logged before the
-  // bank-first switch replays as itself ("as_traded") and would just print
-  // "same" 185 times. So the column stays hidden until real deltas accrue.
-  const [showLegacy, setShowLegacy] = useState(false);
-  // Which trade has its price-path chart expanded, if any.
   const [openPath, setOpenPath] = useState<number | null>(null);
   const pathTrade = trades.find((t) => t.id === openPath) ?? null;
   useEffect(() => {
     fetchTrades(year)
       .then((res) => setTrades(res.trades))
       .catch(() => setTrades([]));
-  }, [year]);
+  }, [year, refreshKey]);
 
   useEffect(() => {
     fetchExitRules(year)
       .then((r) => {
         const map: Record<number, RowInfo> = {};
-        for (const t of r.trades as ExitRulesTrade[]) {
-          if (t.id === null) continue;
-          map[t.id] = {
-            deltaNet: t.delta_net,
-            legacyNet: t.legacy_net,
-            proof: t.proof,
-            rule: t.rule_fired,
-            ruleNet: null,
-            ruleDelta: null,
-            ruleProof: t.proof,
-            ruleFired: t.rule_fired,
-          };
-        }
-        // The rule pass is the same trades replayed through today's ladder.
-        // Overlay it so each row carries both books side by side.
         for (const b of r.rule_book?.rows ?? []) {
           if (b.id === null) continue;
-          const cur = map[b.id];
           map[b.id] = {
-            deltaNet: cur?.deltaNet ?? null,
-            legacyNet: cur?.legacyNet ?? null,
-            proof: cur?.proof ?? b.proof,
-            rule: cur?.rule ?? b.rule_fired,
+            rulePnl: b.rule_pnl ?? null,
             ruleNet: b.rule_net ?? null,
-            ruleDelta: b.delta_net,
             ruleProof: b.proof,
-            ruleFired: b.rule_fired,
+            mfePoints: b.mfe_points ?? null,
           };
         }
         setInfo(map);
-        setShowLegacy(
-          Object.values(map).some((m) => m.proof === "tick" || m.proof === "crossing"),
-        );
       })
       .catch(() => setInfo({}));
-  }, [year]);
+  }, [year, refreshKey]);
 
   async function handleDelete(id: number) {
     try {
@@ -147,22 +114,6 @@ export default function TradeLogsTable({
             <th className="text-right py-2 pr-3">P&amp;L</th>
             <th className="text-right py-2 pr-3">Net</th>
             <th className="text-right py-2 pr-3">Fees</th>
-            {showLegacy && (
-              <th
-                className="text-right py-2 pr-3 border-l border-white/10"
-                style={{ color: "#818cf8" }}
-                title="What the retired ladder (first rung banks entry+1, then +5 steps) would have BANKED on this trade, replayed over the real recorded ticks. Compare it against the Net column. The small figure underneath is the difference against what we actually banked - red means the old rule would have lost money here."
-              >
-                Legacy&nbsp;book
-              </th>
-            )}
-            <th
-              className="text-right py-2 pr-3 border-l border-white/10"
-              style={{ color: "#818cf8" }}
-              title="What TODAY's ladder (first rung banks entry+5, then every +5) would have BANKED on this trade, replayed over the real recorded ticks. Compare it against the Net column. The small figure underneath is the difference against what we actually banked. For trades run before the bank-first switch this is the would-have study; for post-switch trades the ladder IS reality, so this simply mirrors the Net column."
-            >
-              Rule&nbsp;book
-            </th>
             <th className="py-2 w-8">
               <span className="sr-only">Show price path</span>
             </th>
@@ -172,95 +123,34 @@ export default function TradeLogsTable({
         <tbody>
           {trades.map((t, i) => {
             const m = t.id != null ? info[t.id] : undefined;
-            // Legacy book: what the RETIRED rule would have banked on this
-            // trade (first rung parks at entry+1, charges-only), replayed over
-            // the real recorded ticks.
-            //
-            // The big number is the counterfactual's own net, not a difference,
-            // so it reads directly against the Net column beside it. The small
-            // figure underneath is the delta against what we actually banked -
-            // that is the part that says whether the old rule would help or hurt.
-            //
-            // Trades run before the bank-first switch were traded under exactly
-            // this rule, so they replay as "as_traded": the legacy book mirrors
-            // the actual and the column shows "same". Deltas only appear once
-            // post-switch trades (bank_rung 5) start accruing.
-            //
-            // Rows are split by how solid the counterfactual is, because they
-            // are NOT equally trustworthy:
-            //   tick      replayed on real recorded ticks - trust it
-            //   crossing  the stop provably fired, but WHERE it filled is an
-            //             assumption (first rung less the exit buffer), so it is
-            //             drawn dimmed and italic rather than as a hard number
-            //   live      the rule provably changed nothing - nothing to show
-            //   assumed   not provable at all - no claim is made
-            const rule = m?.rule ?? "";
-            const d = m?.deltaNet;
-            const moved = d != null && Math.abs(d) > 0.5;
-            // No rule info at all, or the rule provably changed nothing.
-            const sameEffect =
-              !moved &&
-              (rule === "" ||
-                rule === "survived" ||
-                rule === "untouched" ||
-                rule === "unknown-mfe" ||
-                rule === "as_traded" ||
-                rule === "ladder_same" ||
-                rule === "ladder_help" ||
-                rule === "ladder_hurt" ||
-                rule === "confirmed_same" ||
-                rule === "confirmed_help" ||
-                rule === "confirmed_hurt" ||
-                rule === "current");
-            const tone = !moved ? "#64748b" : d > 0 ? "#10b981" : "#ef4444";
-            // A real counterfactual exists only for tick / crossing rows. For
-            // the other two legacyNet just mirrors actual, so printing it would
-            // duplicate the Net column and read as though the rule had a view.
-            const hasCounterfactual =
-              m != null &&
-              m.legacyNet != null &&
-              (m.proof === "tick" || m.proof === "crossing");
-            const inferred = m?.proof === "crossing";
-            const legacyTone =
-              m?.legacyNet == null || m.legacyNet === 0
-                ? "#64748b"
-                : m.legacyNet > 0
-                  ? "#10b981"
-                  : "#ef4444";
-            // Rule book: what TODAY's ladder would have banked on this trade.
-            // Archive rows carry the would-have study; post-switch rows mirror
-            // reality (the ladder IS what ran), so they read "same" like the
-            // old archive did under the retired rule.
-            const bookRule = m?.ruleFired ?? "";
-            const bd = m?.ruleDelta;
-            const bookMoved = bd != null && Math.abs(bd) > 0.5;
-            const bookSame =
-              !bookMoved &&
-              (bookRule === "" ||
-                bookRule === "survived" ||
-                bookRule === "untouched" ||
-                bookRule === "unknown-mfe" ||
-                bookRule === "as_traded" ||
-                bookRule === "ladder_same" ||
-                bookRule === "ladder_help" ||
-                bookRule === "ladder_hurt" ||
-                bookRule === "confirmed_same" ||
-                bookRule === "confirmed_help" ||
-                bookRule === "confirmed_hurt" ||
-                bookRule === "skipped" ||
-                bookRule === "current");
-            const bookTone = !bookMoved ? "#64748b" : bd > 0 ? "#10b981" : "#ef4444";
-            const hasBookCounterfactual =
-              m != null &&
-              m.ruleNet != null &&
-              (m.ruleProof === "tick" || m.ruleProof === "crossing");
-            const bookInferred = m?.ruleProof === "crossing";
-            const bookNetTone =
-              m?.ruleNet == null || m.ruleNet === 0
-                ? "#64748b"
-                : m.ruleNet > 0
-                  ? "#10b981"
-                  : "#ef4444";
+            // Bank-first results: where the counterfactual is reliable (tick
+            // = replayed over real ticks, crossing = stop provably fired,
+            // live = rule didn't change the exit) we show the measured rule
+            // P&L/Net. For "assumed" trades (no tick path) we can't replay the
+            // ladder, BUT if MFE crossed the first bank rung (+bankAt) the engine
+            // would have banked that band - so we show +bankAt as the conservative
+            // floor. If MFE never reached the bank rung, show "—".
+            const bankUnknown = m?.ruleProof === "assumed";
+            const bankedFloor =
+              bankUnknown && m?.mfePoints != null && m.mfePoints >= bankAt;
+            const pp =
+              t.pnl != null &&
+              t.pnl !== 0 &&
+              t.net_pnl != null &&
+              t.charges != null
+                ? (t.net_pnl + t.charges) / t.pnl
+                : null;
+            const displayPnl = bankedFloor
+              ? bankAt
+              : bankUnknown
+                ? null
+                : m?.rulePnl ?? t.pnl;
+            const displayNet =
+              bankedFloor && pp != null && t.charges != null
+                ? bankAt * pp - t.charges
+                : bankUnknown
+                  ? null
+                  : m?.ruleNet ?? t.net_pnl;
             return (
             <tr
               key={t.id ?? i}
@@ -279,106 +169,54 @@ export default function TradeLogsTable({
               <td className="py-2 pr-3 text-right font-mono">{t.exit_price?.toFixed(2) ?? "—"}</td>
               <td
                 className="py-2 pr-3 text-right font-mono"
+                title={
+                  bankedFloor
+                    ? `No tick path — MFE reached +${bankAt}, banked at first rung`
+                    : bankUnknown
+                      ? `No tick path — MFE ${m?.mfePoints != null ? `(${m.mfePoints} pts)` : ""} below +${bankAt}, exit unknowable`
+                      : m?.ruleProof === "crossing"
+                        ? "Bank stepped on the SL band — exit assumed at first rung"
+                        : undefined
+                }
                 style={{
                   color:
-                    t.pnl !== null
-                      ? t.pnl > breakevenTolerance
+                    displayPnl !== null
+                      ? displayPnl > breakevenTolerance
                         ? "#10b981"
-                        : t.pnl < -breakevenTolerance
+                        : displayPnl < -breakevenTolerance
                           ? "#ef4444"
                           : "#f59e0b"
                       : "#64748b",
                 }}
               >
-                {t.pnl !== null ? `${t.pnl >= 0 ? "+" : ""}${t.pnl.toFixed(2)}` : "—"}
+                {displayPnl !== null ? `${displayPnl >= 0 ? "+" : ""}${displayPnl.toFixed(2)}` : "—"}
               </td>
               <td
                 className="py-2 pr-3 text-right font-mono"
+                title={
+                  bankedFloor
+                    ? `No tick path — MFE reached +${bankAt}, banked at first rung`
+                    : bankUnknown
+                      ? `No tick path — MFE ${m?.mfePoints != null ? `(${m.mfePoints} pts)` : ""} below +${bankAt}, exit unknowable`
+                      : m?.ruleProof === "crossing"
+                        ? "Bank stepped on the SL band — exit assumed at first rung"
+                        : undefined
+                }
                 style={{
                   color:
-                    t.net_pnl !== null && t.net_pnl !== undefined
-                      ? t.net_pnl >= 0
+                    displayNet !== null && displayNet !== undefined
+                      ? displayNet >= 0
                         ? "#10b981"
                         : "#ef4444"
                       : "#64748b",
                 }}
               >
-                {t.net_pnl !== null && t.net_pnl !== undefined
-                  ? `${t.net_pnl >= 0 ? "+" : "-"}₹${Math.abs(t.net_pnl).toFixed(2)}`
+                {displayNet !== null && displayNet !== undefined
+                  ? `${displayNet >= 0 ? "+" : "-"}₹${Math.abs(displayNet).toFixed(2)}`
                   : "—"}
               </td>
               <td className="py-2 pr-3 text-right font-mono text-[#64748b]">
                 {t.charges !== null && t.charges !== undefined ? `₹${t.charges.toFixed(2)}` : "—"}
-              </td>
-              {/* ---- legacy book: what the retired +1 rung would have banked ---- */}
-              {showLegacy && (
-              <td
-                className="py-2 pr-3 text-right font-mono font-semibold border-l border-white/10"
-                style={{ color: hasCounterfactual ? legacyTone : tone }}
-                title={
-                  hasCounterfactual
-                    ? inferred
-                      ? `Retired ladder would have netted Rs ${m?.legacyNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked - a difference of ${d != null && d < 0 ? "-" : "+"}Rs ${Math.abs(d ?? 0).toFixed(0)}. ESTIMATED: the stop provably fired, but exactly where it filled is an assumption, so this is a close estimate, not a measurement.`
-                      : `Retired ladder would have netted Rs ${m?.legacyNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked - a difference of ${d != null && d < 0 ? "-" : "+"}Rs ${Math.abs(d ?? 0).toFixed(0)}. Replayed tick by tick over the prices the bot actually received.`
-                    : m?.proof === "assumed"
-                      ? "No counterfactual is possible for this trade: without a recorded price path there is nothing to replay, and the peak does not prove where the stop would have filled."
-                      : "The retired rule provably would not have changed this exit."
-                }
-              >
-                {hasCounterfactual && m?.legacyNet != null ? (
-                  <div className="leading-tight">
-                    <div className={inferred ? "italic opacity-60" : undefined}>
-                      {m.legacyNet >= 0 ? "+" : "-"}₹{Math.abs(m.legacyNet).toFixed(0)}
-                    </div>
-                    {moved && d != null && (
-                      <div className="text-[9px] font-normal" style={{ color: tone }}>
-                        {d >= 0 ? "+" : "-"}₹{Math.abs(d).toFixed(0)}
-                      </div>
-                    )}
-                  </div>
-                ) : m?.proof === "assumed" ? (
-                  <span className="font-normal">—</span>
-                ) : sameEffect ? (
-                  <span className="font-normal">same</span>
-                ) : (
-                  <span className="font-normal">—</span>
-                )}
-              </td>
-              )}
-              {/* ---- rule book: what TODAY's ladder would have banked ---- */}
-              <td
-                className="py-2 pr-3 text-right font-mono font-semibold border-l border-white/10"
-                style={{ color: hasBookCounterfactual ? bookNetTone : bookTone }}
-                title={
-                  hasBookCounterfactual
-                    ? bookInferred
-                      ? `Today's ladder would have netted Rs ${m?.ruleNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked - a difference of ${bd != null && bd < 0 ? "-" : "+"}Rs ${Math.abs(bd ?? 0).toFixed(0)}. ESTIMATED: the bank was provably crossed, but exactly where the stop filled is an assumption, so this is a close estimate, not a measurement.`
-                      : `Today's ladder would have netted Rs ${m?.ruleNet?.toFixed(2)} vs the Rs ${t.net_pnl?.toFixed(2)} we actually banked - a difference of ${bd != null && bd < 0 ? "-" : "+"}Rs ${Math.abs(bd ?? 0).toFixed(0)}. Replayed tick by tick over the prices the bot actually received.`
-                    : m?.ruleProof === "assumed"
-                      ? "No counterfactual is possible for this trade: without a recorded price path there is nothing to replay, and the peak does not prove where the stop would have filled."
-                      : m?.ruleProof === "live"
-                        ? "This trade ran under exactly this ladder, so the rule book mirrors reality."
-                        : "The bank-first ladder provably would not have changed this exit."
-                }
-              >
-                {hasBookCounterfactual && m?.ruleNet != null ? (
-                  <div className="leading-tight">
-                    <div className={bookInferred ? "italic opacity-60" : undefined}>
-                      {m.ruleNet >= 0 ? "+" : "-"}₹{Math.abs(m.ruleNet).toFixed(0)}
-                    </div>
-                    {bookMoved && bd != null && (
-                      <div className="text-[9px] font-normal" style={{ color: bookTone }}>
-                        {bd >= 0 ? "+" : "-"}₹{Math.abs(bd).toFixed(0)}
-                      </div>
-                    )}
-                  </div>
-                ) : m?.ruleProof === "assumed" ? (
-                  <span className="font-normal">—</span>
-                ) : bookSame ? (
-                  <span className="font-normal">same</span>
-                ) : (
-                  <span className="font-normal">—</span>
-                )}
               </td>
               <td className="py-2">
                 <button

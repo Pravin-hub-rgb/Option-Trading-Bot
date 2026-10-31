@@ -17,22 +17,22 @@ export default function AnalyticsPage() {
     fetchStatus().then(setStatus).catch(() => {});
   }, []);
 
-  const profitFactor = stats && stats.losing > 0 ? (stats.total_pnl > 0 ? (stats.avg_win * stats.profitable) / Math.abs(stats.avg_loss * stats.losing) : 0) : 0;
+  const profitFactor = stats && stats.losing > 0 ? (stats.avg_win * stats.profitable) / (Math.abs(stats.avg_loss) * stats.losing) : 0;
 
   const kpis = [
     { label: "Total Trades", value: stats?.total_trades ?? 0, icon: "lucide:bar-chart-3", color: "" },
     { label: "Winning", value: stats?.profitable ?? 0, icon: "lucide:trending-up", color: "#10b981", border: true },
     { label: "Losing", value: stats?.losing ?? 0, icon: "lucide:trending-down", color: "#ef4444", border: true },
-    { label: "Net P&L", value: `₹${(stats?.total_pnl ?? 0).toFixed(2)}`, icon: "lucide:dollar-sign", color: (stats?.total_pnl ?? 0) >= 0 ? "#10b981" : "#ef4444", border: true },
+    { label: "Net P&L (pts)", value: `${(stats?.total_pnl ?? 0).toFixed(2)}`, icon: "lucide:dollar-sign", color: (stats?.total_pnl ?? 0) >= 0 ? "#10b981" : "#ef4444", border: true },
   ];
 
   const extendedStats = [
     { label: "Win Rate", value: stats ? `${stats.win_rate}%` : "—" },
-    { label: "Avg Win", value: stats ? `₹${stats.avg_win.toFixed(2)}` : "—" },
-    { label: "Avg Loss", value: stats ? `₹${stats.avg_loss.toFixed(2)}` : "—" },
+    { label: "Avg Win (pts)", value: stats ? `${stats.avg_win.toFixed(2)}` : "—" },
+    { label: "Avg Loss (pts)", value: stats ? `${stats.avg_loss.toFixed(2)}` : "—" },
     { label: "Profit Factor", value: stats ? profitFactor.toFixed(2) : "—" },
-    { label: "Largest Win", value: stats ? `₹${stats.largest_win.toFixed(2)}` : "—" },
-    { label: "Largest Loss", value: stats ? `₹${stats.largest_loss.toFixed(2)}` : "—" },
+    { label: "Largest Win (pts)", value: stats ? `${stats.largest_win.toFixed(2)}` : "—" },
+    { label: "Largest Loss (pts)", value: stats ? `${stats.largest_loss.toFixed(2)}` : "—" },
   ];
 
   const positions = status?.positions;
@@ -85,9 +85,9 @@ export default function AnalyticsPage() {
                 <tr className="border-b border-white/5 text-gray-500 uppercase tracking-wider">
                   <th className="text-left px-4 py-2 font-bold">Symbol</th>
                   <th className="text-left px-4 py-2 font-bold">Type</th>
-                  <th className="text-right px-4 py-2 font-bold">Entry</th>
-                  <th className="text-right px-4 py-2 font-bold">LTP</th>
-                  <th className="text-right px-4 py-2 font-bold">P&L</th>
+                      <td className="px-4 py-3 text-right font-mono font-bold">Entry</td>
+                      <th className="text-right px-4 py-2 font-bold">LTP</th>
+                      <th className="text-right px-4 py-2 font-bold">P&L (pts)</th>
                   <th className="text-center px-4 py-2 font-bold">Status</th>
                 </tr>
               </thead>
@@ -107,7 +107,7 @@ export default function AnalyticsPage() {
                         ₹{(ap.p?.entry_price ?? 0) + pnl > 0 ? ((ap.p?.entry_price ?? 0) + pnl).toFixed(2) : "—"}
                       </td>
                       <td className={`px-4 py-3 text-right font-mono font-bold ${pnl >= 0 ? "text-[#10b981]" : "text-[#ef4444]"}`}>
-                        {pnl >= 0 ? "+" : ""}₹{pnl.toFixed(2)}
+                        {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20 uppercase">
@@ -155,7 +155,7 @@ export default function AnalyticsPage() {
                     />
                   </div>
                   <span className={`text-[10px] w-16 text-right font-mono ${(d.net_pnl ?? 0) >= 0 ? "text-[#10b981]" : "text-[#ef4444]"}`}>
-                    ₹{d.net_pnl?.toFixed(0) ?? "0"}
+                    {d.net_pnl?.toFixed(0) ?? "0"}
                   </span>
                 </div>
               );

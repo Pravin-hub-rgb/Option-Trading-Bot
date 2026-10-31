@@ -1,10 +1,10 @@
-# Option Trading Bot - TradeStack
+# Option Trading Bot
 
 A Python + Next.js options trading bot for Indian index options (NIFTY/BANKNIFTY) with a smart bank-first trailing stop loss system.
 
 ## Overview
 
-TradeStack is a paper-trading and live-trading bot designed for intraday options trading. It features:
+This bot is a paper-trading and live-trading system designed for intraday options trading. It features:
 
 - **Bank-first trailing SL**: Parks the stop-loss at entry + 5 points (the "bank"), then ratchets up in 5-point steps as profit increases. The stop never moves backward.
 - **Red candle breakout strategy**: Identifies bullish/bearish breakouts using red candle high/low levels.

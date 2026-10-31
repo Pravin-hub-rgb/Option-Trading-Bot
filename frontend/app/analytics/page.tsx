@@ -23,7 +23,8 @@ export default function AnalyticsPage() {
     { label: "Total Trades", value: stats?.total_trades ?? 0, icon: "lucide:bar-chart-3", color: "" },
     { label: "Winning", value: stats?.profitable ?? 0, icon: "lucide:trending-up", color: "#10b981", border: true },
     { label: "Losing", value: stats?.losing ?? 0, icon: "lucide:trending-down", color: "#ef4444", border: true },
-    { label: "Net P&L (pts)", value: `${(stats?.total_pnl ?? 0).toFixed(2)}`, icon: "lucide:dollar-sign", color: (stats?.total_pnl ?? 0) >= 0 ? "#10b981" : "#ef4444", border: true },
+    { label: "Gross P&L (pts)", value: `${(stats?.total_pnl ?? 0).toFixed(2)}`, icon: "lucide:dollar-sign", color: (stats?.total_pnl ?? 0) >= 0 ? "#10b981" : "#ef4444", border: true },
+    { label: "Net P&L", value: `₹${(stats?.net_total_pnl ?? 0).toFixed(0)}`, icon: "lucide:dollar-sign", color: (stats?.net_total_pnl ?? 0) >= 0 ? "#10b981" : "#ef4444", border: true },
   ];
 
   const extendedStats = [
